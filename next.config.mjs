@@ -1,6 +1,5 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   // Keep dev/build artifacts isolated when both commands are run in parallel.
   distDir: process.env.NEXT_DIST_DIR || ".next",
 
