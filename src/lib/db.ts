@@ -243,7 +243,7 @@ const relationMap: Record<string, Record<string, { table: string; fk: string; pa
     sessions: { table: "session", fk: "school_id", parentKey: "id", type: "many" },
     terms: { table: "term", fk: "school_id", parentKey: "id", type: "many" },
   },
-  user: {
+  '"user"': {
     role: { table: "role", fk: "id", parentKey: "role_id", type: "one" },
   },
   classArm: {
@@ -500,7 +500,7 @@ export const prisma = {
   school: createModelClient("school"),
   schoolBranding: createModelClient("school_branding"),
   role: createModelClient("role"),
-  user: createModelClient("user"),
+  user: createModelClient('"user"'),
   parent: createModelClient("parent"),
   teacher: createModelClient("teacher"),
   student: createModelClient("student"),
