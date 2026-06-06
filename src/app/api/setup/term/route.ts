@@ -3,7 +3,7 @@ import { query, queryOne } from "@/lib/db";
 import { z } from "zod";
 
 const createTermSchema = z.object({
-  sessionId: z.string(),
+  sessionId: z.coerce.string(),
   name: z.string().min(2),
   startDate: z.string().optional(),
   endDate: z.string().optional(),

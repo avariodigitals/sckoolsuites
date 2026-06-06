@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { query, queryOne, withTransaction } from "@/lib/db";
+import { queryOne, withTransaction } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 const activateSchema = z.object({
-  sessionId: z.string(),
-  termId: z.string(),
+  sessionId: z.coerce.string(),
+  termId: z.coerce.string(),
   adminUser: z.object({
     name: z.string(),
     email: z.string().email(),
