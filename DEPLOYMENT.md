@@ -393,6 +393,9 @@ docker compose up --build -d
 | `NEXTAUTH_URL` | Public URL of the deployed app | `https://school.example.com` |
 | `NEXTAUTH_SECRET` | Encryption key for sessions | `openssl rand -base64 32` |
 | `NODE_ENV` | Runtime environment | `production` or `development` |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name for image uploads | `your-cloud-name` |
+| `CLOUDINARY_API_KEY` | Cloudinary API key | `123456789012345` |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret | `your-api-secret` |
 
 ### Optional
 
@@ -400,9 +403,6 @@ docker compose up --build -d
 |----------|-------------|---------|
 | `NEXT_PUBLIC_APP_URL` | Public app URL (client-side) | Same as `NEXTAUTH_URL` |
 | `APP_URL` | Internal app URL | Same as `NEXTAUTH_URL` |
-| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name for image uploads | - |
-| `CLOUDINARY_API_KEY` | Cloudinary API key | - |
-| `CLOUDINARY_API_SECRET` | Cloudinary API secret | - |
 | `SMTP_HOST` | SMTP server for email notifications | - |
 | `SMTP_PORT` | SMTP port | `587` |
 | `SMTP_USER` | SMTP username | - |
@@ -410,6 +410,18 @@ docker compose up --build -d
 | `FROM_EMAIL` | Sender email address | - |
 | `REDIS_URL` | Redis for caching/sessions | - |
 | `EMAIL_WEBHOOK_URL` | Webhook for email events | - |
+
+### Cloudinary Setup (Required for Uploads)
+
+1. Create a free account at [cloudinary.com](https://cloudinary.com).
+2. Go to **Dashboard** and copy your **Cloud Name**, **API Key**, and **API Secret**.
+3. Add these three values as environment variables in your deployment platform.
+
+**Why Cloudinary?**
+- One account handles all schools via folder isolation (`school_default/passports/`, `school_default/logos/`, etc.)
+- Automatic image optimization (WebP, resizing) reduces bandwidth
+- Platform-independent URLs survive hosting changes
+- Generous free tier (25GB storage + bandwidth)
 
 ### Database URL Formats
 
@@ -490,7 +502,7 @@ Use this checklist for every new school deployment:
 - [ ] Visit the deployed URL and complete `/setup` wizard
 - [ ] Create the first `SCHOOL_ADMIN` user via the setup wizard
 - [ ] Verify login works
-- [ ] (Optional) Configure Cloudinary for image uploads
+- [ ] Configure Cloudinary environment variables (required for uploads)
 - [ ] (Optional) Configure SMTP for email notifications
 
 ---

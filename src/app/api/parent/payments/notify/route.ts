@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
 import { prisma } from "@/lib/db";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 const schema = z.object({
   invoiceId: z.string().min(5),
@@ -17,10 +16,6 @@ const schema = z.object({
 
 const ALLOWED_TYPES = new Set(["image/png", "image/jpeg", "image/jpg", "image/webp", "application/pdf"]);
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
-
-function sanitizeFileName(fileName: string) {
-  return fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-}
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -99,17 +94,12 @@ export async function POST(request: Request) {
 
   let proofUrl: string | null = null;
   if (proofFile) {
-
-    const safeName = sanitizeFileName(proofFile.name || "payment-proof");
-    const fileName = `${Date.now()}-${safeName}`;
-    const relativeDir = path.join("uploads", "default", "payments");
-    const absoluteDir = path.join(process.cwd(), "public", relativeDir);
-    const absolutePath = path.join(absoluteDir, fileName);
-
-    await mkdir(absoluteDir, { recursive: true });
     const bytes = await proofFile.arrayBuffer();
-    await writeFile(absolutePath, Buffer.from(bytes));
-    proofUrl = `/${relativeDir.replace(/\\/g, "/")}/${fileName}`;
+    const result = await uploadToCloudinary(Buffer.from(bytes), proofFile.type, {
+      schoolId: "default",
+      folder: "payment-proofs",
+    });
+    proofUrl = result.url;
   }
 
   await prisma.paymentProof.upsert({
