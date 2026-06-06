@@ -3,12 +3,5 @@
   "buildCommand": "npm run vercel-build",
   "framework": "nextjs",
   "installCommand": "npm install",
-  "regions": ["iad1"],
-  "env": {
-    "DATABASE_URL": "@database-url",
-    "DIRECT_URL": "@direct-url",
-    "NEXTAUTH_SECRET": "@nextauth-secret",
-    "NEXTAUTH_URL": "@nextauth-url",
-    "NODE_ENV": "production"
-  }
+  "regions": ["iad1"]
 }
