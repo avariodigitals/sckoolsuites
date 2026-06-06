@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { query, queryOne, withTransaction } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 const activateSchema = z.object({
-  schoolId: z.string(),
   sessionId: z.string(),
   termId: z.string(),
   adminUser: z.object({
@@ -27,12 +26,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const { schoolId, sessionId, termId, adminUser } = parsed.data;
+    const { sessionId, termId, adminUser } = parsed.data;
 
     // Check if admin already exists
-    const existingAdmin = await prisma.user.findFirst({
-      where: { email: adminUser.email }
-    });
+    const existingAdmin = await queryOne<{ id: string }>(
+      'SELECT id FROM "user" WHERE LOWER(email) = LOWER($1)',
+      [adminUser.email]
+    );
     if (existingAdmin) {
       return NextResponse.json(
         { error: "Admin user already exists with this email" },
@@ -40,68 +40,63 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get or create SCHOOL_ADMIN role
-    const adminRole = await prisma.role.upsert({
-      where: { name: "SCHOOL_ADMIN" },
-      update: {},
-      create: { name: "SCHOOL_ADMIN" },
-    });
+    // Get SCHOOL_ADMIN role
+    const adminRole = await queryOne<{ id: number }>(
+      "SELECT id FROM role WHERE name = 'SCHOOL_ADMIN'"
+    );
+    if (!adminRole) {
+      return NextResponse.json(
+        { error: "SCHOOL_ADMIN role not found" },
+        { status: 500 }
+      );
+    }
 
-    // Create admin user
-    const hashedPassword = await bcrypt.hash(adminUser.password, 10);
-    const user = await prisma.user.create({
-      data: {
-        name: adminUser.name,
-        email: adminUser.email,
-        password: hashedPassword,
-        roleId: adminRole.id,
-        schoolId: schoolId,
-      },
-    });
+    // Create admin user and activate school in transaction
+    const result = await withTransaction(async (client) => {
+      // Create admin user
+      const hashedPassword = await bcrypt.hash(adminUser.password, 10);
+      const userResult = await client.query(
+        `INSERT INTO "user" (name, email, password, role_id, is_active)
+         VALUES ($1, LOWER($2), $3, $4, $5)
+         RETURNING id, name, email`,
+        [adminUser.name, adminUser.email, hashedPassword, adminRole.id, true]
+      );
+      const user = userResult.rows[0];
 
-    // Activate school
-    await prisma.school.update({
-      where: { id: schoolId },
-      data: { isActive: true },
-    });
+      // Activate school
+      await client.query(
+        'UPDATE school SET is_active = $1, is_setup = $2 WHERE id = $3',
+        [true, true, 'default']
+      );
 
-    // Set active session and term settings
-    await prisma.schoolSetting.create({
-      data: {
-        schoolId: schoolId,
-        key: "active_session_id",
-        value: sessionId,
-      },
-    });
-    await prisma.schoolSetting.create({
-      data: {
-        schoolId: schoolId,
-        key: "active_term_id",
-        value: termId,
-      },
-    });
-    await prisma.schoolSetting.create({
-      data: {
-        schoolId: schoolId,
-        key: `user_context_session_${user.id}`,
-        value: sessionId,
-      },
-    });
-    await prisma.schoolSetting.create({
-      data: {
-        schoolId: schoolId,
-        key: `user_context_term_${user.id}`,
-        value: termId,
-      },
+      // Set active session and term settings
+      await client.query(
+        'INSERT INTO school_setting (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
+        ['active_session_id', sessionId]
+      );
+      await client.query(
+        'INSERT INTO school_setting (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
+        ['active_term_id', termId]
+      );
+      await client.query(
+        'INSERT INTO school_setting (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
+        [`user_context_session_${user.id}`, sessionId]
+      );
+      await client.query(
+        'INSERT INTO school_setting (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
+        [`user_context_term_${user.id}`, termId]
+      );
+
+      return user;
     });
 
     return NextResponse.json({
       success: true,
       message: "School activated successfully",
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
+        id: result.id,
+        name: result.name,
+        email: result.email,
       },
     });
   } catch (error) {

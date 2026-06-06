@@ -11,14 +11,14 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
 
   try {
-    const updated = await activateSchoolConfigVersion(session.user.schoolId, id);
+    const updated = await activateSchoolConfigVersion("default", id);
     return NextResponse.json({
       id: updated.id,
       version: updated.version,

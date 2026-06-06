@@ -1,0 +1,5 @@
+scripts/
+.next/
+node_modules/
+out/
+dist/

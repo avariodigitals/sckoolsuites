@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { saveSetupWizardStatus } from "@/lib/setup-wizard";
 
 function isAuthorized(role?: string) {
@@ -9,11 +9,11 @@ function isAuthorized(role?: string) {
 
 export async function POST() {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
 
   try {
     // Check if school has required data

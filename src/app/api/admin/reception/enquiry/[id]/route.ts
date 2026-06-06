@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 
 const updateSchema = z.object({
@@ -22,7 +22,7 @@ function isAuthorized(role?: string) {
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -34,7 +34,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
   const data = parsed.data;
 
   try {
@@ -94,12 +94,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
 
   try {
     const existing = await prisma.enquiry.findFirst({

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { ComplaintStatus } from "@prisma/client";
+import { ComplaintStatus } from "@/lib/db-types";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 const schema = z.object({
   status: z.nativeEnum(ComplaintStatus),
@@ -12,7 +12,7 @@ const schema = z.object({
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.schoolId || !session.user.id || !["SCHOOL_ADMIN", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(session.user.role)) {
+  if (!session?.user?.id || !["SCHOOL_ADMIN", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -24,7 +24,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const { id } = await params;
   const updated = await prisma.parentComplaint.updateMany({
-    where: { id, schoolId: session.user.schoolId },
+    where: { id, schoolId: "default" },
     data: {
       status: parsed.data.status,
       reviewedById: session.user.id,
@@ -36,13 +36,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
   }
 
-  const complaint = await prisma.parentComplaint.findFirst({ where: { id, schoolId: session.user.schoolId } });
+  const complaint = await prisma.parentComplaint.findFirst({ where: { id, schoolId: "default" } });
   if (!complaint) {
     return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
   }
 
   await createAuditLog({
-    schoolId: session.user.schoolId,
+    schoolId: "default",
     actorUserId: session.user.id,
     action: "PARENT_COMPLAINT_STATUS_UPDATED",
     targetType: "ParentComplaint",

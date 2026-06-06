@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 
 function isAuthorized(role?: string) {
@@ -12,12 +12,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
 
   // Check invoice exists
   const existing = await prisma.invoice.findFirst({

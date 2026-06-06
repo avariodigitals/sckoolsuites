@@ -4,7 +4,7 @@ import path from "node:path";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 const schema = z.object({
   invoiceId: z.string().min(5),
@@ -24,7 +24,7 @@ function sanitizeFileName(fileName: string) {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "PARENT" || !session.user.schoolId) {
+  if (!session?.user || session.user.role !== "PARENT" ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   }
 
   const parent = await prisma.parent.findFirst({
-    where: { schoolId: session.user.schoolId, userId: session.user.id },
+    where: { schoolId: "default", userId: session.user.id },
   });
 
   if (!parent) {
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
   const invoice = await prisma.invoice.findFirst({
     where: {
       id: parsed.data.invoiceId,
-      schoolId: session.user.schoolId,
+      schoolId: "default",
       OR: [{ parentId: parent.id }, { student: { parentId: parent.id } }],
     },
     include: { student: true },
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
 
   const payment = await prisma.payment.create({
     data: {
-      schoolId: session.user.schoolId,
+      schoolId: "default",
       invoiceId: invoice.id,
       studentId: invoice.studentId,
       amount: parsed.data.amountPaid,
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
 
     const safeName = sanitizeFileName(proofFile.name || "payment-proof");
     const fileName = `${Date.now()}-${safeName}`;
-    const relativeDir = path.join("uploads", session.user.schoolId, "payments");
+    const relativeDir = path.join("uploads", "default", "payments");
     const absoluteDir = path.join(process.cwd(), "public", relativeDir);
     const absolutePath = path.join(absoluteDir, fileName);
 
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
       proofUrl,
     },
     create: {
-      schoolId: session.user.schoolId,
+      schoolId: "default",
       paymentId: payment.id,
       bankName: parsed.data.bankName || null,
       transactionReference: parsed.data.transactionReference,
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
   });
 
   await createAuditLog({
-    schoolId: session.user.schoolId,
+    schoolId: "default",
     actorUserId: session.user.id,
     action: "PAYMENT_NOTICE_SUBMITTED",
     targetType: "Payment",

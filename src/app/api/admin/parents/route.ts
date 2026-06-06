@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { hashPassword } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
 
@@ -18,11 +18,11 @@ function isAuthorized(role?: string) {
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
 
   const [parents, students] = await Promise.all([
     prisma.parent.findMany({
@@ -36,7 +36,7 @@ export async function GET() {
     prisma.student.findMany({
       where: { schoolId },
       include: { user: true, parent: true },
-      orderBy: [{ user: { name: "asc" } }],
+      orderBy: { id: "asc" },
     }),
   ]);
 
@@ -48,10 +48,10 @@ export async function GET() {
       email: parent.user.email,
       isActive: parent.user.isActive,
       createdAt: parent.createdAt.toISOString(),
-      children: parent.students.map((s) => ({
+      children: parent.students?.map((s: any) => ({
         id: s.id,
-        name: s.user.name,
-      })),
+        name: s.user?.name,
+      })) ?? [],
     })),
     unlinkedStudents: students
       .filter((s) => !s.parentId)
@@ -61,7 +61,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
   const data = parsed.data;
 
   // Check if email already exists
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
     const hashedPassword = await hashPassword(password);
 
     // Create user and parent in transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = (await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           schoolId,
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
       });
 
       return { user, parent };
-    });
+    })) as { user: any; parent: any };
 
     await createAuditLog({
       schoolId,

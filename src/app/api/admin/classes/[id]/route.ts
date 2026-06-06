@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 
 const updateSchema = z.object({
@@ -26,13 +26,13 @@ function isAuthorized(role?: string) {
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
   const payload = await request.json();
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
 
   // Check if this is an arm management action
   const armParsed = armSchema.safeParse(payload);
@@ -126,7 +126,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     if (action === "ADD_SUBJECT") {
       // Check if subject is already assigned
-      const alreadyAssigned = cls.subjects.some((s) => s.id === subjectId);
+      const alreadyAssigned = cls.subjects?.some((s: any) => s.id === subjectId) ?? false;
       if (alreadyAssigned) {
         return NextResponse.json({ error: "Subject already assigned to this class" }, { status: 409 });
       }
@@ -149,7 +149,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ ok: true, message: "Subject added to class successfully" });
     } else {
       // REMOVE_SUBJECT
-      const isAssigned = cls.subjects.some((s) => s.id === subjectId);
+      const isAssigned = cls.subjects?.some((s: any) => s.id === subjectId) ?? false;
       if (!isAssigned) {
         return NextResponse.json({ error: "Subject is not assigned to this class" }, { status: 400 });
       }
@@ -249,12 +249,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
 
   // Check class exists
   const existing = await prisma.class.findFirst({

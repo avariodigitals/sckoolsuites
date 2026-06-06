@@ -1,5 +1,5 @@
-import { AcademicStatus, Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { AcademicStatus } from "@/lib/db-types";
+import { prisma } from "@/lib/db";
 
 export class AcademicCalendarRepository {
   async getSchoolAcademicSetup(schoolId: string) {
@@ -18,11 +18,11 @@ export class AcademicCalendarRepository {
     return { sessions, terms };
   }
 
-  async createSession(data: Prisma.SessionUncheckedCreateInput) {
+  async createSession(data: Record<string, any>) {
     return prisma.session.create({ data });
   }
 
-  async createTerm(data: Prisma.TermUncheckedCreateInput) {
+  async createTerm(data: Record<string, any>) {
     return prisma.term.create({ data });
   }
 

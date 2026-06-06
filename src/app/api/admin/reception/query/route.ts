@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 
 const querySchema = z.object({
@@ -50,13 +50,13 @@ async function generateQueryNumber(schoolId: string): Promise<string> {
 
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const queries = await prisma.query.findMany({
-      where: { schoolId: session.user.schoolId },
+      where: { schoolId: "default" },
       orderBy: { createdAt: "desc" },
     });
 
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -77,30 +77,30 @@ export async function POST(request: Request) {
     const json = await request.json();
     const validated = querySchema.parse(json);
     
-    const queryNumber = await generateQueryNumber(session.user.schoolId);
+    const queryNumber = await generateQueryNumber("default");
 
     const query = await prisma.query.create({
       data: {
         ...validated,
         queryNumber,
-        schoolId: session.user.schoolId,
+        schoolId: "default",
         status: "PENDING",
       },
     });
 
     await createAuditLog({
-      userId: session.user.id!,
-      schoolId: session.user.schoolId,
+      actorUserId: session.user.id!,
+      schoolId: "default",
       action: "CREATE",
-      entity: "Query",
-      entityId: query.id,
+      targetType: "Query",
+      targetId: query.id,
       details: `Recorded query ${queryNumber}`,
     });
 
     return NextResponse.json({ query }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     console.error("Error creating query:", error);
     return NextResponse.json({ error: "Failed to create query" }, { status: 500 });

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { MessageStatus, PaymentStatus, Prisma } from "@prisma/client";
+import { MessageStatus, PaymentStatus } from "@/lib/db-types";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 const schema = z.object({
   action: z.enum(["APPROVE", "REJECT"]),
@@ -15,7 +15,7 @@ function nextReceiptNumber() {
   return `RCT-${now.getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
 }
 
-async function getApprovedPaidTotal(tx: Prisma.TransactionClient, invoiceId: string) {
+async function getApprovedPaidTotal(tx: any, invoiceId: string) {
   const aggregate = await tx.payment.aggregate({
     where: {
       invoiceId,
@@ -35,7 +35,7 @@ function invoiceStatusFromBalance(totalAmount: number, amountPaid: number) {
 
 export async function POST(request: Request, { params }: { params: Promise<{ paymentId: string }> }) {
   const session = await auth();
-  if (!session?.user?.id || !session.user.schoolId) {
+  if (!session?.user?.id ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -55,7 +55,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
   }
 
   const payment = await prisma.payment.findFirst({
-    where: { id: paymentId, schoolId: session.user.schoolId },
+    where: { id: paymentId, schoolId: "default" },
     include: {
       invoice: true,
       student: true,
@@ -200,7 +200,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
   });
 
   await createAuditLog({
-    schoolId: session.user.schoolId,
+    schoolId: "default",
     actorUserId: session.user.id,
     action: parsed.data.action === "APPROVE" ? "PAYMENT_PROOF_APPROVED" : "PAYMENT_PROOF_REJECTED",
     targetType: "Payment",

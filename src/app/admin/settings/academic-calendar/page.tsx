@@ -2,7 +2,7 @@ import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { requireRole } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { AcademicCalendarClient } from "@/app/admin/settings/academic-calendar/academic-calendar-client";
 
 export default async function AcademicCalendarPage() {

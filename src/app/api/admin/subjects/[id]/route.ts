@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 export async function PATCH(
   request: Request,
@@ -10,7 +10,7 @@ export async function PATCH(
   const user = session?.user;
   const { id } = await params;
 
-  if (!user?.schoolId) {
+  if (!user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -27,7 +27,7 @@ export async function PATCH(
 
     // Check if subject exists and belongs to this school
     const existing = await prisma.subject.findFirst({
-      where: { id, schoolId: user.schoolId },
+      where: { id, schoolId: "default" },
     });
 
     if (!existing) {
@@ -40,7 +40,7 @@ export async function PATCH(
     // Check for duplicate name
     const duplicate = await prisma.subject.findFirst({
       where: {
-        schoolId: user.schoolId,
+        schoolId: "default",
         name: name.trim(),
         id: { not: id },
       },
@@ -76,14 +76,14 @@ export async function DELETE(
   const user = session?.user;
   const { id } = await params;
 
-  if (!user?.schoolId) {
+  if (!user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     // Check if subject exists and belongs to this school
     const subject = await prisma.subject.findFirst({
-      where: { id, schoolId: user.schoolId },
+      where: { id, schoolId: "default" },
       include: { classes: true },
     });
 

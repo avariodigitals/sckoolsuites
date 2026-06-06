@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
 import { getClassGroupGradingProfiles, resolveClassGroupProfile } from "@/lib/class-group-grading";
 import { calculateGradeFromBands } from "@/lib/grades";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
 
@@ -19,7 +19,7 @@ const calendarService = new AcademicCalendarService();
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.id || !session.user.schoolId || session.user.role !== "TEACHER") {
+  if (!session?.user?.id  || session.user.role !== "TEACHER") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -29,13 +29,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const teacher = await prisma.teacher.findFirst({ where: { schoolId: session.user.schoolId, userId: session.user.id } });
+  const teacher = await prisma.teacher.findFirst({ where: { schoolId: "default", userId: session.user.id } });
   if (!teacher) {
     return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 });
   }
 
   const subject = await prisma.subject.findFirst({
-    where: { id: parsed.data.subjectId, schoolId: session.user.schoolId },
+    where: { id: parsed.data.subjectId, schoolId: "default" },
   });
   if (!subject) {
     return NextResponse.json({ error: "Subject not found" }, { status: 404 });
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   }
 
   const student = await prisma.student.findFirst({
-    where: { id: parsed.data.studentId, schoolId: session.user.schoolId },
+    where: { id: parsed.data.studentId, schoolId: "default" },
     include: {
       class: {
         include: {
@@ -63,14 +63,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Student class does not match this subject" }, { status: 400 });
   }
 
-  const context = await calendarService.getUserContext(session.user.schoolId, session.user.id);
+  const context = await calendarService.getUserContext("default", session.user.id);
   if (!context.sessionId || !context.termId) {
     return NextResponse.json({ error: "Academic context is not selected" }, { status: 400 });
   }
 
   const [activeConfig, classGroupProfiles] = await Promise.all([
-    getActiveSchoolConfig(session.user.schoolId),
-    getClassGroupGradingProfiles(session.user.schoolId),
+    getActiveSchoolConfig("default"),
+    getClassGroupGradingProfiles("default"),
   ]);
 
   const classGroupProfile = resolveClassGroupProfile(classGroupProfiles, student.class?.classGroup?.name);
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
       gpa: grade.gpa,
     },
     create: {
-      schoolId: session.user.schoolId,
+      schoolId: "default",
       studentId: student.id,
       subjectId: subject.id,
       teacherId: teacher.id,
@@ -129,7 +129,7 @@ export async function POST(request: Request) {
   });
 
   await createAuditLog({
-    schoolId: session.user.schoolId,
+    schoolId: "default",
     actorUserId: session.user.id,
     action: "SCORE_UPSERTED",
     targetType: "Score",

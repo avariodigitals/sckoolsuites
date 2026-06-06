@@ -12,7 +12,7 @@ import {
   GraduationCap,
   Clock3,
 } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { PortalShell } from "@/components/portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -232,17 +232,17 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
     status: bill.status,
     dueDate: bill.dueDate?.toISOString() ?? null,
     paymentInstructions: bill.paymentInstructions,
-    items: bill.items.map((item) => ({
+    items: bill.items?.map((item: any) => ({
       id: item.id,
-      groupName: item.feeItem.feeGroup?.name ?? item.feeItem.category,
-      name: item.feeItem.name,
+      groupName: item.feeItem?.feeGroup?.name ?? item.feeItem?.category,
+      name: item.feeItem?.name,
       amount: item.amount,
-      optional: isOptionalFeeItem({ category: item.feeItem.category, name: item.feeItem.name }),
-    })),
+      optional: isOptionalFeeItem({ category: item.feeItem?.category, name: item.feeItem?.name }),
+    })) ?? [],
   }));
 
   const activeConfig = core.school ? await getActiveSchoolConfig(core.school.id) : null;
-  const gradingBands = (activeConfig?.config.academic.gradingSystem ?? []).map((band) => ({
+  const gradingBands = (activeConfig?.config.academic.gradingSystem ?? []).map((band: any) => ({
     min: Number(band.min),
     grade: band.grade,
     gpa: Number(band.gpa),

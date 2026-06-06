@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { getSetupWizardState } from "@/lib/setup-wizard";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
 
@@ -25,7 +25,7 @@ async function nextInvoiceNumber(schoolId: string) {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.id || !session.user.schoolId) {
+  if (!session?.user?.id ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -38,12 +38,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const setup = await getSetupWizardState(session.user.schoolId);
+  const setup = await getSetupWizardState("default");
   if (!setup.status.setupCompleted) {
     return NextResponse.json({ error: "Setup wizard must be completed before generating invoices.", setup }, { status: 409 });
   }
 
-  const context = await calendarService.getUserContext(session.user.schoolId, session.user.id);
+  const context = await calendarService.getUserContext("default", session.user.id);
   const sessionId = parsed.data.sessionId ?? context.sessionId;
   const termId = parsed.data.termId ?? context.termId;
 
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   }
 
   const student = await prisma.student.findFirst({
-    where: { id: parsed.data.studentId, schoolId: session.user.schoolId },
+    where: { id: parsed.data.studentId, schoolId: "default" },
     include: { class: true },
   });
 
@@ -60,17 +60,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Student not found" }, { status: 404 });
   }
 
+  // Load active fee groups first (shim does not support nested relation filters)
+  const activeGroups = await prisma.feeGroup.findMany({
+    where: { schoolId: "default", isActive: true },
+    select: { id: true },
+  });
+  const activeGroupIds = activeGroups.map((g) => g.id);
+
+  const classFilter = student.classId
+    ? { OR: [{ classId: student.classId }, { classId: null }] }
+    : { classId: null };
+
   const feeItems = await prisma.feeItem.findMany({
     where: {
-      schoolId: session.user.schoolId,
-      feeGroup: { isActive: true },
+      schoolId: "default",
+      feeGroupId: { in: activeGroupIds },
       sessionId,
       termId,
-      OR: student.classId ? [{ classId: student.classId }, { classId: null }] : [{ classId: null }],
+      ...classFilter,
       armId: null,
       isActive: true,
     },
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    orderBy: { createdAt: "asc" },
     include: { feeGroup: true },
   });
 
@@ -84,20 +95,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No active fee items found for invoice generation" }, { status: 400 });
   }
 
-  const existingItemRows = await prisma.invoiceItem.findMany({
-    where: {
-      feeItemId: { in: selectedItems.map((item) => item.id) },
-      invoice: {
-        schoolId: session.user.schoolId,
-        studentId: student.id,
-        sessionId,
-        termId,
-      },
-    },
-    select: { feeItemId: true },
+  // Find existing invoices for this student/session/term, then their items
+  const existingInvoices = await prisma.invoice.findMany({
+    where: { schoolId: "default", studentId: student.id, sessionId, termId },
+    select: { id: true },
   });
+  const existingInvoiceIds = existingInvoices.map((inv) => inv.id);
 
-  const billedFeeItemIds = new Set(existingItemRows.map((row) => row.feeItemId));
+  const existingItemRows = existingInvoiceIds.length
+    ? await prisma.invoiceItem.findMany({
+        where: { feeItemId: { in: selectedItems.map((item) => item.id) }, invoiceId: { in: existingInvoiceIds } },
+        select: { feeItemId: true },
+      })
+    : [];
+
+  const billedFeeItemIds = new Set(existingItemRows.map((row) => row.fee_item_id));
   const netNewItems = selectedItems.filter((item) => !billedFeeItemIds.has(item.id));
 
   if (!netNewItems.length) {
@@ -106,15 +118,16 @@ export async function POST(request: Request) {
 
   const totalAmount = netNewItems.reduce((sum, item) => sum + item.amount, 0);
 
+  // Create invoice without nested items (shim strips nested creates)
   const invoice = await prisma.invoice.create({
     data: {
-      schoolId: session.user.schoolId,
+      schoolId: "default",
       studentId: student.id,
-      parentId: student.parentId,
-      classId: student.classId,
+      parentId: student.parent_id ?? null,
+      classId: student.class_id ?? null,
       termId,
       sessionId,
-      invoiceNumber: await nextInvoiceNumber(session.user.schoolId),
+      invoiceNumber: await nextInvoiceNumber("default"),
       totalAmount,
       amountPaid: 0,
       balance: totalAmount,
@@ -122,13 +135,23 @@ export async function POST(request: Request) {
       paymentInstructions: parsed.data.paymentInstructions?.trim() || null,
       createdById: session.user.id,
       dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null,
-      items: {
-        create: netNewItems.map((item) => ({
-          feeItemId: item.id,
-          amount: item.amount,
-        })),
-      },
     },
+  });
+
+  // Create invoice items separately
+  for (const item of netNewItems) {
+    await prisma.invoiceItem.create({
+      data: {
+        invoiceId: invoice.id,
+        feeItemId: item.id,
+        amount: item.amount,
+      },
+    });
+  }
+
+  // Reload invoice with all relations for response
+  const invoiceWithData = await prisma.invoice.findUnique({
+    where: { id: invoice.id },
     include: {
       items: { include: { feeItem: { include: { feeGroup: true } } } },
       term: true,
@@ -137,8 +160,12 @@ export async function POST(request: Request) {
     },
   });
 
+  if (!invoiceWithData) {
+    return NextResponse.json({ error: "Invoice creation failed" }, { status: 500 });
+  }
+
   await createAuditLog({
-    schoolId: session.user.schoolId,
+    schoolId: "default",
     actorUserId: session.user.id,
     action: "INVOICE_GENERATED",
     targetType: "Invoice",
@@ -148,7 +175,7 @@ export async function POST(request: Request) {
       sessionId,
       termId,
       includeOptional: parsed.data.includeOptional,
-      itemCount: invoice.items.length,
+      itemCount: netNewItems.length,
       totalAmount: invoice.totalAmount,
       generatedFeeItemIds: netNewItems.map((item) => item.id),
       invoiceNumber: invoice.invoiceNumber,
@@ -158,22 +185,22 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     invoice: {
-      id: invoice.id,
-      invoiceNumber: invoice.invoiceNumber,
-      totalAmount: invoice.totalAmount,
-      balance: invoice.balance,
-      status: invoice.status,
-      studentName: invoice.student.user.name,
-      termName: invoice.term.name,
-      sessionName: invoice.session.name,
-      items: invoice.items.map((item) => ({
+      id: invoiceWithData.id,
+      invoiceNumber: invoiceWithData.invoice_number,
+      totalAmount: invoiceWithData.total_amount,
+      balance: invoiceWithData.balance,
+      status: invoiceWithData.status,
+      studentName: (invoiceWithData.student as any)?.user?.name ?? "",
+      termName: (invoiceWithData.term as any)?.name ?? "",
+      sessionName: (invoiceWithData.session as any)?.name ?? "",
+      items: (invoiceWithData as any).items?.map((item: any) => ({
         id: item.id,
-        feeItemId: item.feeItemId,
-        feeGroupName: item.feeItem.feeGroup.name,
-        name: item.feeItem.name,
-        category: item.feeItem.category,
+        feeItemId: item.fee_item_id,
+        feeGroupName: item.feeItem?.feeGroup?.name,
+        name: item.feeItem?.name,
+        category: item.feeItem?.category,
         amount: item.amount,
-      })),
+      })) ?? [],
     },
   });
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 
 const complaintSchema = z.object({
@@ -50,13 +50,13 @@ async function generateComplaintNumber(schoolId: string): Promise<string> {
 
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const complaints = await prisma.receptionComplaint.findMany({
-      where: { schoolId: session.user.schoolId },
+      where: { schoolId: "default" },
       orderBy: { createdAt: "desc" },
     });
 
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -77,30 +77,30 @@ export async function POST(request: Request) {
     const json = await request.json();
     const validated = complaintSchema.parse(json);
     
-    const complaintNumber = await generateComplaintNumber(session.user.schoolId);
+    const complaintNumber = await generateComplaintNumber("default");
 
     const complaint = await prisma.receptionComplaint.create({
       data: {
         ...validated,
         complaintNumber,
-        schoolId: session.user.schoolId,
+        schoolId: "default",
         status: "OPEN",
       },
     });
 
     await createAuditLog({
-      userId: session.user.id!,
-      schoolId: session.user.schoolId,
+      actorUserId: session.user.id!,
+      schoolId: "default",
       action: "CREATE",
-      entity: "Complaint",
-      entityId: complaint.id,
+      targetType: "Complaint",
+      targetId: complaint.id,
       details: `Created complaint ${complaintNumber}`,
     });
 
     return NextResponse.json({ complaint }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     console.error("Error creating complaint:", error);
     return NextResponse.json({ error: "Failed to create complaint" }, { status: 500 });

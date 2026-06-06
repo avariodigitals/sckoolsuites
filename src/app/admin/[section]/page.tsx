@@ -23,7 +23,7 @@ import { adminModuleScopeBySection } from "@/lib/module-blueprint";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 import { getSetupWizardState } from "@/lib/setup-wizard";
 import { formatDate, naira } from "@/lib/utils";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 const allowed = [
   "dashboard",

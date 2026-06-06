@@ -15,13 +15,13 @@ function isAuthorized(role?: string) {
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const [active, versions] = await Promise.all([
-    getActiveSchoolConfig(session.user.schoolId),
-    getSchoolConfigVersions(session.user.schoolId),
+    getActiveSchoolConfig("default"),
+    getSchoolConfigVersions("default"),
   ]);
 
   return NextResponse.json({ active, versions });
@@ -29,7 +29,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
   try {
     const created = await publishSchoolConfigVersion({
-      schoolId: session.user.schoolId,
+      schoolId: "default",
       config: parsed.data.config,
       notes: parsed.data.notes,
       source: parsed.data.source ?? "manual",

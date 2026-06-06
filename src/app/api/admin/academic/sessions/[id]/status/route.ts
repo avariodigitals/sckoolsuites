@@ -2,16 +2,17 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
+import { AcademicStatus } from "@/lib/db-types";
 
 const schema = z.object({
-  status: z.enum(["DRAFT", "ACTIVE", "CLOSED", "ARCHIVED"]),
+  status: z.nativeEnum(AcademicStatus),
 });
 
 const service = new AcademicCalendarService();
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.schoolId || !["SCHOOL_ADMIN", "PRINCIPAL"].includes(session.user.role)) {
+  if (!session?.user || !["SCHOOL_ADMIN", "PRINCIPAL"].includes(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -22,6 +23,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const { id } = await params;
-  const updated = await service.updateSessionStatus(session.user.schoolId, id, parsed.data.status);
+  const updated = await service.updateSessionStatus("default", id, parsed.data.status);
   return NextResponse.json(updated);
 }

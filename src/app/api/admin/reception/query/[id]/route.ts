@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 
 const updateSchema = z.object({
@@ -15,7 +15,7 @@ function isAuthorized(role?: string) {
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -25,23 +25,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const validated = updateSchema.parse(json);
 
     const query = await prisma.query.update({
-      where: { id, schoolId: session.user.schoolId },
+      where: { id, schoolId: "default" },
       data: validated,
     });
 
     await createAuditLog({
-      userId: session.user.id!,
-      schoolId: session.user.schoolId,
+      actorUserId: session.user.id!,
+      schoolId: "default",
       action: "UPDATE",
-      entity: "Query",
-      entityId: id,
+      targetType: "Query",
+      targetId: id,
       details: `Updated query ${query.queryNumber}`,
     });
 
     return NextResponse.json({ query });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     console.error("Error updating query:", error);
     return NextResponse.json({ error: "Failed to update query" }, { status: 500 });
@@ -50,7 +50,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -58,15 +58,15 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     const { id } = await params;
     
     await prisma.query.delete({
-      where: { id, schoolId: session.user.schoolId },
+      where: { id, schoolId: "default" },
     });
 
     await createAuditLog({
-      userId: session.user.id!,
-      schoolId: session.user.schoolId,
+      actorUserId: session.user.id!,
+      schoolId: "default",
       action: "DELETE",
-      entity: "Query",
-      entityId: id,
+      targetType: "Query",
+      targetId: id,
       details: "Deleted query",
     });
 

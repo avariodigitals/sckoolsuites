@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 
 const updateSchema = z.object({
@@ -14,7 +14,7 @@ function isAuthorized(role?: string) {
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -24,23 +24,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const validated = updateSchema.parse(json);
 
     const item = await prisma.correspondence.update({
-      where: { id, schoolId: session.user.schoolId },
+      where: { id, schoolId: "default" },
       data: validated,
     });
 
     await createAuditLog({
-      userId: session.user.id!,
-      schoolId: session.user.schoolId,
+      actorUserId: session.user.id!,
+      schoolId: "default",
       action: "UPDATE",
-      entity: "Correspondence",
-      entityId: id,
+      targetType: "Correspondence",
+      targetId: id,
       details: `Updated correspondence ${item.refNumber}`,
     });
 
     return NextResponse.json({ item });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     console.error("Error updating correspondence:", error);
     return NextResponse.json({ error: "Failed to update correspondence" }, { status: 500 });
@@ -49,7 +49,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -57,15 +57,15 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     const { id } = await params;
     
     await prisma.correspondence.delete({
-      where: { id, schoolId: session.user.schoolId },
+      where: { id, schoolId: "default" },
     });
 
     await createAuditLog({
-      userId: session.user.id!,
-      schoolId: session.user.schoolId,
+      actorUserId: session.user.id!,
+      schoolId: "default",
       action: "DELETE",
-      entity: "Correspondence",
-      entityId: id,
+      targetType: "Correspondence",
+      targetId: id,
       details: "Deleted correspondence",
     });
 

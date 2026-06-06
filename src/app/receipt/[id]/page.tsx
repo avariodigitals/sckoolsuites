@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth-guards";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { APP_POWERED_BY } from "@/lib/constants";
 import { formatDate, naira } from "@/lib/utils";
 import { PrintButton } from "@/components/print-button";
@@ -9,7 +9,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   await requireUser();
   const { id } = await params;
 
-  const receipt = await prisma.receipt.findFirst({
+  const receipt: any = await prisma.receipt.findFirst({
     where: { OR: [{ id }, { invoiceId: id }] },
     include: {
       school: { include: { branding: true } },
@@ -27,7 +27,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
 
   const brandPrimary = receipt.school.branding?.primaryColor ?? "#0B1F4D";
   const brandSecondary = receipt.school.branding?.secondaryColor ?? "#0E9F6E";
-  const groupedBreakdown = receipt.invoice.items.reduce<Record<string, Array<{ name: string; amount: number; optional: boolean }>>>(
+  const groupedBreakdown = ((receipt.invoice?.items || []) as any[]).reduce<Record<string, Array<{ name: string; amount: number; optional: boolean }>>>(
     (accumulator, item) => {
       const key = item.feeItem.feeGroup?.name ?? item.feeItem.category;
       const bucket = accumulator[key] ?? [];

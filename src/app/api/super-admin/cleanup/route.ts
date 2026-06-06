@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { RoleType } from "@prisma/client";
+import { RoleType } from "@/lib/db-types";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 // This endpoint wipes all data except admin users and school records
 // Only SUPER_ADMIN can access this

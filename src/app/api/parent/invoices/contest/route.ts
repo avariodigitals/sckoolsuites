@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { listInvoiceContestsByParent, submitInvoiceContest } from "@/lib/invoice-contest";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 const submitSchema = z.object({
   invoiceId: z.string().min(5),
@@ -17,22 +17,22 @@ const submitSchema = z.object({
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user || session.user.role !== "PARENT" || !session.user.schoolId || !session.user.id) {
+  if (!session?.user || session.user.role !== "PARENT"  || !session.user.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const parent = await prisma.parent.findFirst({ where: { schoolId: session.user.schoolId, userId: session.user.id } });
+  const parent = await prisma.parent.findFirst({ where: { schoolId: "default", userId: session.user.id } });
   if (!parent) {
     return NextResponse.json({ contests: [] });
   }
 
-  const contests = await listInvoiceContestsByParent(session.user.schoolId, parent.id, 50);
+  const contests = await listInvoiceContestsByParent("default", parent.id, 50);
   return NextResponse.json({ contests });
 }
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "PARENT" || !session.user.schoolId || !session.user.id) {
+  if (!session?.user || session.user.role !== "PARENT"  || !session.user.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 
   try {
     const contest = await submitInvoiceContest({
-      schoolId: session.user.schoolId,
+      schoolId: "default",
       parentUserId: session.user.id,
       invoiceId: parsed.data.invoiceId,
       parentComment: parsed.data.parentComment,

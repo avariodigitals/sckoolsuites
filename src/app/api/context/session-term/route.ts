@@ -12,17 +12,17 @@ const service = new AcademicCalendarService();
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.schoolId) {
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const context = await service.getUserContext(session.user.schoolId, session.user.id);
+  const context = await service.getUserContext("default", session.user.id);
   return NextResponse.json(context);
 }
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId) {
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  await service.setUserContext(session.user.schoolId, session.user.id, parsed.data.sessionId, parsed.data.termId);
-  const context = await service.getUserContext(session.user.schoolId, session.user.id);
+  await service.setUserContext("default", session.user.id, parsed.data.sessionId, parsed.data.termId);
+  const context = await service.getUserContext("default", session.user.id);
   return NextResponse.json(context);
 }

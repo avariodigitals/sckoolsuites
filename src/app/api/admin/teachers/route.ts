@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { hashPassword } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
 
@@ -18,11 +18,11 @@ function isAuthorized(role?: string) {
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
 
   const [teachers, classes, subjects] = await Promise.all([
     prisma.teacher.findMany({
@@ -55,8 +55,8 @@ export async function GET() {
       email: teacher.user.email,
       isActive: teacher.user.isActive,
       createdAt: teacher.createdAt.toISOString(),
-      assignedClasses: teacher.classes.map((c) => ({ id: c.id, name: c.name })),
-      assignedSubjects: teacher.subjects.map((s) => ({ id: s.id, name: s.name })),
+      assignedClasses: teacher.classes?.map((c: any) => ({ id: c.id, name: c.name })) ?? [],
+      assignedSubjects: teacher.subjects?.map((s: any) => ({ id: s.id, name: s.name })) ?? [],
       studentCount: teacher.students.length,
     })),
     unassignedClasses: classes
@@ -72,7 +72,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
   const data = parsed.data;
 
   // Check if email already exists

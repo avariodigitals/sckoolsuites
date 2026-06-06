@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { ComplaintStatus } from "@prisma/client";
+import { ComplaintStatus } from "@/lib/db-types";
 import { createAuditLog } from "@/lib/audit-log";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 const createSchema = z.object({
   category: z.string().min(2),
@@ -13,18 +13,18 @@ const createSchema = z.object({
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user || session.user.role !== "PARENT" || !session.user.schoolId) {
+  if (!session?.user || session.user.role !== "PARENT" ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const parent = await prisma.parent.findFirst({
-    where: { schoolId: session.user.schoolId, userId: session.user.id },
+    where: { schoolId: "default", userId: session.user.id },
   });
 
   if (!parent) return NextResponse.json([]);
 
   const items = await prisma.parentComplaint.findMany({
-    where: { schoolId: session.user.schoolId, parentId: parent.id },
+    where: { schoolId: "default", parentId: parent.id },
     orderBy: { createdAt: "desc" },
     take: 100,
   });
@@ -45,12 +45,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "PARENT" || !session.user.schoolId) {
+  if (!session?.user || session.user.role !== "PARENT" ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const parent = await prisma.parent.findFirst({
-    where: { schoolId: session.user.schoolId, userId: session.user.id },
+    where: { schoolId: "default", userId: session.user.id },
   });
 
   if (!parent) {
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 
   const created = await prisma.parentComplaint.create({
     data: {
-      schoolId: session.user.schoolId,
+      schoolId: "default",
       parentId: parent.id,
       category: parsed.data.category,
       subject: parsed.data.subject,
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
   });
 
   await createAuditLog({
-    schoolId: session.user.schoolId,
+    schoolId: "default",
     actorUserId: session.user.id,
     action: "PARENT_COMPLAINT_CREATED",
     targetType: "ParentComplaint",

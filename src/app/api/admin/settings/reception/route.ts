@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 const CONFIG_KEY = "receptionConfig";
 
@@ -16,14 +16,14 @@ function isAuthorized(role?: string) {
 
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);
   const schoolId = searchParams.get("schoolId");
 
-  if (!schoolId || schoolId !== session.user.schoolId) {
+  if (!schoolId || schoolId !== "default") {
     return NextResponse.json({ error: "Invalid school ID" }, { status: 400 });
   }
 
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 
   const { schoolId, config } = parsed.data;
 
-  if (schoolId !== session.user.schoolId) {
+  if (schoolId !== "default") {
     return NextResponse.json({ error: "Invalid school ID" }, { status: 400 });
   }
 

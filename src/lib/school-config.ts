@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 const assessmentTypeSchema = z.object({
   name: z.string().min(1),
@@ -193,7 +192,7 @@ export const schoolConfigSchema = z.object({
 
 export type SchoolConfig = z.infer<typeof schoolConfigSchema>;
 
-type SchoolConfigTx = Prisma.TransactionClient;
+type SchoolConfigTx = any;
 
 function slugifyCode(value: string) {
   return value
@@ -270,7 +269,7 @@ async function syncFeeStructuresToDatabase(tx: SchoolConfigTx, schoolId: string,
     return;
   }
 
-  const classByName = new Map(classes.map((item) => [item.name.trim().toLowerCase(), item.id]));
+  const classByName = new Map(classes.map((item: any) => [item.name.trim().toLowerCase(), item.id]));
 
   const feeGroupsByCategory = new Map<string, string>();
 
@@ -302,7 +301,7 @@ async function syncFeeStructuresToDatabase(tx: SchoolConfigTx, schoolId: string,
     .filter((item) => item.category.trim() && item.name.trim())
     .map((item) => {
       const className = item.className?.trim();
-      const classId = className ? classByName.get(className.toLowerCase()) ?? null : null;
+      const classId = className ? (classByName.get(className.toLowerCase()) as string | undefined) ?? null : null;
       const feeGroupId = feeGroupsByCategory.get(item.category.trim().toLowerCase());
       if (!feeGroupId) return null;
       const dedupeKey = buildFeeItemDedupeKey({
@@ -478,7 +477,7 @@ export async function publishSchoolConfigVersion(params: {
         schoolId: params.schoolId,
         version: nextVersion,
         isActive: true,
-        config: normalized as Prisma.InputJsonValue,
+        config: normalized as Record<string, unknown>,
         source: params.source ?? "manual",
         notes: params.notes,
         createdById: params.createdById,

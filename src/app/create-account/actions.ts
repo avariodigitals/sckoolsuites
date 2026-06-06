@@ -2,8 +2,8 @@
 
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
-import { RoleType } from "@prisma/client";
+import { prisma } from "@/lib/db";
+import { RoleType } from "@/lib/db-types";
 
 const schema = z.object({
   schoolName: z.string().min(2),

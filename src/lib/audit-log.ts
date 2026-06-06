@@ -1,5 +1,4 @@
-import type { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 type AuditInput = {
   schoolId: string;
@@ -7,7 +6,8 @@ type AuditInput = {
   action: string;
   targetType: string;
   targetId?: string | null;
-  metadata?: Prisma.InputJsonValue;
+  metadata?: Record<string, any>;
+  details?: string;
 };
 
 export async function createAuditLog(input: AuditInput) {
@@ -18,7 +18,7 @@ export async function createAuditLog(input: AuditInput) {
       action: input.action,
       targetType: input.targetType,
       targetId: input.targetId ?? null,
-      metadata: input.metadata,
+      metadata: input.details ? { details: input.details } : input.metadata,
     },
   });
 }

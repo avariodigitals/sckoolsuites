@@ -26,10 +26,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!session.user.schoolId) {
-    return NextResponse.json({ error: "No school selected" }, { status: 400 });
-  }
-
   const formData = await request.formData();
   const file = formData.get("file");
   const folder = sanitizeFolderPath(String(formData.get("folder") ?? ""));
@@ -49,8 +45,8 @@ export async function POST(request: Request) {
   const safeName = sanitizeFileName(file.name);
   const fileName = `${Date.now()}-${safeName}`;
   const relativeDir = folder
-    ? path.join("uploads", session.user.schoolId, folder)
-    : path.join("uploads", session.user.schoolId);
+    ? path.join("uploads", "default", folder)
+    : path.join("uploads", "default");
   const absoluteDir = path.join(process.cwd(), "public", relativeDir);
   const absolutePath = path.join(absoluteDir, fileName);
 

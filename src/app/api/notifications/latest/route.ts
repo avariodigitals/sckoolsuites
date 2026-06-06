@@ -6,12 +6,12 @@ export async function GET() {
   const session = await auth();
   const user = session?.user;
 
-  if (!user?.id || !user.schoolId || !user.role) {
+  if (!user?.id || !user.role) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const notifications = await getLatestNotifications({
-    schoolId: user.schoolId,
+    schoolId: "default",
     userId: user.id,
     role: user.role as NotificationRole,
     take: 12,

@@ -1,4 +1,4 @@
-import { AcademicStatus } from "@prisma/client";
+import { AcademicStatus } from "@/lib/db-types";
 import { AcademicCalendarRepository } from "@/modules/academic-setup/repositories/academic-calendar.repository";
 
 type CreateSessionInput = {

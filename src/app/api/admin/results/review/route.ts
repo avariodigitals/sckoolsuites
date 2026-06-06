@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { ResultStatus } from "@prisma/client";
+import { ResultStatus } from "@/lib/db-types";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
 import { getClassGroupGradingProfiles, resolveClassGroupProfile } from "@/lib/class-group-grading";
 import { calculateGradeFromBands } from "@/lib/grades";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 import { getSetupWizardState } from "@/lib/setup-wizard";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
@@ -37,7 +37,7 @@ function readableAction(action: "APPROVE" | "PUBLISH" | "REJECT") {
 
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.user?.id || !session.user.schoolId) {
+  if (!session?.user?.id ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
 
   const results = await prisma.result.findMany({
     where: {
-      schoolId: session.user.schoolId,
+      schoolId: "default",
       ...(status ? { status } : { status: { in: [ResultStatus.DRAFT, ResultStatus.APPROVED, ResultStatus.REJECTED] } }),
       ...(parsedQuery.data.sessionId ? { sessionId: parsedQuery.data.sessionId } : {}),
       ...(parsedQuery.data.termId ? { termId: parsedQuery.data.termId } : {}),
@@ -111,7 +111,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.id || !session.user.schoolId) {
+  if (!session?.user?.id ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const setup = await getSetupWizardState(session.user.schoolId);
+  const setup = await getSetupWizardState("default");
   if (!setup.status.setupCompleted) {
     return NextResponse.json({ error: "Setup wizard must be completed before result approval/publishing.", setup }, { status: 409 });
   }
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Review note is required when rejecting a result." }, { status: 400 });
   }
 
-  const context = await calendarService.getUserContext(session.user.schoolId, session.user.id);
+  const context = await calendarService.getUserContext("default", session.user.id);
   const sessionId = parsed.data.sessionId ?? context.sessionId;
   const termId = parsed.data.termId ?? context.termId;
 
@@ -143,7 +143,7 @@ export async function POST(request: Request) {
   }
 
   const student = await prisma.student.findFirst({
-    where: { id: parsed.data.studentId, schoolId: session.user.schoolId },
+    where: { id: parsed.data.studentId, schoolId: "default" },
     include: {
       class: {
         include: {
@@ -163,7 +163,7 @@ export async function POST(request: Request) {
     const [scores, attendance, activeConfig, classGroupProfiles] = await Promise.all([
       prisma.score.findMany({
         where: {
-          schoolId: session.user.schoolId,
+          schoolId: "default",
           studentId: parsed.data.studentId,
           sessionId,
           termId,
@@ -171,14 +171,14 @@ export async function POST(request: Request) {
       }),
       prisma.attendance.findMany({
         where: {
-          schoolId: session.user.schoolId,
+          schoolId: "default",
           studentId: parsed.data.studentId,
           sessionId,
           termId,
         },
       }),
-      getActiveSchoolConfig(session.user.schoolId),
-      getClassGroupGradingProfiles(session.user.schoolId),
+      getActiveSchoolConfig("default"),
+      getClassGroupGradingProfiles("default"),
     ]);
 
     if (!scores.length) {
@@ -222,7 +222,7 @@ export async function POST(request: Request) {
         approvedAt: now,
       },
       create: {
-        schoolId: session.user.schoolId,
+        schoolId: "default",
         studentId: parsed.data.studentId,
         termId,
         sessionId,
@@ -243,7 +243,7 @@ export async function POST(request: Request) {
     });
 
     await createAuditLog({
-      schoolId: session.user.schoolId,
+      schoolId: "default",
       actorUserId: session.user.id,
       action: readableAction(parsed.data.action),
       targetType: "Result",
@@ -273,7 +273,7 @@ export async function POST(request: Request) {
 
   const existing = await prisma.result.findFirst({
     where: {
-      schoolId: session.user.schoolId,
+      schoolId: "default",
       studentId: parsed.data.studentId,
       sessionId,
       termId,
@@ -300,7 +300,7 @@ export async function POST(request: Request) {
     });
 
     await createAuditLog({
-      schoolId: session.user.schoolId,
+      schoolId: "default",
       actorUserId: session.user.id,
       action: readableAction(parsed.data.action),
       targetType: "Result",
@@ -329,7 +329,7 @@ export async function POST(request: Request) {
   });
 
   await createAuditLog({
-    schoolId: session.user.schoolId,
+    schoolId: "default",
     actorUserId: session.user.id,
     action: readableAction(parsed.data.action),
     targetType: "Result",

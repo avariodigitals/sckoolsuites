@@ -1,5 +1,5 @@
-import { PaymentStatus } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { PaymentStatus } from "@/lib/db-types";
+import { prisma } from "@/lib/db";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
 
 function isContestAnnouncementEntry(input: { title?: string | null; body?: string | null }) {
@@ -10,12 +10,20 @@ function isContestAnnouncementEntry(input: { title?: string | null; body?: strin
 export async function getCurrentSchoolByUser(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: {
-      school: { include: { branding: true } },
-      role: true,
-    },
+    include: { role: true },
   });
-  return user;
+  if (!user) return null;
+
+  const school = await prisma.school.findUnique({
+    where: { id: "default" },
+    include: { branding: true },
+  });
+
+  return {
+    ...user,
+    schoolId: "default",
+    school: school ?? null,
+  };
 }
 
 export async function getAdminOverview(schoolId: string) {

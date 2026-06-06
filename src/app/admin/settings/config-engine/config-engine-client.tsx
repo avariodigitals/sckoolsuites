@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 type VersionSummary = {
   id: string;
-  version: number;
+  version: string;
   isActive: boolean;
   source: string;
   notes: string | null;

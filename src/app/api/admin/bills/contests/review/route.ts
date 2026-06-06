@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { RoleType } from "@prisma/client";
+import { RoleType } from "@/lib/db-types";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { reviewBillContest } from "@/lib/bill-contest";
@@ -22,7 +22,7 @@ const reviewSchema = z.object({
 export async function POST(request: Request) {
   const session = await auth();
   const user = session?.user;
-  if (!user?.id || !user.schoolId || !user.role) {
+  if (!user?.id || !user.role) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
   try {
     const contest = await reviewBillContest({
-      schoolId: user.schoolId,
+      schoolId: "default",
       actorUserId: user.id,
       actorRole: user.role as RoleType,
       invoiceId: parsed.data.billId,

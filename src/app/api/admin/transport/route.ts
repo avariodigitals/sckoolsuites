@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 
 // Vehicle schema
@@ -44,11 +44,11 @@ function isAuthorized(role?: string) {
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
 
   const [vehicles, drivers, routes, routeStops, availableUsers] = await Promise.all([
     prisma.vehicle.findMany({
@@ -68,7 +68,7 @@ export async function GET() {
     }),
     prisma.routeStop.findMany({
       where: { schoolId },
-      orderBy: [{ routeId: "asc" }, { order: "asc" }],
+      orderBy: { order: "asc" },
     }),
     // Get users without drivers (available to be assigned as drivers)
     prisma.user.findMany({
@@ -115,13 +115,13 @@ export async function GET() {
       isActive: r.isActive,
       stopCount: r.stops.length,
       studentCount: r.students.length,
-      stops: r.stops.map((s) => ({
+      stops: r.stops?.map((s: any) => ({
         id: s.id,
         name: s.name,
         address: s.address,
         order: s.order,
         pickupTime: s.pickupTime,
-      })),
+      })) ?? [],
     })),
     routeStops: routeStops.map((s) => ({
       id: s.id,
@@ -137,12 +137,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body = await request.json();
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
 
   try {
     switch (body.type) {

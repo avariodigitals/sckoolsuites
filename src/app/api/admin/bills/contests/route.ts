@@ -5,7 +5,7 @@ import { listBillContestsBySchool } from "@/lib/bill-contest";
 export async function GET() {
   const session = await auth();
   const user = session?.user;
-  if (!user?.id || !user.schoolId || !user.role) {
+  if (!user?.id || !user.role) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -14,11 +14,11 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const contests = await listBillContestsBySchool(user.schoolId, 100);
+  const contests = await listBillContestsBySchool("default", 100);
   const billIds = contests.map((item) => item.invoiceId);
   const audits = billIds.length
-    ? await (await import("@/lib/prisma")).prisma.invoiceContestAudit.findMany({
-        where: { schoolId: user.schoolId, invoiceId: { in: billIds } },
+    ? await (await import("@/lib/db")).prisma.invoiceContestAudit.findMany({
+        where: { schoolId: "default", invoiceId: { in: billIds } },
         orderBy: { createdAt: "asc" },
       })
     : [];

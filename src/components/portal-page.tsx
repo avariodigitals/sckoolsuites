@@ -32,13 +32,13 @@ export async function PortalPage({
   if (!userRecord) return null;
 
   if (roleScope === "superadmin") {
-    const schools = await (await import("@/lib/prisma")).prisma.school.findMany({
+    const schools = await (await import("@/lib/db")).prisma.school.findMany({
       include: { students: true, users: true, payments: true },
       orderBy: { createdAt: "desc" },
     });
 
     const activeSchools = schools.filter((s) => s.isActive).length;
-    const totalRevenue = schools.reduce((sum, school) => sum + school.payments.reduce((acc, payment) => acc + payment.amount, 0), 0);
+    const totalRevenue = schools.reduce((sum: number, school: any) => sum + (school.payments?.reduce((acc: number, payment: any) => acc + payment.amount, 0) || 0), 0);
 
     return (
       <PortalShell role={user.role} userName={user.name ?? "Super Admin"} pathname={pathname}>

@@ -1,5 +1,5 @@
-import { MessageStatus, PaymentStatus, Prisma, RoleType } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { MessageStatus, PaymentStatus, RoleType } from "@/lib/db-types";
+import { prisma } from "@/lib/db";
 import { sendWorkflowEmail } from "@/lib/email";
 import { createAuditLog } from "@/lib/audit-log";
 
@@ -109,11 +109,11 @@ export async function submitInvoiceContest({
   if (!invoice) throw new Error("INVOICE_NOT_FOUND");
   if (invoice.status === "PAID") throw new Error("INVOICE_ALREADY_PAID");
 
-  const adjustmentMap = new Map(adjustments.map((item) => [item.invoiceItemId, item.proposedAmount]));
-  const optionalInvoiceItems = invoice.items.filter((item) => isOptionalFeeItem({ category: item.feeItem.category, name: item.feeItem.name }));
+  const adjustmentMap = new Map(adjustments.map((item: any) => [item.invoiceItemId, item.proposedAmount]));
+  const optionalInvoiceItems = invoice.items?.filter((item: any) => isOptionalFeeItem({ category: item.feeItem?.category, name: item.feeItem?.name })) ?? [];
   const proposedItems: InvoiceContestItem[] = [];
 
-  for (const item of invoice.items) {
+  for (const item of invoice.items || []) {
     const proposedAmount = adjustmentMap.get(item.id);
     if (proposedAmount === undefined) continue;
 
@@ -211,9 +211,9 @@ export async function submitInvoiceContest({
 }
 
 function mapPaymentStatus(amountPaid: number, totalAmount: number): PaymentStatus {
-  if (amountPaid <= 0) return "UNPAID";
-  if (amountPaid >= totalAmount) return "PAID";
-  return "PART_PAYMENT";
+  if (amountPaid <= 0) return PaymentStatus.UNPAID;
+  if (amountPaid >= totalAmount) return PaymentStatus.PAID;
+  return PaymentStatus.PART_PAYMENT;
 }
 
 async function writeContestAuditEntry(params: {
@@ -231,7 +231,7 @@ async function writeContestAuditEntry(params: {
       actorUserId: params.actorUserId,
       actorRole: params.actorRole,
       action: params.action,
-      details: params.details as Prisma.InputJsonValue,
+      details: params.details as Record<string, unknown>,
     },
   });
 }
@@ -558,7 +558,7 @@ export async function reviewInvoiceContest({
     }
 
     const latestItems = await tx.invoiceItem.findMany({ where: { invoiceId: invoice.id } });
-    const totalAmount = latestItems.reduce((sum, item) => sum + item.amount, 0);
+    const totalAmount = latestItems.reduce((sum: number, item: any) => sum + item.amount, 0);
     const balance = Math.max(0, totalAmount - invoice.amountPaid);
     const status = mapPaymentStatus(invoice.amountPaid, totalAmount);
 

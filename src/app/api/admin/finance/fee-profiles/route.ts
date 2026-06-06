@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 
 const profileSchema = z.object({
@@ -27,11 +27,11 @@ function isAuthorized(role?: string) {
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
 
   const profiles = await prisma.feeProfile.findMany({
     where: { schoolId, isActive: true },
@@ -65,15 +65,15 @@ export async function GET() {
       dueDate: p.dueDate?.toISOString() ?? null,
       isActive: p.isActive,
       createdAt: p.createdAt.toISOString(),
-      items: p.items.map((i) => ({
+      items: p.items?.map((i: any) => ({
         id: i.id,
         feeComponentId: i.feeComponentId,
-        feeComponentName: i.feeComponent.name,
+        feeComponentName: i.feeComponent?.name,
         amount: i.amount,
         isOptional: i.isOptional,
-      })),
-      classes: p.classes.map((c) => ({ id: c.classId, name: c.class.name })),
-      arms: p.arms.map((a) => ({ id: a.armId, name: a.arm.name })),
+      })) ?? [],
+      classes: p.classes?.map((c: any) => ({ id: c.classId, name: c.class?.name })) ?? [],
+      arms: p.arms?.map((a: any) => ({ id: a.armId, name: a.arm?.name })) ?? [],
     })),
     stats: {
       totalProfiles: profileCount,
@@ -84,7 +84,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
   const data = parsed.data;
 
   try {
@@ -172,7 +172,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -183,7 +183,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "ID required" }, { status: 400 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
 
   try {
     // Check if any students have been billed with this profile

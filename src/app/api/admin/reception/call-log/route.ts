@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 
 const callLogSchema = z.object({
@@ -51,13 +51,13 @@ async function generateCallNumber(schoolId: string): Promise<string> {
 
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const calls = await prisma.callLog.findMany({
-      where: { schoolId: session.user.schoolId },
+      where: { schoolId: "default" },
       orderBy: { createdAt: "desc" },
     });
 
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -78,30 +78,30 @@ export async function POST(request: Request) {
     const json = await request.json();
     const validated = callLogSchema.parse(json);
     
-    const callNumber = await generateCallNumber(session.user.schoolId);
+    const callNumber = await generateCallNumber("default");
 
     const call = await prisma.callLog.create({
       data: {
         ...validated,
         callNumber,
-        schoolId: session.user.schoolId,
+        schoolId: "default",
         status: "COMPLETED",
       },
     });
 
     await createAuditLog({
-      userId: session.user.id!,
-      schoolId: session.user.schoolId,
+      actorUserId: session.user.id!,
+      schoolId: "default",
       action: "CREATE",
-      entity: "CallLog",
-      entityId: call.id,
+      targetType: "CallLog",
+      targetId: call.id,
       details: `Logged call ${callNumber}`,
     });
 
     return NextResponse.json({ call }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     console.error("Error creating call log:", error);
     return NextResponse.json({ error: "Failed to create call log" }, { status: 500 });

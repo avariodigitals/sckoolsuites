@@ -14,7 +14,7 @@ import {
 import { requireRole } from "@/lib/auth-guards";
 import { getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
 import { buildSchoolRoleModel, buildSuperAdminModel, type RoleScope } from "@/lib/dashboard/role-dashboard-model";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { getSetupWizardState } from "@/lib/setup-wizard";
 import { assignSchoolToUser } from "@/app/admin/actions";
 
@@ -32,7 +32,7 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
   const user = await requireRole(roleAliases[roleScope]);
 
   // If Super Admin has a school assigned, treat them as school admin
-  const superAdminWithSchool = roleScope === "superadmin" && user.schoolId;
+  const superAdminWithSchool = roleScope === "superadmin" && "default";
 
   // If Super Admin has no school, redirect to setup wizard
   if (roleScope === "superadmin" && !superAdminWithSchool) {
@@ -53,7 +53,7 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
       orderBy: { createdAt: "desc" },
     });
 
-    const totalRevenue = schools.reduce((sum, school) => sum + school.payments.reduce((acc, payment) => acc + payment.amount, 0), 0);
+    const totalRevenue = schools.reduce((sum: number, school: any) => sum + (school.payments?.reduce((acc: number, payment: any) => acc + payment.amount, 0) || 0), 0);
     const totalTeachers = schools.reduce((sum, school) => sum + school.teachers.length, 0);
     const totalStudents = schools.reduce((sum, school) => sum + school.students.length, 0);
     const activeSchools = schools.filter((s) => s.isActive).length;

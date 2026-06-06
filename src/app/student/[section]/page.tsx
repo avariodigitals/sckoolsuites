@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireRole } from "@/lib/auth-guards";
 import { getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
 import { calculateGradeFromBands } from "@/lib/grades";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 import { formatDate, humanizeEnum } from "@/lib/utils";
 

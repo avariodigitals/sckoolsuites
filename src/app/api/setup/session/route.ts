@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { query, queryOne } from "@/lib/db";
 import { z } from "zod";
 
 const createSessionSchema = z.object({
-  schoolId: z.string(),
   name: z.string().min(3),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
@@ -22,18 +21,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const { schoolId, name, startDate, endDate } = parsed.data;
+    const { name, startDate, endDate } = parsed.data;
 
     // Check if school exists
-    const school = await prisma.school.findUnique({ where: { id: schoolId } });
+    const school = await queryOne<{ id: string }>('SELECT id FROM school WHERE id = $1', ['default']);
     if (!school) {
       return NextResponse.json({ error: "School not found" }, { status: 404 });
     }
 
     // Check for duplicate session name
-    const existing = await prisma.session.findFirst({
-      where: { schoolId, name }
-    });
+    const existing = await queryOne<{ id: string }>(
+      'SELECT id FROM session WHERE name = $1',
+      [name]
+    );
     if (existing) {
       return NextResponse.json(
         { error: "Session with this name already exists" },
@@ -41,18 +41,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const session = await prisma.session.create({
-      data: {
-        schoolId,
-        name,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
-        isCurrent: true,
-        status: "ACTIVE",
-      },
-    });
+    const result = await query(
+      `INSERT INTO session (name, start_date, end_date, is_current, status)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [name, startDate || null, endDate || null, true, 'ACTIVE']
+    );
 
-    return NextResponse.json(session);
+    return NextResponse.json(result.rows[0]);
   } catch (error) {
     console.error("Session creation error:", error);
     return NextResponse.json(

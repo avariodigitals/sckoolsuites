@@ -186,7 +186,7 @@ export function GatePassClient({ schoolId }: { schoolId: string }) {
             <option value="ALL">All Status</option>
             {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
-          <Button variant="outline" size="icon" onClick={() => setShowChart(!showChart)}><BarChart3 className="h-4 w-4" /></Button>
+          <Button variant="outline" onClick={() => setShowChart(!showChart)}><BarChart3 className="h-4 w-4" /></Button>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={exportToCSV}><Download className="h-4 w-4 mr-2" /> Export</Button>

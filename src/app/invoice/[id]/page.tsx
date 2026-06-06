@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Fragment } from "react";
 import { requireUser } from "@/lib/auth-guards";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { formatDate, naira } from "@/lib/utils";
 import { statusLabel } from "@/lib/data";
 import { PrintButton } from "@/components/print-button";
@@ -11,7 +11,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   await requireUser();
   const { id } = await params;
 
-  const invoice = await prisma.invoice.findUnique({
+  const invoice: any = await prisma.invoice.findUnique({
     where: { id },
     include: {
       school: { include: { branding: true } },
@@ -25,7 +25,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
 
   if (!invoice) notFound();
 
-  const groupedInvoiceItems = invoice.items.reduce<Record<string, Array<{ name: string; category: string; amount: number; optional: boolean }>>>(
+  const groupedInvoiceItems = ((invoice.items || []) as any[]).reduce<Record<string, Array<{ name: string; category: string; amount: number; optional: boolean }>>>(
     (accumulator, item) => {
       const key = item.feeItem.feeGroup?.name ?? item.feeItem.category;
       const bucket = accumulator[key] ?? [];
@@ -46,7 +46,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   const ruleText = invoice.paymentInstructions ?? invoice.school.branding?.bankInstructions ?? "";
   const paymentRules = ruleText
     .split(/\s(?=\d+\.)/)
-    .map((item) => item.trim())
+    .map((item: string) => item.trim())
     .filter(Boolean);
 
   const logoUrl = invoice.school.branding?.logoUrl
@@ -65,7 +65,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
+    .map((part: string) => part[0]?.toUpperCase() ?? "")
     .join("");
 
   return (
@@ -85,7 +85,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                     .split(" ")
                     .filter(Boolean)
                     .slice(0, 2)
-                    .map((part) => part[0]?.toUpperCase() ?? "")
+                    .map((part: string) => part[0]?.toUpperCase() ?? "")
                     .join("") || "SCH"}
                 </div>
               )}
@@ -141,7 +141,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                 <tr className="bg-slate-100 font-semibold">
                   <td className="border p-2" colSpan={3}>{groupName}</td>
                 </tr>
-                {rows.map((row) => (
+                {rows.map((row: any) => (
                   <tr key={`${groupName}-${row.name}`}>
                     <td className="border p-2">{row.name}</td>
                     <td className="border p-2">{row.optional ? "Optional" : row.category}</td>
@@ -185,7 +185,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             <p>{invoice.school.branding?.bankAccountNumber ?? "Account Number"}</p>
             {paymentRules.length ? (
               <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs text-slate-600">
-                {paymentRules.map((rule) => <li key={rule}>{rule.replace(/^\d+\.\s*/, "")}</li>)}
+                {paymentRules.map((rule: string) => <li key={rule}>{rule.replace(/^\d+\.\s*/, "")}</li>)}
               </ol>
             ) : (
               <p className="mt-2 text-xs text-slate-600">{ruleText}</p>

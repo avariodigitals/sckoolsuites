@@ -212,7 +212,7 @@ export function VisitorClient({ schoolId }: { schoolId: string }) {
         <div className="rounded-xl bg-white p-5 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-600">Today's Visitors</p>
+              <p className="text-sm font-medium text-slate-600">Today&apos;s Visitors</p>
               <p className="mt-2 text-3xl font-bold text-slate-900">{stats.totalToday}</p>
             </div>
             <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center">
@@ -294,7 +294,7 @@ export function VisitorClient({ schoolId }: { schoolId: string }) {
           <div className="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
             <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Today's Hourly Check-ins
+              Today&apos;s Hourly Check-ins
             </h3>
             {stats.hourlyData.length === 0 ? (
               <p className="text-slate-500 text-center py-8">No check-ins today</p>

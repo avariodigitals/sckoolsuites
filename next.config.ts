@@ -17,15 +17,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-
-  // Webpack configuration for Prisma on serverless
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      // Ensure Prisma Client is properly resolved on serverless
-      config.resolve.alias["@prisma/client"] = require.resolve("@prisma/client");
-    }
-    return config;
-  },
 };
 
 export default nextConfig;

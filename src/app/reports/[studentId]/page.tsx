@@ -3,7 +3,7 @@ import Image from "next/image";
 import { requireUser } from "@/lib/auth-guards";
 import { getClassGroupGradingProfiles, parseNumericAssessmentScore, resolveClassGroupProfile } from "@/lib/class-group-grading";
 import { calculateGradeFromBands } from "@/lib/grades";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 import { resolveReportTemplate } from "@/lib/report-templates";
 import { APP_POWERED_BY } from "@/lib/constants";
@@ -50,14 +50,14 @@ export default async function ReportCardPage({ params }: { params: Promise<{ stu
     }
   })();
   const reportScores = result
-    ? student.scores.filter((score) => score.termId === result.termId && score.sessionId === result.sessionId)
+    ? student.scores.filter((score: any) => score.termId === result.termId && score.sessionId === result.sessionId)
     : [];
-  const cumulativeTotal = result?.cumulativeTotal ?? (reportScores.length ? reportScores.reduce((sum, score) => sum + score.total, 0) : 0);
+  const cumulativeTotal = result?.cumulativeTotal ?? (reportScores.length ? reportScores.reduce((sum: number, score: any) => sum + score.total, 0) : 0);
   const average = result?.average ?? (reportScores.length ? cumulativeTotal / reportScores.length : 0);
-  const attendancePresent = result?.attendancePresent ?? (result ? student.attendance.filter((item) => item.status === "PRESENT").length : 0);
+  const attendancePresent = result?.attendancePresent ?? (result ? student.attendance.filter((item: any) => item.status === "PRESENT").length : 0);
   const attendanceTotal = result?.attendanceTotal ?? (result ? student.attendance.length : 0);
   const termPercentage = result?.termPercentage ?? average;
-  const termGpa = result?.termGpa ?? (reportScores.length ? reportScores.reduce((sum, score) => sum + score.gpa, 0) / reportScores.length : 0);
+  const termGpa = result?.termGpa ?? (reportScores.length ? reportScores.reduce((sum: number, score: any) => sum + score.gpa, 0) / reportScores.length : 0);
   const [activeConfig, classGroupProfiles, feeAggregate] = await Promise.all([
     getActiveSchoolConfig(student.schoolId),
     getClassGroupGradingProfiles(student.schoolId),
@@ -241,7 +241,7 @@ export default async function ReportCardPage({ params }: { params: Promise<{ stu
                 </tr>
               </thead>
               <tbody>
-                {reportScores.map((score, index) => (
+                {reportScores.map((score: any, index: number) => (
                   <tr key={score.id} className={index % 2 ? "bg-slate-50" : "bg-white"}>
                     <td className="border border-slate-300 p-2 font-medium text-slate-800">{score.subject.name}</td>
                     <td className="border border-slate-300 p-2 text-center">{score.caScore}</td>

@@ -1,9 +1,9 @@
-import { AttendanceStatus } from "@prisma/client";
+import { AttendanceStatus } from "@/lib/db-types";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
 
 const schema = z.object({
@@ -17,7 +17,7 @@ const calendarService = new AcademicCalendarService();
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.id || !session.user.schoolId || session.user.role !== "TEACHER") {
+  if (!session?.user?.id  || session.user.role !== "TEACHER") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -28,27 +28,27 @@ export async function POST(request: Request) {
   }
 
   const teacher = await prisma.teacher.findFirst({
-    where: { schoolId: session.user.schoolId, userId: session.user.id },
+    where: { schoolId: "default", userId: session.user.id },
   });
   if (!teacher) {
     return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 });
   }
 
   const classRecord = await prisma.class.findFirst({
-    where: { id: parsed.data.classId, schoolId: session.user.schoolId },
+    where: { id: parsed.data.classId, schoolId: "default" },
   });
   if (!classRecord || classRecord.teacherId !== teacher.id) {
     return NextResponse.json({ error: "You can only record attendance for your assigned classes" }, { status: 403 });
   }
 
   const student = await prisma.student.findFirst({
-    where: { id: parsed.data.studentId, schoolId: session.user.schoolId, classId: parsed.data.classId },
+    where: { id: parsed.data.studentId, schoolId: "default", classId: parsed.data.classId },
   });
   if (!student) {
     return NextResponse.json({ error: "Student not found in selected class" }, { status: 404 });
   }
 
-  const context = await calendarService.getUserContext(session.user.schoolId, session.user.id);
+  const context = await calendarService.getUserContext("default", session.user.id);
   if (!context.sessionId || !context.termId) {
     return NextResponse.json({ error: "Academic context is not selected" }, { status: 400 });
   }
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
   const existing = await prisma.attendance.findFirst({
     where: {
-      schoolId: session.user.schoolId,
+      schoolId: "default",
       studentId: student.id,
       classId: classRecord.id,
       sessionId: context.sessionId,
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
       })
     : await prisma.attendance.create({
         data: {
-          schoolId: session.user.schoolId,
+          schoolId: "default",
           studentId: student.id,
           classId: classRecord.id,
           teacherId: teacher.id,
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
       });
 
   await createAuditLog({
-    schoolId: session.user.schoolId,
+    schoolId: "default",
     actorUserId: session.user.id,
     action: existing ? "ATTENDANCE_UPDATED" : "ATTENDANCE_CREATED",
     targetType: "Attendance",

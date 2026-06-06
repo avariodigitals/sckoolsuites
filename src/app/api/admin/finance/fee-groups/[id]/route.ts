@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { slugifyFinanceCode } from "@/lib/finance";
 
 const updateSchema = z.object({
@@ -17,7 +17,7 @@ function isAuthorized(role?: string) {
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -31,7 +31,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   try {
     const updated = await prisma.feeGroup.updateMany({
-      where: { id, schoolId: session.user.schoolId },
+      where: { id, schoolId: "default" },
       data: {
         ...(parsed.data.name !== undefined ? { name: parsed.data.name.trim() } : {}),
         ...(parsed.data.code !== undefined ? { code: slugifyFinanceCode(parsed.data.code.trim()) } : {}),
@@ -53,14 +53,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
 
   const updated = await prisma.feeGroup.updateMany({
-    where: { id, schoolId: session.user.schoolId },
+    where: { id, schoolId: "default" },
     data: { isActive: false },
   });
 
@@ -69,7 +69,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   }
 
   await prisma.feeItem.updateMany({
-    where: { feeGroupId: id, schoolId: session.user.schoolId },
+    where: { feeGroupId: id, schoolId: "default" },
     data: { isActive: false },
   });
 

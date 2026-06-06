@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { buildFeeItemDedupeKey } from "@/lib/finance";
 import { getSetupWizardState, saveSetupWizardStatus, setupStepOrder } from "@/lib/setup-wizard";
 
@@ -36,11 +36,11 @@ function parseDelimitedList(input: unknown) {
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
   const [school, appIconSetting, activeSessionSetting, activeTermSetting, groupGradingProfilesSetting, sessions, terms, classGroups, classes, arms, subjects, feeGroups, feeItems, teachers, parents, students, setup] = await Promise.all([
     prisma.school.findUnique({ where: { id: schoolId }, include: { branding: true } }),
     prisma.schoolSetting.findFirst({ where: { schoolId, key: "app_icon_logo" }, select: { value: true } }),
@@ -51,10 +51,10 @@ export async function GET() {
     prisma.term.findMany({ where: { schoolId }, orderBy: { createdAt: "desc" } }),
     prisma.classGroup.findMany({ where: { schoolId }, orderBy: { name: "asc" } }),
     prisma.class.findMany({ where: { schoolId }, include: { classGroup: true }, orderBy: { name: "asc" } }),
-    prisma.classArm.findMany({ where: { schoolId }, include: { class: true }, orderBy: [{ class: { name: "asc" } }, { name: "asc" }] }),
+    prisma.classArm.findMany({ where: { schoolId }, include: { class: true }, orderBy: { name: "asc" } }),
     prisma.subject.findMany({ where: { schoolId }, include: { class: true, classGroup: true, teacher: { include: { user: true } } }, orderBy: { name: "asc" } }),
-    prisma.feeGroup.findMany({ where: { schoolId }, orderBy: [{ isActive: "desc" }, { name: "asc" }] }),
-    prisma.feeItem.findMany({ where: { schoolId }, include: { feeGroup: true, class: true, arm: true, session: true, term: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
+    prisma.feeGroup.findMany({ where: { schoolId }, orderBy: { name: "asc" } }),
+    prisma.feeItem.findMany({ where: { schoolId }, include: { feeGroup: true, class: true, arm: true, session: true, term: true }, orderBy: { createdAt: "asc" } }),
     prisma.teacher.findMany({ where: { schoolId }, include: { user: true } }),
     prisma.parent.findMany({ where: { schoolId }, include: { user: true } }),
     prisma.student.findMany({ where: { schoolId }, include: { user: true, class: true, parent: { include: { user: true } } } }),
@@ -91,7 +91,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !session.user.id || !isAuthorized(session.user.role)) {
+  if (!session?.user?.id || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
   const { step, data } = parsed.data;
 
   try {

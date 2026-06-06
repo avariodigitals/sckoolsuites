@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { slugifyFinanceCode } from "@/lib/finance";
 
 const createSchema = z.object({
@@ -17,14 +17,14 @@ function isAuthorized(role?: string) {
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const groups = await prisma.feeGroup.findMany({
-    where: { schoolId: session.user.schoolId },
+    where: { schoolId: "default" },
     include: { _count: { select: { feeItems: true } } },
-    orderBy: [{ isActive: "desc" }, { name: "asc" }],
+    orderBy: { name: "asc" },
   });
 
   return NextResponse.json({
@@ -43,7 +43,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   try {
     const created = await prisma.feeGroup.create({
       data: {
-        schoolId: session.user.schoolId,
+        schoolId: "default",
         name,
         code,
         description: parsed.data.description?.trim() || null,

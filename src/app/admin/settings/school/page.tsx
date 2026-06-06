@@ -2,7 +2,7 @@ import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { DashboardHeader } from "@/components/modern-dashboard";
 import { requireRole } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { SchoolForm } from "./school-form";
 
 export default async function SchoolPage() {
@@ -10,8 +10,8 @@ export default async function SchoolPage() {
   const profile = await getCurrentSchoolByUser(user.id);
   
   // Check if schools already exist (for Super Admin)
-  const schools = user.role.name === "SUPER_ADMIN" 
-    ? await prisma.school.findMany({ take: 1 })
+  const schools = user.role === "SUPER_ADMIN" 
+    ? await prisma.school.findMany({})
     : [];
   
   const hasSchool = !!profile?.school || schools.length > 0;
@@ -46,7 +46,7 @@ export default async function SchoolPage() {
           <div className="p-6">
             <SchoolForm 
               school={profile?.school ?? null} 
-              isSuperAdmin={user.role.name === "SUPER_ADMIN"}
+              isSuperAdmin={user.role === "SUPER_ADMIN"}
             />
           </div>
         </div>

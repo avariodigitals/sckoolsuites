@@ -48,7 +48,7 @@ export default async function ConfigEnginePage() {
                 notes: active.notes,
                 config: active.config,
               }}
-              initialVersions={versions.map((item) => ({
+              initialVersions={versions.map((item: { id: string; version: string; isActive: boolean; source: string; notes: string | null; createdAt: Date }) => ({
                 id: item.id,
                 version: item.version,
                 isActive: item.isActive,

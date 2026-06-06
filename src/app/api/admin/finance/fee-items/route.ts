@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { buildFeeItemDedupeKey } from "@/lib/finance";
 
 const createSchema = z.object({
@@ -26,11 +26,11 @@ function isAuthorized(role?: string) {
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
 
   const [items, groups, classes, sessions, terms, arms] = await Promise.all([
     prisma.feeItem.findMany({
@@ -42,13 +42,13 @@ export async function GET() {
         session: true,
         term: true,
       },
-      orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
+      orderBy: { createdAt: "asc" },
     }),
-    prisma.feeGroup.findMany({ where: { schoolId }, orderBy: [{ isActive: "desc" }, { name: "asc" }] }),
+    prisma.feeGroup.findMany({ where: { schoolId }, orderBy: { name: "asc" } }),
     prisma.class.findMany({ where: { schoolId }, orderBy: { name: "asc" } }),
     prisma.session.findMany({ where: { schoolId }, orderBy: { createdAt: "desc" } }),
     prisma.term.findMany({ where: { schoolId }, orderBy: { createdAt: "desc" } }),
-    prisma.classArm.findMany({ where: { schoolId, isActive: true }, orderBy: [{ class: { name: "asc" } }, { name: "asc" }] }),
+    prisma.classArm.findMany({ where: { schoolId, isActive: true }, orderBy: { name: "asc" } }),
   ]);
 
   return NextResponse.json({
@@ -83,7 +83,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
   const classId = parsed.data.classId ?? null;
   const armId = parsed.data.armId ?? null;
   const dedupeKey = buildFeeItemDedupeKey({

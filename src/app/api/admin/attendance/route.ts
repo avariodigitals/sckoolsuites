@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { AttendanceStatus } from "@prisma/client";
+import { AttendanceStatus } from "@/lib/db-types";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 
 const querySchema = z.object({
@@ -17,7 +17,7 @@ const createSchema = z.object({
   studentId: z.string().min(5),
   classId: z.string().min(5).optional(),
   date: z.string(),
-  status: z.enum(["PRESENT", "ABSENT", "LATE", "EXCUSED"]),
+  status: z.nativeEnum(AttendanceStatus),
   sessionId: z.string().min(5).optional(),
   termId: z.string().min(5).optional(),
 });
@@ -26,7 +26,7 @@ const bulkSchema = z.object({
   records: z.array(
     z.object({
       studentId: z.string().min(5),
-      status: z.enum(["PRESENT", "ABSENT", "LATE", "EXCUSED"]),
+      status: z.nativeEnum(AttendanceStatus),
     })
   ),
   classId: z.string().min(5),
@@ -41,11 +41,11 @@ function isAuthorized(role?: string) {
 
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
   const url = new URL(request.url);
   
   const parsedQuery = querySchema.safeParse({
@@ -94,7 +94,7 @@ export async function GET(request: Request) {
         session: true,
         term: true,
       },
-      orderBy: [{ date: "desc" }, { student: { user: { name: "asc" } } }],
+      orderBy: { date: "desc" },
       take: 200,
     }),
     prisma.class.findMany({
@@ -105,7 +105,7 @@ export async function GET(request: Request) {
     prisma.student.findMany({
       where: { schoolId },
       include: { user: true, class: true },
-      orderBy: [{ user: { name: "asc" } }],
+      orderBy: { id: "asc" },
     }),
     prisma.session.findMany({
       where: { schoolId },
@@ -136,19 +136,19 @@ export async function GET(request: Request) {
       termName: a.term?.name ?? null,
       createdAt: a.createdAt.toISOString(),
     })),
-    classes: classes.map((c) => ({
+    classes: classes.map((c: any) => ({
       id: c.id,
       name: c.name,
-      students: c.students.map((s) => ({ id: s.id, name: s.user.name })),
+      students: c.students?.map((s: any) => ({ id: s.id, name: s.user?.name })) ?? [],
     })),
-    students: students.map((s) => ({
+    students: students.map((s: any) => ({
       id: s.id,
-      name: s.user.name,
+      name: s.user?.name,
       classId: s.classId,
       className: s.class?.name ?? null,
     })),
-    sessions: sessions.map((s) => ({ id: s.id, name: s.name, isCurrent: s.isCurrent })),
-    terms: terms.map((t) => ({
+    sessions: sessions.map((s: any) => ({ id: s.id, name: s.name, isCurrent: s.isCurrent })),
+    terms: terms.map((t: any) => ({
       id: t.id,
       name: t.name,
       sessionId: t.sessionId,
@@ -160,7 +160,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -169,7 +169,7 @@ export async function POST(request: Request) {
   // Check if this is a bulk request
   const bulkParsed = bulkSchema.safeParse(payload);
   if (bulkParsed.success) {
-    return handleBulkAttendance(bulkParsed.data, session.user.schoolId, session.user.id);
+    return handleBulkAttendance(bulkParsed.data, "default", session.user.id);
   }
 
   const parsed = createSchema.safeParse(payload);
@@ -177,7 +177,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const schoolId = session.user.schoolId;
+  const schoolId = "default";
   const data = parsed.data;
 
   // Validate student

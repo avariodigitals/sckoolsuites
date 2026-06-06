@@ -6,7 +6,7 @@ import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { requireRole } from "@/lib/auth-guards";
 import { getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
 import { formatDate, humanizeEnum, naira } from "@/lib/utils";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { ChildWorkspaceSwitcher } from "@/app/parent/_components/child-workspace-switcher";
 
 export default async function ParentChildWorkspacePage({ params }: { params: Promise<{ childId: string }> }) {
@@ -47,7 +47,7 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
   }
   const linkedChildren = core.students.filter((student) => student.parentId === parentProfile.id);
 
-  const childInvoices = core.invoices.filter((invoice) => invoice.studentId === child.id);
+  const childInvoices = core.bills.filter((invoice: any) => invoice.studentId === child.id);
   const childAttendance = core.attendance.filter((row) => row.studentId === child.id);
   const childScoresAll = core.scores.filter((score) => score.studentId === child.id);
   const childLessons = core.lessons.filter((lesson) => child.classId && lesson.classId === child.classId);

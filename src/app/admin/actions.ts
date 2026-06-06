@@ -1,17 +1,14 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth-guards";
 import { revalidatePath } from "next/cache";
 
-export async function assignSchoolToUser(schoolId: string) {
+export async function assignSchoolToUser(_schoolId: string) {
+  void _schoolId;
   const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN"]);
   
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { schoolId },
-  });
-  
+  // Single-school mode: user table has no school_id column.
+  // This action is retained for API compatibility but does not mutate the DB.
   revalidatePath("/admin/dashboard");
-  return { success: true };
+  return { success: true, userId: user.id };
 }

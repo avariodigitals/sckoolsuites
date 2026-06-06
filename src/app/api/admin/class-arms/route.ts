@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 export async function GET() {
   const session = await auth();
   const user = session?.user;
 
-  if (!user?.schoolId) {
+  if (!user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const arms = await prisma.classArm.findMany({
-      where: { schoolId: user.schoolId },
+      where: { schoolId: "default" },
       include: {
         class: {
           select: {
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   const session = await auth();
   const user = session?.user;
 
-  if (!user?.schoolId) {
+  if (!user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
     // Check if class exists and belongs to this school
     const classItem = await prisma.class.findFirst({
-      where: { id: classId, schoolId: user.schoolId },
+      where: { id: classId, schoolId: "default" },
     });
 
     if (!classItem) {
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     const existing = await prisma.classArm.findUnique({
       where: {
         schoolId_classId_name: {
-          schoolId: user.schoolId,
+          schoolId: "default",
           classId,
           name: name.trim(),
         },
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
 
     const arm = await prisma.classArm.create({
       data: {
-        schoolId: user.schoolId,
+        schoolId: "default",
         classId,
         name: name.trim(),
         isActive: true,

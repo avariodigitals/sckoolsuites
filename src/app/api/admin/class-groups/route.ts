@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 export async function GET() {
   const session = await auth();
   const user = session?.user;
 
-  if (!user?.schoolId) {
+  if (!user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const classGroups = await prisma.classGroup.findMany({
-      where: { schoolId: user.schoolId },
+      where: { schoolId: "default" },
       orderBy: { createdAt: "asc" },
     });
 
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   const session = await auth();
   const user = session?.user;
 
-  if (!user?.schoolId) {
+  if (!user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 
     // Check for duplicate
     const existing = await prisma.classGroup.findUnique({
-      where: { schoolId_name: { schoolId: user.schoolId, name: name.trim() } },
+      where: { schoolId_name: { schoolId: "default", name: name.trim() } },
     });
 
     if (existing) {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
 
     const classGroup = await prisma.classGroup.create({
       data: {
-        schoolId: user.schoolId,
+        schoolId: "default",
         name: name.trim(),
       },
     });

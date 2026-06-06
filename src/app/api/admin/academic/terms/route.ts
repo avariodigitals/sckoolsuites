@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
+import { AcademicStatus } from "@/lib/db-types";
 
 const createTermSchema = z.object({
   sessionId: z.string().min(5),
@@ -10,7 +11,7 @@ const createTermSchema = z.object({
   endDate: z.string().optional(),
   resumptionDate: z.string().optional(),
   breakDates: z.array(z.string()).optional(),
-  status: z.enum(["DRAFT", "ACTIVE", "CLOSED", "ARCHIVED"]).optional(),
+  status: z.nativeEnum(AcademicStatus).optional(),
 });
 
 const service = new AcademicCalendarService();
@@ -19,8 +20,8 @@ export async function POST(request: Request) {
   try {
     const session = await auth();
     console.log("Term API - user:", session?.user);
-    if (!session?.user?.schoolId || !["SUPER_ADMIN", "SCHOOL_ADMIN", "PRINCIPAL"].includes(session.user.role)) {
-      return NextResponse.json({ error: `Unauthorized - no school assigned. Role: ${session?.user?.role}, schoolId: ${session?.user?.schoolId}` }, { status: 401 });
+    if (!session?.user || !["SUPER_ADMIN", "SCHOOL_ADMIN", "PRINCIPAL"].includes(session.user.role)) {
+      return NextResponse.json({ error: `Unauthorized - no school assigned. Role: ${session?.user?.role}, ` }, { status: 401 });
     }
 
     const payload = await request.json();
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
     }
 
     const created = await service.createTerm({
-      schoolId: session.user.schoolId,
+      schoolId: "default",
       ...parsed.data,
     });
 

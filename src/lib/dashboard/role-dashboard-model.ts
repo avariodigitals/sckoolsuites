@@ -107,8 +107,8 @@ export function buildSchoolRoleModel(roleScope: Exclude<RoleScope, "superadmin">
   const assignments = core.assignments || [];
   const announcements = core.announcements || [];
   
-  const totalInvoiceAmount = invoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
-  const totalPaidAmount = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+  const totalInvoiceAmount = invoices.reduce((sum: number, invoice: any) => sum + (invoice.totalAmount || 0), 0);
+  const totalPaidAmount = payments.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0);
   const collectionRate = totalInvoiceAmount ? (totalPaidAmount / totalInvoiceAmount) * 100 : 0;
 
   const models: Record<Exclude<RoleScope, "superadmin">, RoleDashboardModel> = {
@@ -117,14 +117,14 @@ export function buildSchoolRoleModel(roleScope: Exclude<RoleScope, "superadmin">
       subtitle: "Enrollment, academics, and finance operations in one command view.",
       modules: ["Students", "Teachers", "Parents", "Classes", "Subjects", "Attendance", "Fees", "Invoices", "Payments", "Results", "Report Cards", "Timetable", "Academic Calendar", "Messages", "Announcements", "Settings"],
       stats: [
-        { label: "Active Session", value: sessions.find((item) => item.isCurrent)?.name ?? "N/A", hint: "Academic session" },
-        { label: "Active Term", value: terms.find((item) => item.isCurrent)?.name ?? "N/A", hint: "Academic term" },
+        { label: "Active Session", value: sessions.find((item: any) => item.isCurrent)?.name ?? "N/A", hint: "Academic session" },
+        { label: "Active Term", value: terms.find((item: any) => item.isCurrent)?.name ?? "N/A", hint: "Academic term" },
         { label: "Total Students", value: String(students.length), hint: "Enrolled learners" },
         { label: "Total Teachers", value: String(teachers.length), hint: "Instruction workforce" },
         { label: "Total Parents", value: String(parents.length), hint: "Linked guardians" },
         { label: "Total Classes", value: String(classes.length), hint: "Active class groups" },
         { label: "Fee Collection", value: `${collectionRate.toFixed(1)}%`, hint: "Invoice recovery" },
-        { label: "Unpaid Invoices", value: String(invoices.filter((item) => (item.balance || 0) > 0).length), hint: "Outstanding balances" },
+        { label: "Unpaid Invoices", value: String(invoices.filter((item: any) => (item.balance || 0) > 0).length), hint: "Outstanding balances" },
       ],
       quickActions: [
         { label: "Add Student", href: "/admin/students" },
@@ -145,7 +145,7 @@ export function buildSchoolRoleModel(roleScope: Exclude<RoleScope, "superadmin">
       activities: students.slice(0, 6).map((student) => ({ id: student.id, title: student.user.name, detail: "New registration", time: formatDate(student.createdAt) })),
       tasks: [
         { id: "res", title: "Pending results", detail: `${Math.max(0, students.length - scores.length)} students pending score rows`, time: "Today" },
-        { id: "fees", title: "Follow up unpaid invoices", detail: `${invoices.filter((item) => (item.balance || 0) > 0).length} invoices open`, time: "This week" },
+        { id: "fees", title: "Follow up unpaid invoices", detail: `${invoices.filter((item: any) => (item.balance || 0) > 0).length} invoices open`, time: "This week" },
       ],
       announcements: mapAnnouncements(announcements),
       tableTitle: "Recent Payments",
@@ -204,9 +204,9 @@ export function buildSchoolRoleModel(roleScope: Exclude<RoleScope, "superadmin">
         title: "Attendance Trend",
         subtitle: "Recent attendance statuses",
         data: [
-          { label: "Present", value: attendance.filter((item) => item.status === "PRESENT").length },
-          { label: "Absent", value: attendance.filter((item) => item.status === "ABSENT").length },
-          { label: "Late", value: attendance.filter((item) => item.status === "LATE").length },
+          { label: "Present", value: attendance.filter((item: any) => item.status === "PRESENT").length },
+          { label: "Absent", value: attendance.filter((item: any) => item.status === "ABSENT").length },
+          { label: "Late", value: attendance.filter((item: any) => item.status === "LATE").length },
         ],
       },
       activities: payments.slice(0, 6).map((item) => ({ id: item.id, title: `Payment ${item.invoice.invoiceNumber}`, detail: statusLabel(item.status), time: formatDate(item.confirmedAt ?? item.createdAt) })),
@@ -292,7 +292,7 @@ export function buildSchoolRoleModel(roleScope: Exclude<RoleScope, "superadmin">
         { label: "New Applications", value: String(students.length), hint: "Incoming records" },
         { label: "Pending Approvals", value: String(Math.max(0, students.length - classes.length)), hint: "Awaiting admission" },
         { label: "Admitted Students", value: String(students.length), hint: "Total enrolled" },
-        { label: "Incomplete Registrations", value: String(students.filter((student) => !student.classId).length), hint: "Need class placement" },
+        { label: "Incomplete Registrations", value: String(students.filter((student: any) => !student.classId).length), hint: "Need class placement" },
       ],
       quickActions: [
         { label: "Admit Student", href: "/admin/students" },
@@ -304,13 +304,13 @@ export function buildSchoolRoleModel(roleScope: Exclude<RoleScope, "superadmin">
         subtitle: "Registration completion",
         data: [
           { label: "Applications", value: students.length },
-          { label: "Placed", value: students.filter((student) => student.classId).length },
-          { label: "Incomplete", value: students.filter((student) => !student.classId).length },
+          { label: "Placed", value: students.filter((student: any) => student.classId).length },
+          { label: "Incomplete", value: students.filter((student: any) => !student.classId).length },
         ],
       },
       activities: students.slice(0, 6).map((student) => ({ id: student.id, title: student.user.name, detail: student.class?.name ?? "Awaiting class", time: formatDate(student.createdAt) })),
       tasks: [
-        { id: "place", title: "Complete class placements", detail: `${students.filter((student) => !student.classId).length} students pending`, time: "Urgent" },
+        { id: "place", title: "Complete class placements", detail: `${students.filter((student: any) => !student.classId).length} students pending`, time: "Urgent" },
         { id: "docs", title: "Verify submitted documents", detail: "Review admission uploads", time: "Today" },
       ],
       announcements: mapAnnouncements(announcements),

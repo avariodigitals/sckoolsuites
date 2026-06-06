@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { query, queryOne, withTransaction } from "@/lib/db";
 
 // POST - Create school during setup (no auth required)
 export async function POST(request: Request) {
   try {
     // Check if school already exists
-    const existing = await prisma.school.findFirst();
+    const existing = await queryOne<{ id: string }>('SELECT id FROM school WHERE id = $1', ['default']);
     if (existing) {
       return NextResponse.json(
         { error: "School already exists" },
@@ -30,20 +30,24 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create school with branding
-    const school = await prisma.school.create({
-      data: {
-        name,
-        email,
-        phone,
-        address,
-        website,
-        motto,
-        isActive: false, // Will be activated later
-        branding: {
-          create: {},
-        },
-      },
+    // Create school and branding in transaction
+    const school = await withTransaction(async (client) => {
+      // Create school
+      const schoolResult = await client.query(
+        `INSERT INTO school (id, name, email, phone, address, website, motto, is_active, is_setup)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING *`,
+        ['default', name, email, phone, address, website, motto, false, false]
+      );
+
+      // Create default branding
+      await client.query(
+        `INSERT INTO school_branding (school_id, primary_color, secondary_color, report_card_theme, invoice_theme, receipt_theme)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        ['default', '#0B1F4D', '#0E9F6E', 'classic', 'clean', 'simple']
+      );
+
+      return schoolResult.rows[0];
     });
 
     return NextResponse.json({ 

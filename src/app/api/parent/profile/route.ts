@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 const schema = z.object({
   name: z.string().min(2),
@@ -13,10 +13,10 @@ const schema = z.object({
 
 async function getParentContext() {
   const session = await auth();
-  if (!session?.user || session.user.role !== "PARENT" || !session.user.schoolId) return null;
+  if (!session?.user || session.user.role !== "PARENT" ) return null;
 
   const parent = await prisma.parent.findFirst({
-    where: { schoolId: session.user.schoolId, userId: session.user.id },
+    where: { schoolId: "default", userId: session.user.id },
     include: { user: true },
   });
 
@@ -36,7 +36,6 @@ export async function GET() {
 
   const settings = await prisma.schoolSetting.findMany({
     where: {
-      schoolId: context.session.user.schoolId!,
       key: { in: [keys.phone, keys.address, keys.emergencyContact] },
     },
   });
@@ -76,9 +75,9 @@ export async function POST(request: Request) {
   ];
 
   await Promise.all(values.map((item) => prisma.schoolSetting.upsert({
-    where: { schoolId_key: { schoolId: context.session.user.schoolId!, key: item.key } },
+    where: { key: item.key },
     update: { value: item.value },
-    create: { schoolId: context.session.user.schoolId!, key: item.key, value: item.value },
+    create: { key: item.key, value: item.value },
   })));
 
   return NextResponse.json({ ok: true });

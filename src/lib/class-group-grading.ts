@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import type { GradingBand } from "@/lib/grades";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 

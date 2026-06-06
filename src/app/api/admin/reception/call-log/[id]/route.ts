@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 
 function isAuthorized(role?: string) {
@@ -9,7 +9,7 @@ function isAuthorized(role?: string) {
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.schoolId || !isAuthorized(session.user.role)) {
+  if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -17,15 +17,15 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     const { id } = await params;
     
     await prisma.callLog.delete({
-      where: { id, schoolId: session.user.schoolId },
+      where: { id, schoolId: "default" },
     });
 
     await createAuditLog({
-      userId: session.user.id!,
-      schoolId: session.user.schoolId,
+      actorUserId: session.user.id!,
+      schoolId: "default",
       action: "DELETE",
-      entity: "CallLog",
-      entityId: id,
+      targetType: "CallLog",
+      targetId: id,
       details: "Deleted call log",
     });
 

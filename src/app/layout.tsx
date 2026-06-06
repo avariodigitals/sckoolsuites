@@ -3,6 +3,8 @@ import { Plus_Jakarta_Sans, Sora } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import "./globals.css";
 
+export const dynamic = "force-dynamic";
+
 const sora = Sora({
   variable: "--font-display",
   subsets: ["latin"],

@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, subDays, format } from "date-fns";
 
 export async function GET(request: Request) {
   const session = await auth();
   const user = session?.user;
 
-  if (!user?.schoolId) {
+  if (!user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     // Get payments (income) within date range
     const payments = await prisma.payment.findMany({
       where: {
-        schoolId: user.schoolId,
+        schoolId: "default",
         createdAt: {
           gte: startDate,
           lte: endDate,
@@ -62,7 +62,7 @@ export async function GET(request: Request) {
     // For now, we'll simulate or get from a hypothetical expense model
     const expenses = await prisma.schoolSetting.findMany({
       where: {
-        schoolId: user.schoolId,
+        schoolId: "default",
         key: { startsWith: "expense_" },
         createdAt: {
           gte: startDate,

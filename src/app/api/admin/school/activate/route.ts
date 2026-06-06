@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth-guards";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 export async function POST() {
   try {
@@ -13,14 +13,6 @@ export async function POST() {
         { error: "No school found" },
         { status: 400 }
       );
-    }
-
-    // Ensure user is assigned to the school
-    if (!user.schoolId) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { schoolId: school.id },
-      });
     }
 
     // Find the current session and term

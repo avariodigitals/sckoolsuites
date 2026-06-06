@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 const querySchema = z.object({
   status: z.enum(["PENDING", "APPROVED", "REJECTED"]).optional(),
@@ -10,7 +10,7 @@ const querySchema = z.object({
 
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.user?.id || !session.user.schoolId) {
+  if (!session?.user?.id ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
   const proofs = await prisma.paymentProof.findMany({
     where: {
-      schoolId: session.user.schoolId,
+      schoolId: "default",
       ...(parsedQuery.data.status ? { status: parsedQuery.data.status } : {}),
     },
     include: {
