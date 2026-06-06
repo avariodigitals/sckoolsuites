@@ -5,6 +5,7 @@ import { queryOne } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+// Trigger deployment after DATABASE_URL fix
 export default async function Home() {
   // Check if setup is complete first
   const school = await queryOne<{ is_setup: boolean }>(
