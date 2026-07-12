@@ -506,7 +506,16 @@ export async function activateSchoolConfigVersion(schoolId: string, configVersio
   });
 }
 
-export async function getSchoolConfigVersions(schoolId: string) {
+export async function getSchoolConfigVersions(schoolId: string): Promise<
+  Array<{
+    id: number;
+    version: number;
+    isActive: boolean;
+    source: string;
+    notes: string | null;
+    createdAt: Date;
+  }>
+> {
   return prisma.schoolConfigVersion.findMany({
     where: { schoolId },
     orderBy: { version: "desc" },
@@ -535,6 +544,10 @@ export async function getActiveSchoolConfig(schoolId: string) {
       source: "bootstrap",
       notes: "Auto-created from existing school data.",
     });
+  }
+
+  if (!active) {
+    throw new Error("Failed to create or find active school config.");
   }
 
   return {
