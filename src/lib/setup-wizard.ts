@@ -104,20 +104,23 @@ export async function computeSetupChecklist(schoolId: string): Promise<SetupChec
 }
 
 export async function getSetupWizardState(schoolId: string) {
-  const [setting, checklist] = await Promise.all([
+  const [setting, checklist, schoolRecord] = await Promise.all([
     prisma.schoolSetting.findFirst({ where: { schoolId, key: "setup_wizard_status" } }),
     computeSetupChecklist(schoolId),
+    prisma.school.findUnique({ where: { id: schoolId } }),
   ]);
 
   const current = parseStatus(setting?.value);
   const completedSteps = setupStepOrder.filter((step) => step !== "review-activate" && checklist[step]);
   const completionPercentage = Math.round((completedSteps.length / (setupStepOrder.length - 1)) * 100);
 
+  const canActivate = completedSteps.length === setupStepOrder.length - 1;
+  const schoolIsSetup = (schoolRecord as any)?.is_setup ?? (schoolRecord as any)?.isSetup ?? false;
   const effective: SetupWizardStatus = {
     ...current,
     completedSteps,
     lastCompletedStep: completedSteps.length,
-    setupCompleted: current.setupCompleted,
+    setupCompleted: current.setupCompleted || schoolIsSetup || canActivate,
     updatedAt: current.updatedAt,
   };
 

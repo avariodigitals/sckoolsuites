@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
+import { parseNumericId } from "@/lib/id-helpers";
 
 const updateSchema = z.object({
   name: z.string().min(2).max(120).optional(),
@@ -10,21 +12,33 @@ const updateSchema = z.object({
 });
 
 const linkStudentSchema = z.object({
-  studentId: z.string().min(5),
+  studentId: z.coerce.number().min(1),
   action: z.enum(["LINK", "UNLINK"]),
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "PATCH", "parents");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
+
+  let parentId: number;
+  try {
+    parentId = parseNumericId(id, "parent id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid parent id";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
   const payload = await request.json();
   const schoolId = "default";
 
@@ -35,7 +49,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     // Verify parent exists
     const parent = await prisma.parent.findFirst({
-      where: { id, schoolId },
+      where: { id: parentId, schoolId },
     });
     if (!parent) {
       return NextResponse.json({ error: "Parent not found" }, { status: 404 });
@@ -51,7 +65,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     if (action === "LINK") {
       // Check if student already has a different parent
-      if (student.parentId && student.parentId !== id) {
+      if (student.parentId && student.parentId !== parentId) {
         return NextResponse.json(
           { error: "Student is already linked to another parent" },
           { status: 409 }
@@ -60,7 +74,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
       await prisma.student.update({
         where: { id: studentId },
-        data: { parentId: id },
+        data: { parentId },
       });
 
       await createAuditLog({
@@ -75,7 +89,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ ok: true, message: "Student linked successfully" });
     } else {
       // UNLINK
-      if (student.parentId !== id) {
+      if (student.parentId !== parentId) {
         return NextResponse.json(
           { error: "Student is not linked to this parent" },
           { status: 400 }
@@ -110,7 +124,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   // Check parent exists
   const existing = await prisma.parent.findFirst({
-    where: { id, schoolId },
+    where: { id: parentId, schoolId },
     include: { user: true },
   });
   if (!existing) {
@@ -150,16 +164,28 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "DELETE", "parents");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
+
+  let parentId: number;
+  try {
+    parentId = parseNumericId(id, "parent id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid parent id";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
   const schoolId = "default";
 
   // Check parent exists
   const existing = await prisma.parent.findFirst({
-    where: { id, schoolId },
+    where: { id: parentId, schoolId },
     include: { user: true, students: true },
   });
   if (!existing) {

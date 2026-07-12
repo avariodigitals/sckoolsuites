@@ -2,7 +2,7 @@ import { statusLabel } from "@/lib/data";
 import { formatDate, naira } from "@/lib/utils";
 import type { FeedItem, QuickActionItem, SeriesItem, StatCardItem } from "@/components/dashboard-widgets";
 
-type CoreData = Awaited<ReturnType<typeof import("@/lib/data").getCoreSchoolDataByContext>>;
+type CoreData = any;
 
 export type RoleScope = "superadmin" | "admin" | "teacher" | "accountant" | "parent" | "student" | "registrar";
 
@@ -20,8 +20,8 @@ export type RoleDashboardModel = {
   tableRows: Array<{ id: string; primary: string; secondary?: string; status?: string; amount?: string; date?: string }>;
 };
 
-function mapAnnouncements(items: CoreData["announcements"]): FeedItem[] {
-  return items.slice(0, 5).map((item) => ({
+function mapAnnouncements(items: any[]): FeedItem[] {
+  return items.slice(0, 5).map((item: any) => ({
     id: item.id,
     title: item.title,
     detail: item.body.slice(0, 90),
@@ -93,23 +93,32 @@ export function buildSuperAdminModel(params: {
 
 export function buildSchoolRoleModel(roleScope: Exclude<RoleScope, "superadmin">, core: CoreData): RoleDashboardModel {
   // Safety checks for undefined arrays
-  const invoices = (core as any).bills || [];
-  const payments = core.payments || [];
-  const sessions = core.sessions || [];
-  const terms = core.terms || [];
-  const students = core.students || [];
-  const teachers = core.teachers || [];
-  const parents = core.parents || [];
-  const classes = core.classes || [];
-  const subjects = core.subjects || [];
-  const scores = core.scores || [];
-  const attendance = core.attendance || [];
-  const assignments = core.assignments || [];
-  const announcements = core.announcements || [];
+  const invoices: any[] = (core as any).bills || [];
+  const payments: any[] = core.payments || [];
+  const sessions: any[] = core.sessions || [];
+  const terms: any[] = core.terms || [];
+  const students: any[] = core.students || [];
+  const teachers: any[] = core.teachers || [];
+  const parents: any[] = core.parents || [];
+  const classes: any[] = core.classes || [];
+  const subjects: any[] = core.subjects || [];
+  const studentCount = (core as any).studentCount ?? students.length;
+  const teacherCount = (core as any).teacherCount ?? teachers.length;
+  const parentCount = (core as any).parentCount ?? parents.length;
+  const classCount = (core as any).classCount ?? classes.length;
+  const subjectCount = (core as any).subjectCount ?? subjects.length;
+  const scores: any[] = core.scores || [];
+  const attendance: any[] = core.attendance || [];
+  const assignments: any[] = core.assignments || [];
+  const lessons: any[] = core.lessons || [];
+  const announcements: any[] = core.announcements || [];
   
   const totalInvoiceAmount = invoices.reduce((sum: number, invoice: any) => sum + (invoice.totalAmount || 0), 0);
   const totalPaidAmount = payments.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0);
   const collectionRate = totalInvoiceAmount ? (totalPaidAmount / totalInvoiceAmount) * 100 : 0;
+
+  const selectedSessionName = (core as any).selectedSession?.name ?? sessions.find((item: any) => item.isCurrent)?.name ?? "N/A";
+  const selectedTermName = (core as any).selectedTerm?.name ?? terms.find((item: any) => item.isCurrent)?.name ?? "N/A";
 
   const models: Record<Exclude<RoleScope, "superadmin">, RoleDashboardModel> = {
     admin: {
@@ -117,12 +126,12 @@ export function buildSchoolRoleModel(roleScope: Exclude<RoleScope, "superadmin">
       subtitle: "Enrollment, academics, and finance operations in one command view.",
       modules: ["Students", "Teachers", "Parents", "Classes", "Subjects", "Attendance", "Fees", "Invoices", "Payments", "Results", "Report Cards", "Timetable", "Academic Calendar", "Messages", "Announcements", "Settings"],
       stats: [
-        { label: "Active Session", value: sessions.find((item: any) => item.isCurrent)?.name ?? "N/A", hint: "Academic session" },
-        { label: "Active Term", value: terms.find((item: any) => item.isCurrent)?.name ?? "N/A", hint: "Academic term" },
-        { label: "Total Students", value: String(students.length), hint: "Enrolled learners" },
-        { label: "Total Teachers", value: String(teachers.length), hint: "Instruction workforce" },
-        { label: "Total Parents", value: String(parents.length), hint: "Linked guardians" },
-        { label: "Total Classes", value: String(classes.length), hint: "Active class groups" },
+        { label: "Active Session", value: selectedSessionName, hint: "Academic session" },
+        { label: "Active Term", value: selectedTermName, hint: "Academic term" },
+        { label: "Total Students", value: String(studentCount), hint: "Enrolled learners" },
+        { label: "Total Teachers", value: String(teacherCount), hint: "Instruction workforce" },
+        { label: "Total Parents", value: String(parentCount), hint: "Linked guardians" },
+        { label: "Total Classes", value: String(classCount), hint: "Active class groups" },
         { label: "Fee Collection", value: `${collectionRate.toFixed(1)}%`, hint: "Invoice recovery" },
         { label: "Unpaid Invoices", value: String(invoices.filter((item: any) => (item.balance || 0) > 0).length), hint: "Outstanding balances" },
       ],
@@ -144,7 +153,7 @@ export function buildSchoolRoleModel(roleScope: Exclude<RoleScope, "superadmin">
       },
       activities: students.slice(0, 6).map((student) => ({ id: student.id, title: student.user.name, detail: "New registration", time: formatDate(student.createdAt) })),
       tasks: [
-        { id: "res", title: "Pending results", detail: `${Math.max(0, students.length - scores.length)} students pending score rows`, time: "Today" },
+        { id: "res", title: "Pending results", detail: `${Math.max(0, studentCount - scores.length)} students pending score rows`, time: "Today" },
         { id: "fees", title: "Follow up unpaid invoices", detail: `${invoices.filter((item: any) => (item.balance || 0) > 0).length} invoices open`, time: "This week" },
       ],
       announcements: mapAnnouncements(announcements),
@@ -156,9 +165,9 @@ export function buildSchoolRoleModel(roleScope: Exclude<RoleScope, "superadmin">
       subtitle: "Track classes, grading workload, and lesson execution.",
       modules: ["My Classes", "My Subjects", "Attendance", "Score Entry", "Assignments", "Lesson Notes", "Timetable", "Student Reports", "Announcements"],
       stats: [
-        { label: "Assigned Classes", value: String(classes.length), hint: "Class responsibilities" },
-        { label: "Assigned Subjects", value: String(subjects.length), hint: "Teaching load" },
-        { label: "Pending Scores", value: String(Math.max(0, students.length - scores.length)), hint: "Entries remaining" },
+        { label: "Assigned Classes", value: String(classCount), hint: "Class responsibilities" },
+        { label: "Assigned Subjects", value: String(subjectCount), hint: "Teaching load" },
+        { label: "Pending Scores", value: String(Math.max(0, studentCount - scores.length)), hint: "Entries remaining" },
         { label: "Attendance Logs", value: String(attendance.length), hint: "Recorded marks" },
       ],
       quickActions: [
@@ -175,21 +184,21 @@ export function buildSchoolRoleModel(roleScope: Exclude<RoleScope, "superadmin">
           value: Math.round(scores.filter((score) => score.subjectId === subject.id).reduce((sum, score) => sum + score.total, 0) / Math.max(1, scores.filter((score) => score.subjectId === subject.id).length)),
         })),
       },
-      activities: core.lessons?.slice(0, 6).map((lesson) => ({ id: lesson.id, title: lesson.title, detail: lesson.subject?.name ?? "Subject", time: formatDate(lesson.createdAt) })) ?? [],
+      activities: lessons.slice(0, 6).map((lesson: any) => ({ id: lesson.id, title: lesson.title, detail: lesson.subject?.name ?? "Subject", time: formatDate(lesson.createdAt) })),
       tasks: [
-        { id: "grade", title: "Grade pending scripts", detail: `${Math.max(0, students.length - scores.length)} pending score records`, time: "Today" },
+        { id: "grade", title: "Grade pending scripts", detail: `${Math.max(0, studentCount - scores.length)} pending score records`, time: "Today" },
         { id: "lesson", title: "Prepare upcoming lesson", detail: "Tomorrow's class plan due", time: "Tomorrow" },
       ],
       announcements: mapAnnouncements(announcements),
       tableTitle: "Upcoming Lessons",
-      tableRows: core.lessons?.slice(0, 20).map((lesson) => ({ id: lesson.id, primary: lesson.title, secondary: lesson.subject?.name ?? "Subject", status: "SCHEDULED", date: formatDate(lesson.createdAt) })) ?? [],
+      tableRows: lessons.slice(0, 20).map((lesson: any) => ({ id: lesson.id, primary: lesson.title, secondary: lesson.subject?.name ?? "Subject", status: "SCHEDULED", date: formatDate(lesson.createdAt) })),
     },
     parent: {
       title: "Parent Monitoring Dashboard",
       subtitle: "Track child performance, fee balances, and school communication.",
       modules: ["My Children", "Fees & Invoices", "Payments", "Attendance", "Results", "Report Cards", "School Calendar", "Messages", "Announcements"],
       stats: [
-        { label: "Children", value: String(students.length), hint: "Linked to parent profile" },
+        { label: "Children", value: String(studentCount), hint: "Linked to parent profile" },
         { label: "Attendance Logs", value: String(attendance.length), hint: "Visible records" },
         { label: "Fee Balance", value: naira(invoices.reduce((sum: number, item: any) => sum + (item.balance || 0), 0)), hint: "Outstanding due" },
         { label: "Latest Results", value: String(scores.length), hint: "Published score rows" },
@@ -224,7 +233,7 @@ export function buildSchoolRoleModel(roleScope: Exclude<RoleScope, "superadmin">
       modules: ["My Profile", "Subjects", "Timetable", "Assignments", "Attendance", "Results", "Report Card", "Announcements"],
       stats: [
         { label: "Current Class", value: students[0]?.class?.name ?? "N/A", hint: "Assigned class" },
-        { label: "Subjects", value: String(subjects.length), hint: "Current term load" },
+        { label: "Subjects", value: String(subjectCount), hint: "Current term load" },
         { label: "Assignments", value: String(assignments.length), hint: "Total assignments" },
         { label: "Attendance", value: String(attendance.length), hint: "Attendance records" },
       ],
@@ -289,9 +298,9 @@ export function buildSchoolRoleModel(roleScope: Exclude<RoleScope, "superadmin">
       subtitle: "Admissions throughput and enrollment completion performance.",
       modules: ["Applications", "Admissions", "Student Records", "Class Placement", "Parent Records", "Documents", "ID Cards"],
       stats: [
-        { label: "New Applications", value: String(students.length), hint: "Incoming records" },
-        { label: "Pending Approvals", value: String(Math.max(0, students.length - classes.length)), hint: "Awaiting admission" },
-        { label: "Admitted Students", value: String(students.length), hint: "Total enrolled" },
+        { label: "New Applications", value: String(studentCount), hint: "Incoming records" },
+        { label: "Pending Approvals", value: String(Math.max(0, studentCount - classCount)), hint: "Awaiting admission" },
+        { label: "Admitted Students", value: String(studentCount), hint: "Total enrolled" },
         { label: "Incomplete Registrations", value: String(students.filter((student: any) => !student.classId).length), hint: "Need class placement" },
       ],
       quickActions: [

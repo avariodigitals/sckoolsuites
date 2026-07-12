@@ -6,18 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface TermStepProps {
-  schoolId: string;
-  sessionId: string;
-  onComplete: (term: { id: string; name: string }) => void;
+  onComplete: (term: { name: string; startDate: string; endDate: string }) => void;
   onBack: () => void;
   isLoading: boolean;
-  initialData: { id: string; name: string } | null;
+  initialData: { name: string; startDate: string; endDate: string } | null;
 }
 
-export function TermStep({ schoolId, sessionId, onComplete, onBack, isLoading, initialData }: TermStepProps) {
+export function TermStep({ onComplete, onBack, isLoading, initialData }: TermStepProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
@@ -36,32 +34,7 @@ export function TermStep({ schoolId, sessionId, onComplete, onBack, isLoading, i
       return;
     }
 
-    try {
-      const res = await fetch("/api/setup/term", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          schoolId,
-          sessionId,
-          name,
-          startDate,
-          endDate,
-        }),
-      });
-
-      const result = await res.json();
-      if (!res.ok) {
-        setErrors({ submit: result.error || `Error: ${res.status}` });
-        return;
-      }
-      if (result.id) {
-        onComplete({ id: result.id, name: result.name || name });
-      } else {
-        setErrors({ submit: "Invalid response from server" });
-      }
-    } catch (err) {
-      setErrors({ submit: err instanceof Error ? err.message : "Failed to create term" });
-    }
+    onComplete({ name, startDate, endDate });
   };
 
   return (

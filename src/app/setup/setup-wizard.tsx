@@ -9,8 +9,7 @@ import { TermStep } from "./steps/term-step";
 import { UserStep } from "./steps/user-step";
 import { ReviewStep } from "./steps/review-step";
 
-interface SchoolData {
-  id: string;
+interface SchoolInput {
   name: string;
   email: string;
   phone: string;
@@ -19,31 +18,32 @@ interface SchoolData {
   motto: string | null;
 }
 
-interface SessionData {
-  id: string;
+interface SessionInput {
   name: string;
+  startDate: string;
+  endDate: string;
 }
 
-interface TermData {
-  id: string;
+interface TermInput {
   name: string;
+  startDate: string;
+  endDate: string;
 }
 
-interface SetupWizardProps {
-  existingSchool: SchoolData | null;
-  step: number;
-  existingSession: SessionData | null;
-  existingTerm: TermData | null;
+interface AdminInput {
+  name: string;
+  email: string;
+  password: string;
 }
 
-export function SetupWizard({ existingSchool, step: initialStep, existingSession, existingTerm }: SetupWizardProps) {
+export function SetupWizard() {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(initialStep);
+  const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [schoolData, setSchoolData] = useState(existingSchool);
-  const [sessionData, setSessionData] = useState(existingSession);
-  const [termData, setTermData] = useState(existingTerm);
-  const [adminUser, setAdminUser] = useState<{name: string; email: string; password: string} | null>(null);
+  const [schoolData, setSchoolData] = useState<SchoolInput | null>(null);
+  const [sessionData, setSessionData] = useState<SessionInput | null>(null);
+  const [termData, setTermData] = useState<TermInput | null>(null);
+  const [adminUser, setAdminUser] = useState<AdminInput | null>(null);
 
   const steps = [
     { id: 1, name: "School Details", icon: Building2 },
@@ -55,47 +55,37 @@ export function SetupWizard({ existingSchool, step: initialStep, existingSession
 
   const [schoolError, setSchoolError] = useState<string | null>(null);
 
-  const handleSchoolComplete = async (data: FormData) => {
-    setIsLoading(true);
+  const handleSchoolComplete = (formData: FormData) => {
     setSchoolError(null);
-    try {
-      const res = await fetch("/api/setup/school", {
-        method: "POST",
-        body: data,
-      });
-      
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Server error" }));
-        setSchoolError(err.error || `Error: ${res.status}`);
-        return;
-      }
+    const data: SchoolInput = {
+      name: String(formData.get("name") ?? "").trim(),
+      email: String(formData.get("email") ?? "").trim().toLowerCase(),
+      phone: String(formData.get("phone") ?? "").trim(),
+      address: String(formData.get("address") ?? "").trim(),
+      website: String(formData.get("website") ?? "").trim() || null,
+      motto: String(formData.get("motto") ?? "").trim() || null,
+    };
 
-      const result = await res.json();
-      if (result.success) {
-        setSchoolData(result.school);
-        router.refresh();
-        setCurrentStep(2);
-      } else {
-        setSchoolError(result.error || "Failed to create school");
-      }
-    } catch (err) {
-      setSchoolError(err instanceof Error ? err.message : "Network error");
-    } finally {
-      setIsLoading(false);
+    if (!data.name || !data.email || !data.phone || !data.address) {
+      setSchoolError("Name, email, phone, and address are required");
+      return;
     }
+
+    setSchoolData(data);
+    setCurrentStep(2);
   };
 
-  const handleSessionComplete = (data: SessionData) => {
+  const handleSessionComplete = (data: SessionInput) => {
     setSessionData(data);
     setCurrentStep(3);
   };
 
-  const handleTermComplete = (data: TermData) => {
+  const handleTermComplete = (data: TermInput) => {
     setTermData(data);
     setCurrentStep(4);
   };
 
-  const handleUserComplete = (data: {name: string; email: string; password: string}) => {
+  const handleUserComplete = (data: AdminInput) => {
     setAdminUser(data);
     setCurrentStep(5);
   };
@@ -115,20 +105,20 @@ export function SetupWizard({ existingSchool, step: initialStep, existingSession
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          schoolId: schoolData.id,
-          sessionId: sessionData.id,
-          termId: termData.id,
-          adminUser
+          school: schoolData,
+          session: sessionData,
+          term: termData,
+          adminUser,
         })
       });
       const result = await res.json();
-      
+
       if (!res.ok) {
         setActivateError(result.error || "Failed to activate");
         return;
       }
-      
-      // Redirect to login with credentials displayed
+
+      // Redirect to login after successful activation
       router.push("/login?setup=complete");
     } catch (err) {
       setActivateError(err instanceof Error ? err.message : "Activation failed");
@@ -198,16 +188,15 @@ export function SetupWizard({ existingSchool, step: initialStep, existingSession
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
           {currentStep === 1 && (
-            <SchoolStep 
-              onComplete={handleSchoolComplete} 
+            <SchoolStep
+              onComplete={handleSchoolComplete}
               isLoading={isLoading}
               error={schoolError}
               initialData={schoolData}
             />
           )}
           {currentStep === 2 && schoolData && (
-            <SessionStep 
-              schoolId={schoolData.id}
+            <SessionStep
               onComplete={handleSessionComplete}
               onBack={() => setCurrentStep(1)}
               isLoading={isLoading}
@@ -215,9 +204,7 @@ export function SetupWizard({ existingSchool, step: initialStep, existingSession
             />
           )}
           {currentStep === 3 && schoolData && sessionData && (
-            <TermStep 
-              schoolId={schoolData.id}
-              sessionId={sessionData.id}
+            <TermStep
               onComplete={handleTermComplete}
               onBack={() => setCurrentStep(2)}
               isLoading={isLoading}
@@ -233,7 +220,7 @@ export function SetupWizard({ existingSchool, step: initialStep, existingSession
             />
           )}
           {currentStep === 5 && schoolData && sessionData && termData && adminUser && (
-            <ReviewStep 
+            <ReviewStep
               school={schoolData}
               session={sessionData}
               term={termData}

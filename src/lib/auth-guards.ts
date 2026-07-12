@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { roleDefaultRoute } from "@/lib/constants";
+import { checkPrivilege, type PrivilegeCode } from "@/lib/privileges";
 
 export async function requireUser() {
   const session = await auth();
@@ -15,4 +16,21 @@ export async function requireRole(allowedRoles: string[]) {
     redirect(fallback);
   }
   return user;
+}
+
+export async function requirePrivilege(code: PrivilegeCode) {
+  const user = await requireUser();
+  const allowed = await checkPrivilege(user.id, code);
+  if (!allowed) {
+    const fallback = roleDefaultRoute[user.role] ?? "/login";
+    redirect(fallback);
+  }
+  return user;
+}
+
+export async function withPrivilege(code: PrivilegeCode, action: () => Promise<any>) {
+  const user = await requireUser();
+  const allowed = await checkPrivilege(user.id, code);
+  if (!allowed) return null;
+  return action();
 }

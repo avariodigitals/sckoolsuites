@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
+import { parseNumericId } from "@/lib/id-helpers";
 
 const componentSchema = z.object({
   name: z.string().min(1).max(100),
@@ -10,11 +12,15 @@ const componentSchema = z.object({
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN", "BURSAR", "ACCOUNTANT"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN", "BURSAR", "ACCOUNTANT"].includes(role) : false;
 }
 
 export async function GET() {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "fees");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -31,6 +37,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "fees");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -58,7 +68,7 @@ export async function POST(request: Request) {
       actorUserId: session.user.id,
       action: "FEE_COMPONENT_CREATED",
       targetType: "FeeComponent",
-      targetId: component.id,
+      targetId: String(component.id),
       metadata: { name: data.name },
     });
 
@@ -71,6 +81,10 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "DELETE", "fees");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -78,15 +92,19 @@ export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
 
-  if (!id) {
-    return NextResponse.json({ error: "ID required" }, { status: 400 });
+  let parsedId: number;
+  try {
+    parsedId = parseNumericId(id ?? undefined, "fee component id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid fee component id";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   const schoolId = "default";
 
   try {
     await prisma.feeComponent.update({
-      where: { id, schoolId },
+      where: { id: parsedId },
       data: { isActive: false },
     });
 
@@ -95,7 +113,7 @@ export async function DELETE(request: Request) {
       actorUserId: session.user.id,
       action: "FEE_COMPONENT_DELETED",
       targetType: "FeeComponent",
-      targetId: id,
+      targetId: String(parsedId),
       metadata: {},
     });
 

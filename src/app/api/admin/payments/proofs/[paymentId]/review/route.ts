@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { MessageStatus, PaymentStatus } from "@/lib/db-types";
 import { z } from "zod";
 import { auth } from "@/auth";
@@ -35,11 +36,15 @@ function invoiceStatusFromBalance(totalAmount: number, amountPaid: number) {
 
 export async function POST(request: Request, { params }: { params: Promise<{ paymentId: string }> }) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "payments");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user?.id ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!["SCHOOL_ADMIN", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(session.user.role)) {
+  if (!["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -73,7 +78,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
 
   const now = new Date();
 
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: any) => {
     if (parsed.data.action === "APPROVE") {
       const updatedPayment = await tx.payment.update({
         where: { id: payment.id },

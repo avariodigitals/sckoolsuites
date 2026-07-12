@@ -1,0 +1,69 @@
+{
+  "node": {
+    "40483c776baaae6e8aa18ddce1816cefe1ce94c781": {
+      "workers": {
+        "app/login/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fapp%2Flogin%2Factions.ts%22%2C%5B%7B%22id%22%3A%2240483c776baaae6e8aa18ddce1816cefe1ce94c781%22%2C%22exportedName%22%3A%22loginAction%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/login/page": "action-browser"
+      }
+    },
+    "40485cac74bd49449317ac22eda3ed4a5bc28f4532": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fcomponents%2Frole-dashboard.tsx%22%2C%5B%7B%22id%22%3A%2240485cac74bd49449317ac22eda3ed4a5bc28f4532%22%2C%22exportedName%22%3A%22%24%24RSC_SERVER_ACTION_0%22%7D%5D%5D%2C%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fapp%2Fadmin%2Factions.ts%22%2C%5B%7B%22id%22%3A%224074a2b81547b07e59ee4185e22268e948932d1a13%22%2C%22exportedName%22%3A%22assignSchoolToUser%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": true
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fcomponents%2Frole-dashboard.tsx%22%2C%5B%7B%22id%22%3A%2240485cac74bd49449317ac22eda3ed4a5bc28f4532%22%2C%22exportedName%22%3A%22%24%24RSC_SERVER_ACTION_0%22%7D%5D%5D%2C%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fapp%2Fadmin%2Factions.ts%22%2C%5B%7B%22id%22%3A%224074a2b81547b07e59ee4185e22268e948932d1a13%22%2C%22exportedName%22%3A%22assignSchoolToUser%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": true
+        },
+        "app/parent/dashboard/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fcomponents%2Frole-dashboard.tsx%22%2C%5B%7B%22id%22%3A%2240485cac74bd49449317ac22eda3ed4a5bc28f4532%22%2C%22exportedName%22%3A%22%24%24RSC_SERVER_ACTION_0%22%7D%5D%5D%2C%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fapp%2Fadmin%2Factions.ts%22%2C%5B%7B%22id%22%3A%224074a2b81547b07e59ee4185e22268e948932d1a13%22%2C%22exportedName%22%3A%22assignSchoolToUser%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": true
+        },
+        "app/student/dashboard/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fcomponents%2Frole-dashboard.tsx%22%2C%5B%7B%22id%22%3A%2240485cac74bd49449317ac22eda3ed4a5bc28f4532%22%2C%22exportedName%22%3A%22%24%24RSC_SERVER_ACTION_0%22%7D%5D%5D%2C%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fapp%2Fadmin%2Factions.ts%22%2C%5B%7B%22id%22%3A%224074a2b81547b07e59ee4185e22268e948932d1a13%22%2C%22exportedName%22%3A%22assignSchoolToUser%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/teacher/dashboard/page": "rsc",
+        "app/parent/dashboard/page": "rsc",
+        "app/student/dashboard/page": "rsc"
+      }
+    },
+    "4074a2b81547b07e59ee4185e22268e948932d1a13": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fcomponents%2Frole-dashboard.tsx%22%2C%5B%7B%22id%22%3A%2240485cac74bd49449317ac22eda3ed4a5bc28f4532%22%2C%22exportedName%22%3A%22%24%24RSC_SERVER_ACTION_0%22%7D%5D%5D%2C%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fapp%2Fadmin%2Factions.ts%22%2C%5B%7B%22id%22%3A%224074a2b81547b07e59ee4185e22268e948932d1a13%22%2C%22exportedName%22%3A%22assignSchoolToUser%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": true
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fcomponents%2Frole-dashboard.tsx%22%2C%5B%7B%22id%22%3A%2240485cac74bd49449317ac22eda3ed4a5bc28f4532%22%2C%22exportedName%22%3A%22%24%24RSC_SERVER_ACTION_0%22%7D%5D%5D%2C%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fapp%2Fadmin%2Factions.ts%22%2C%5B%7B%22id%22%3A%224074a2b81547b07e59ee4185e22268e948932d1a13%22%2C%22exportedName%22%3A%22assignSchoolToUser%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": true
+        },
+        "app/parent/dashboard/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fcomponents%2Frole-dashboard.tsx%22%2C%5B%7B%22id%22%3A%2240485cac74bd49449317ac22eda3ed4a5bc28f4532%22%2C%22exportedName%22%3A%22%24%24RSC_SERVER_ACTION_0%22%7D%5D%5D%2C%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fapp%2Fadmin%2Factions.ts%22%2C%5B%7B%22id%22%3A%224074a2b81547b07e59ee4185e22268e948932d1a13%22%2C%22exportedName%22%3A%22assignSchoolToUser%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": true
+        },
+        "app/student/dashboard/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fcomponents%2Frole-dashboard.tsx%22%2C%5B%7B%22id%22%3A%2240485cac74bd49449317ac22eda3ed4a5bc28f4532%22%2C%22exportedName%22%3A%22%24%24RSC_SERVER_ACTION_0%22%7D%5D%5D%2C%5B%22%2FUsers%2Fralphmore%2FDocuments%2FGitHub%2Fsckoolsuites%2Fsrc%2Fapp%2Fadmin%2Factions.ts%22%2C%5B%7B%22id%22%3A%224074a2b81547b07e59ee4185e22268e948932d1a13%22%2C%22exportedName%22%3A%22assignSchoolToUser%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/teacher/dashboard/page": "rsc",
+        "app/parent/dashboard/page": "rsc",
+        "app/student/dashboard/page": "rsc"
+      }
+    }
+  },
+  "edge": {},
+  "encryptionKey": "L8oGaVumXRWJ+o58VHwiQzbkmxYEBotS/Ibkrfj867s="
+}

@@ -9,12 +9,12 @@ export function slugifyFinanceCode(value: string) {
 }
 
 export function buildFeeItemDedupeKey(input: {
-  feeGroupId: string;
+  feeGroupId: string | number;
   name: string;
-  classId?: string | null;
-  armId?: string | null;
-  sessionId: string;
-  termId: string;
+  classId?: string | number | null;
+  armId?: string | number | null;
+  sessionId: string | number;
+  termId: string | number;
 }) {
   return [
     input.feeGroupId,

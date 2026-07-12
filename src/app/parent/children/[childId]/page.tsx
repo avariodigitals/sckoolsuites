@@ -5,14 +5,15 @@ import { PortalShell } from "@/components/portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { requireRole } from "@/lib/auth-guards";
 import { getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
-import { formatDate, humanizeEnum, naira } from "@/lib/utils";
 import { prisma } from "@/lib/db";
+import { formatDate, humanizeEnum, naira } from "@/lib/utils";
 import { ChildWorkspaceSwitcher } from "@/app/parent/_components/child-workspace-switcher";
 
 export default async function ParentChildWorkspacePage({ params }: { params: Promise<{ childId: string }> }) {
   const { childId } = await params;
 
   const user = await requireRole(["PARENT"]);
+  const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
   const profile = await getCurrentSchoolByUser(user.id);
 
   if (!profile?.schoolId || !profile.school) {
@@ -31,7 +32,7 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
     termId: context.term?.id,
   });
 
-  const parentProfile = core.parents.find((parent) => parent.userId === user.id);
+  const parentProfile = core.parents.find((parent: any) => parent.userId === user.id);
   if (!parentProfile) {
     return (
       <SetupRequiredScreen
@@ -41,17 +42,17 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
     );
   }
 
-  const child = core.students.find((student) => student.id === childId && student.parentId === parentProfile.id);
+  const child = core.students.find((student: any) => student.id === childId && student.parentId === parentProfile.id);
   if (!child) {
     notFound();
   }
-  const linkedChildren = core.students.filter((student) => student.parentId === parentProfile.id);
+  const linkedChildren = core.students.filter((student: any) => student.parentId === parentProfile.id);
 
   const childInvoices = core.bills.filter((invoice: any) => invoice.studentId === child.id);
-  const childAttendance = core.attendance.filter((row) => row.studentId === child.id);
-  const childScoresAll = core.scores.filter((score) => score.studentId === child.id);
-  const childLessons = core.lessons.filter((lesson) => child.classId && lesson.classId === child.classId);
-  const childAssignments = core.assignments.filter((assignment) => assignment.studentId === child.id || (child.classId && assignment.classId === child.classId));
+  const childAttendance = core.attendance.filter((row: any) => row.studentId === child.id);
+  const childScoresAll = core.scores.filter((score: any) => score.studentId === child.id);
+  const childLessons = core.lessons.filter((lesson: any) => child.classId && lesson.classId === child.classId);
+  const childAssignments = core.assignments.filter((assignment: any) => assignment.studentId === child.id || (child.classId && assignment.classId === child.classId));
 
   const childResults = await (async () => {
     const whereBase = {
@@ -82,10 +83,10 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
 
   const latestResult = childResults[0] ?? null;
   const childScores = latestResult ? childScoresAll : [];
-  const totalOutstanding = childInvoices.reduce((sum, item) => sum + item.balance, 0);
-  const presentCount = childAttendance.filter((item) => item.status === "PRESENT").length;
+  const totalOutstanding = childInvoices.reduce((sum: any, item: any) => sum + item.balance, 0);
+  const presentCount = childAttendance.filter((item: any) => item.status === "PRESENT").length;
   const attendancePercent = childAttendance.length ? (presentCount / childAttendance.length) * 100 : 0;
-  const submittedAssignments = childAssignments.filter((item) => Boolean(item.submittedAt)).length;
+  const submittedAssignments = childAssignments.filter((item: any) => Boolean(item.submittedAt)).length;
 
   return (
     <PortalShell
@@ -93,11 +94,12 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
       schoolName={core.school?.name}
       schoolLogoUrl={core.school?.branding?.logoUrl ?? undefined}
       userName={user.name ?? "Parent"}
+      avatarUrl={dbUser?.avatarUrl ?? undefined}
       pathname="/parent/children"
       currentSessionName={context.session?.name}
       currentTermName={context.term?.name}
-      sessions={core.sessions.map((item) => ({ id: item.id, name: item.name }))}
-      terms={core.terms.map((item) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
+      sessions={core.sessions.map((item: any) => ({ id: item.id, name: item.name }))}
+      terms={core.terms.map((item: any) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
       selectedSessionId={context.session?.id}
       selectedTermId={context.term?.id}
       primaryColor={core.school?.branding?.primaryColor}
@@ -112,7 +114,7 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             <ChildWorkspaceSwitcher
-              childOptions={linkedChildren.map((item) => ({ id: item.id, name: item.user.name }))}
+              childOptions={linkedChildren.map((item: any) => ({ id: item.id, name: item.user.name }))}
               currentChildId={child.id}
             />
             <Link href="/parent/children" className="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-white">Back to children</Link>
@@ -135,7 +137,7 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
         <Card className="glass-panel">
           <CardHeader><CardTitle>Lessons</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
-            {childLessons.length ? childLessons.slice(0, 20).map((lesson) => (
+            {childLessons.length ? childLessons.slice(0, 20).map((lesson: any) => (
               <div key={lesson.id} className="rounded-xl border border-slate-200 bg-white/70 p-3">
                 <p className="font-medium text-slate-900">{lesson.title}</p>
                 <p className="text-slate-600">{lesson.subject?.name ?? "Subject"} • {formatDate(lesson.createdAt)}</p>
@@ -149,7 +151,7 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
         <Card className="glass-panel">
           <CardHeader><CardTitle>Attendance</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
-            {childAttendance.length ? childAttendance.slice(0, 30).map((row) => (
+            {childAttendance.length ? childAttendance.slice(0, 30).map((row: any) => (
               <div key={row.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white/70 p-3">
                 <p className="text-slate-700">{formatDate(row.date)}</p>
                 <span className="rounded-full border border-slate-300 px-2 py-0.5 text-xs text-slate-700">{humanizeEnum(row.status)}</span>
@@ -163,7 +165,7 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
         <Card className="glass-panel">
           <CardHeader><CardTitle>Fees & Bills</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
-            {childInvoices.length ? childInvoices.map((invoice) => (
+            {childInvoices.length ? childInvoices.map((invoice: any) => (
               <div key={invoice.id} className="rounded-xl border border-slate-200 bg-white/70 p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
@@ -188,9 +190,9 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
                 <p className="font-medium text-slate-900">Latest Result Snapshot</p>
                 <p className="text-slate-600">{latestResult.term.name} / {latestResult.session.name}</p>
                 <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                  <div className="rounded-lg border border-slate-200 bg-white p-2"><p className="text-[11px] text-slate-500">Percentage</p><p className="font-semibold text-slate-900">{latestResult.termPercentage.toFixed(1)}%</p></div>
-                  <div className="rounded-lg border border-slate-200 bg-white p-2"><p className="text-[11px] text-slate-500">Grade</p><p className="font-semibold text-slate-900">{latestResult.termGrade}</p></div>
-                  <div className="rounded-lg border border-slate-200 bg-white p-2"><p className="text-[11px] text-slate-500">GPA</p><p className="font-semibold text-slate-900">{latestResult.termGpa.toFixed(2)}</p></div>
+                  <div className="rounded-lg border border-slate-200 bg-white p-2"><p className="text-[11px] text-slate-500">Percentage</p><p className="font-semibold text-slate-900">{latestResult.termPercentage !== null ? `${latestResult.termPercentage.toFixed(1)}%` : "-"}</p></div>
+                  <div className="rounded-lg border border-slate-200 bg-white p-2"><p className="text-[11px] text-slate-500">Grade</p><p className="font-semibold text-slate-900">{latestResult.termGrade ?? "-"}</p></div>
+                  <div className="rounded-lg border border-slate-200 bg-white p-2"><p className="text-[11px] text-slate-500">GPA</p><p className="font-semibold text-slate-900">{latestResult.termGpa !== null ? latestResult.termGpa.toFixed(2) : "-"}</p></div>
                 </div>
                 <p className="mt-2 text-xs text-slate-600">Class teacher: {latestResult.classTeacherComment ?? "No comment yet."}</p>
               </div>
@@ -200,7 +202,7 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
               <p className="mb-2 font-medium text-slate-900">Subject Scores</p>
               {childScores.length ? (
                 <div className="space-y-2">
-                  {childScores.map((score) => (
+                  {childScores.map((score: any) => (
                     <div key={score.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-2">
                       <span className="text-slate-700">{score.subject.name}</span>
                       <span className="text-xs text-slate-600">{score.total.toFixed(1)}% ({score.grade})</span>

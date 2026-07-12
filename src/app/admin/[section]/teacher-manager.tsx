@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TeacherDetailModal } from "./teacher-detail-modal";
 
 type Teacher = {
   id: string;
@@ -38,6 +39,7 @@ export function TeacherManager() {
   const [submitting, setSubmitting] = useState(false);
   const [unassigningClassId, setUnassigningClassId] = useState<string | null>(null);
   const [unassigningSubjectId, setUnassigningSubjectId] = useState<string | null>(null);
+  const [viewingId, setViewingId] = useState<string | null>(null);
 
   const filteredTeachers = useMemo(() => {
     if (!searchQuery.trim()) return teachers;
@@ -412,6 +414,9 @@ export function TeacherManager() {
                     </td>
                     <td className="px-2 py-2">
                       <div className="flex flex-wrap gap-1">
+                        <Button size="sm" variant="outline" onClick={() => setViewingId(teacher.id)}>
+                          View
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => startEdit(teacher)}>
                           Edit
                         </Button>
@@ -471,6 +476,13 @@ export function TeacherManager() {
           </table>
         </div>
       </div>
+
+      {viewingId && (
+        <TeacherDetailModal
+          teacherId={viewingId}
+          onClose={() => setViewingId(null)}
+        />
+      )}
     </div>
   );
 }

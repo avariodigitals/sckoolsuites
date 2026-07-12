@@ -1,7 +1,8 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { DashboardHeader, StatCard, SectionCard } from "@/components/modern-dashboard";
 import { BillContestReviewPanel } from "@/components/bill-contest-review-panel";
 import { AdminApprovalActions } from "./admin-approval-actions";
@@ -10,19 +11,25 @@ import { ParentManager } from "./parent-manager";
 import { TeacherManager } from "./teacher-manager";
 import { ClassManager } from "./class-manager";
 import { SubjectManager } from "./subject-manager";
+import { AssessmentManager } from "./assessment-manager";
 import { AttendanceManager } from "./attendance-manager";
 import { LMSManager } from "./lms-manager";
 import { AnnouncementManager } from "./announcement-manager";
 import { TransportManager } from "./transport-manager";
 import { ReceptionManager } from "./reception-manager";
 import { FeeProfileManager } from "./fee-profile-manager";
+import { FinanceManager } from "./finance-manager";
 import { BillManager } from "./bill-manager";
+import { UserManager } from "./user-manager";
+import { RoleManager } from "./role-manager";
+import { PrivilegeManager } from "./privilege-manager";
+import { ProfileManager } from "./profile-manager";
 import { requireRole } from "@/lib/auth-guards";
-import { getAdminOverview, getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
+import { getAdminOverview, getDashboardData, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
 import { adminModuleScopeBySection } from "@/lib/module-blueprint";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 import { getSetupWizardState } from "@/lib/setup-wizard";
-import { formatDate, naira } from "@/lib/utils";
+import { naira } from "@/lib/utils";
 import { prisma } from "@/lib/db";
 
 const allowed = [
@@ -34,8 +41,14 @@ const allowed = [
   "academics",
   "classes",
   "subjects",
+  "assessments",
   "fees",
   "finance",
+  "income",
+  "expenses",
+  "debtors",
+  "ledger",
+  "revenue",
   "invoices",
   "payments",
   "results",
@@ -44,6 +57,10 @@ const allowed = [
   "announcements",
   "transport",
   "settings",
+  "users",
+  "roles",
+  "privileges",
+  "profile",
 ] as const;
 
 type AllowedSection = (typeof allowed)[number];
@@ -104,6 +121,12 @@ const blueprints: Record<AllowedSection, AdminSectionBlueprint> = {
     metrics: [],
     actionChips: ["Add Subject", "Assign Teacher", "By Class", "By Arm"],
   },
+  assessments: {
+    title: "Assessment Management",
+    subtitle: "Create assessment frameworks with headings for EYFS and early years classes.",
+    metrics: [],
+    actionChips: ["Add Assessment", "Define Headings", "Link to Class", "Grading Scale"],
+  },
   fees: {
     title: "Fee Setup",
     subtitle: "Fee groups, fee structures, concessions, and billing rules.",
@@ -115,6 +138,36 @@ const blueprints: Record<AllowedSection, AdminSectionBlueprint> = {
     subtitle: "Bills, payments, receipts, debtors, discounts, and collections.",
     metrics: [],
     actionChips: ["Fee Setup", "Bills", "Payments", "Debtors"],
+  },
+  income: {
+    title: "Income",
+    subtitle: "Track all school income from fees, donations, grants, and other sources.",
+    metrics: [],
+    actionChips: ["Add Income", "Categories", "Reports"],
+  },
+  expenses: {
+    title: "Expenses",
+    subtitle: "Record and categorize all operational and capital expenditures.",
+    metrics: [],
+    actionChips: ["Add Expense", "Categories", "Reports"],
+  },
+  debtors: {
+    title: "Debtors",
+    subtitle: "Monitor outstanding balances and unpaid bills by student.",
+    metrics: [],
+    actionChips: ["View Bills", "Payment History", "Reminders"],
+  },
+  ledger: {
+    title: "General Ledger",
+    subtitle: "Chronological record of all income and expense transactions.",
+    metrics: [],
+    actionChips: ["Journal Entries", "Reconciliation", "Reports"],
+  },
+  revenue: {
+    title: "Revenue Report",
+    subtitle: "Summary of income, expenses, and net revenue by category.",
+    metrics: [],
+    actionChips: ["Income Summary", "Expense Summary", "Net Position"],
   },
   invoices: {
     title: "Bill Management",
@@ -164,33 +217,78 @@ const blueprints: Record<AllowedSection, AdminSectionBlueprint> = {
     metrics: [],
     actionChips: ["Configuration Engine", "Branding", "Academic Calendar", "Visibility"],
   },
+  users: {
+    title: "User Management",
+    subtitle: "Create, edit, activate, and manage all system users.",
+    metrics: [],
+    actionChips: ["New User", "Edit User", "Reset Password", "Activate/Deactivate"],
+  },
+  roles: {
+    title: "Roles",
+    subtitle: "View and manage system roles.",
+    metrics: [],
+    actionChips: ["View Roles"],
+  },
+  privileges: {
+    title: "Privileges & Permissions",
+    subtitle: "Assign granular feature access to users regardless of role.",
+    metrics: [],
+    actionChips: ["Seed Defaults", "Assign to User", "Revoke Access"],
+  },
+  profile: {
+    title: "My Profile",
+    subtitle: "Update your profile information and change your password.",
+    metrics: [],
+    actionChips: ["Edit Profile", "Change Password"],
+  },
 };
-
-function listToRows(items: Array<{ name: string; detail: string; status: string }>) {
-  return items.map((item) => [item.name, item.detail, item.status]);
-}
 
 export default async function AdminSectionPage({ params }: { params: Promise<{ section: string }> }) {
   const { section } = await params;
   if (!(allowed as readonly string[]).includes(section)) notFound();
 
-  const user = await requireRole(["SCHOOL_ADMIN", "PRINCIPAL"]);
+  const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
   const profile = await getCurrentSchoolByUser(user.id);
   if (!profile?.schoolId || !profile.school) {
     return null;
   }
 
   const context = await getUserAcademicContext(profile.schoolId, user.id);
-  const [overview, core, activeConfig, feeGroupCount, setup] = await Promise.all([
-    getAdminOverview(profile.schoolId),
-    getCoreSchoolDataByContext(profile.schoolId, { sessionId: context.session?.id, termId: context.term?.id }),
+
+  // Only fetch heavy dashboard data for sections that actually use it
+  const needsDashboardData = ["dashboard", "students", "teachers", "fees", "finance", "income", "expenses", "debtors", "ledger", "revenue", "invoices", "payments", "results", "lms", "attendance", "announcements"].includes(section);
+  const needsPrivilegeData = ["dashboard", "users", "roles", "privileges"].includes(section);
+  const needsFeeGroupCount = ["dashboard", "fees", "finance", "income", "expenses", "debtors", "ledger", "revenue", "invoices", "payments"].includes(section);
+
+  const [
+    overview,
+    rawCore,
+    activeConfig,
+    feeGroupCount,
+    setup,
+    userCount,
+    roleCount,
+    privilegeCount,
+    rolePrivilegeCount,
+    userPrivilegeCount,
+  ] = await Promise.all([
+    getAdminOverview(profile.schoolId, { sessionId: context.session?.id, termId: context.term?.id }),
+    needsDashboardData ? getDashboardData(profile.schoolId, { sessionId: context.session?.id, termId: context.term?.id }) : Promise.resolve(null),
     getActiveSchoolConfig(profile.schoolId),
-    prisma.feeGroup.count({ where: { schoolId: profile.schoolId, isActive: true } }),
+    needsFeeGroupCount ? prisma.feeGroup.count({ where: { schoolId: profile.schoolId, isActive: true } }) : Promise.resolve(0),
     getSetupWizardState(profile.schoolId),
+    needsPrivilegeData ? prisma.user.count() : Promise.resolve(0),
+    needsPrivilegeData ? prisma.role.count() : Promise.resolve(0),
+    needsPrivilegeData ? prisma.privilege.count() : Promise.resolve(0),
+    needsPrivilegeData ? prisma.rolePrivilege.count() : Promise.resolve(0),
+    needsPrivilegeData ? prisma.userPrivilege.count() : Promise.resolve(0),
   ]);
 
+  // Cast to any for legacy metric property access (subjects, lessons, assignments, etc.)
+  const core = (rawCore ?? {}) as any;
+
   const blueprint = blueprints[section as AllowedSection];
-  const setupLocked = !setup.status.setupCompleted && ["fees", "finance", "invoices", "results"].includes(section);
+  const setupLocked = !setup.status.setupCompleted && ["fees", "finance", "income", "expenses", "debtors", "ledger", "revenue", "invoices", "results"].includes(section);
   const academic = activeConfig.config.academic as {
     sessions: Array<{ name: string; status?: string }>;
     terms: Array<{ name: string; status?: string }>;
@@ -199,9 +297,12 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
     assessmentTypes: Array<{ name: string; weight: number }>;
     gradingSystem: Array<{ min: number; grade: string; gpa: number }>;
   };
-  const finance = activeConfig.config.finance as {
-    feeStructures: Array<{ category: string; name: string; amount: number; className?: string; isActive?: boolean }>;
-  };
+
+  let categoryCount = 0;
+  if (needsPrivilegeData) {
+    const privilegeList = await prisma.privilege.findMany();
+    categoryCount = new Set(privilegeList.map((p: { category: string }) => p.category)).size;
+  }
 
   const metricsBySection: Record<AllowedSection, Array<{ label: string; value: string; helper?: string }>> = {
     dashboard: [
@@ -214,104 +315,159 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
       { label: "Students", value: String(overview.students), helper: "Active learners" },
       { label: "Parents", value: String(overview.parents), helper: "Linked guardians" },
       { label: "Classes", value: String(overview.classes), helper: "Available placements" },
-      { label: "Admission Flow", value: "Open", helper: "Applications can be reviewed" },
+      { label: "Subjects", value: String(core.subjectCount ?? 0), helper: "Available subjects" },
     ],
     reception: [
-      { label: "Applications", value: String(core.students.length), helper: "Student records on file" },
+      { label: "Students", value: String(overview.students), helper: "Student records on file" },
       { label: "Parents", value: String(overview.parents), helper: "Guardians on file" },
-      { label: "Pending Reviews", value: "0", helper: "Ready for intake review" },
-      { label: "Documents", value: "Ready", helper: "Upload checks and verification" },
+      { label: "Teachers", value: String(overview.teachers), helper: "Staff accounts" },
+      { label: "Classes", value: String(overview.classes), helper: "Class groups" },
     ],
     parents: [
       { label: "Parents", value: String(overview.parents), helper: "Parent accounts" },
-      { label: "Children", value: String(core.students.length), helper: "Linked children" },
-      { label: "Messages", value: String(core.announcements.length), helper: "Announcements and alerts" },
+      { label: "Children", value: String(overview.students), helper: "Linked children" },
+      { label: "Messages", value: String(overview.announcements), helper: "Announcements and alerts" },
       { label: "Bills", value: naira(overview.outstanding), helper: "Outstanding balances" },
     ],
     teachers: [
       { label: "Teachers", value: String(overview.teachers), helper: "Staff accounts" },
       { label: "Classes", value: String(overview.classes), helper: "Assigned class groups" },
-      { label: "Subjects", value: String(core.subjects.length), helper: "Assigned subjects" },
-      { label: "Pending Tasks", value: String(core.assignments.length), helper: "Content and grading tasks" },
+      { label: "Subjects", value: String(core.subjectCount ?? 0), helper: "Assigned subjects" },
+      { label: "Pending Tasks", value: String(core.assignments?.length ?? 0), helper: "Content and grading tasks" },
     ],
     academics: [
-      { label: "Sessions", value: String(academic.sessions.length), helper: "Academic sessions" },
-      { label: "Terms", value: String(academic.terms.length), helper: "Term definitions" },
-      { label: "Classes", value: String(academic.classes.length), helper: "Class groups and arms" },
-      { label: "Subjects", value: String(academic.subjects.length), helper: "Curriculum subjects" },
+      { label: "Sessions", value: String(academic.sessions?.length ?? 0), helper: "Academic sessions" },
+      { label: "Terms", value: String(academic.terms?.length ?? 0), helper: "Term definitions" },
+      { label: "Classes", value: String(academic.classes?.length ?? 0), helper: "Class groups and arms" },
+      { label: "Subjects", value: String(academic.subjects?.length ?? 0), helper: "Curriculum subjects" },
     ],
     classes: [
-      { label: "Classes", value: String(academic.classes.length), helper: "Configured class groups" },
-      { label: "Arms", value: String(academic.classes.reduce((sum, item) => sum + (item.arms?.length ?? 0), 0)), helper: "Streams per class" },
-      { label: "Subjects", value: String(academic.subjects.length), helper: "Subject assignments" },
+      { label: "Classes", value: String(academic.classes?.length ?? 0), helper: "Configured class groups" },
+      { label: "Arms", value: String((academic.classes ?? []).reduce((sum, item) => sum + (item.arms?.length ?? 0), 0)), helper: "Streams per class" },
+      { label: "Subjects", value: String(academic.subjects?.length ?? 0), helper: "Subject assignments" },
       { label: "Current Session", value: context.session?.name ?? "-", helper: context.term?.name ?? "Active term" },
     ],
     subjects: [
-      { label: "Subjects", value: String(academic.subjects.length), helper: "Defined subject list" },
-      { label: "Class Links", value: String(academic.subjects.filter((item) => item.className).length), helper: "Class-specific allocations" },
-      { label: "Arm Links", value: String(academic.subjects.filter((item) => item.armName).length), helper: "Arm-specific allocations" },
+      { label: "Subjects", value: String(academic.subjects?.length ?? 0), helper: "Defined subject list" },
+      { label: "Class Links", value: String((academic.subjects ?? []).filter((item) => item.className).length), helper: "Class-specific allocations" },
+      { label: "Arm Links", value: String((academic.subjects ?? []).filter((item) => item.armName).length), helper: "Arm-specific allocations" },
       { label: "Teachers", value: String(overview.teachers), helper: "Subject teachers available" },
+    ],
+    assessments: [
+      { label: "Assessments", value: String((core.assessments ?? []).length), helper: "Configured frameworks" },
+      { label: "Headings", value: String((core.assessments ?? []).reduce((sum: number, a: any) => sum + (a.headings?.length ?? 0), 0)), helper: "Total assessment areas" },
+      { label: "Class Links", value: String((core.classAssessments ?? []).length), helper: "Class-level attachments" },
+      { label: "Group Links", value: String((core.classGroupAssessments ?? []).length), helper: "Group-level attachments" },
     ],
     fees: [
       { label: "Fee Groups", value: String(feeGroupCount), helper: "Active groups" },
-      { label: "Concessions", value: "Ready", helper: "Discount and waiver support" },
-      { label: "Bills", value: String(core.bills.length), helper: "Generated billing records" },
+      { label: "Bills", value: String(core.bills?.length ?? 0), helper: "Generated billing records" },
       { label: "Outstanding", value: naira(overview.outstanding), helper: "Unpaid balances" },
+      { label: "Payments", value: String(core.payments?.length ?? 0), helper: "Recorded collections" },
     ],
     finance: [
-      { label: "Bills", value: String(core.bills.length), helper: "Billing records" },
-      { label: "Payments", value: String(core.payments.length), helper: "Payment entries" },
-      { label: "Outstanding", value: naira(overview.outstanding), helper: "Balance due" },
-      { label: "Fee Structures", value: String(finance.feeStructures.length), helper: "Dynamic fee setup" },
+      { label: "Bills", value: String(core.bills?.length ?? 0), helper: "Billing records" },
+      { label: "Payments", value: String(core.payments?.length ?? 0), helper: "Payment entries" },
+      { label: "Income", value: String(core.incomeCount ?? 0), helper: "Income records" },
+      { label: "Expenses", value: String(core.expenseCount ?? 0), helper: "Expense records" },
+    ],
+    income: [
+      { label: "Income Records", value: String(core.incomeCount ?? 0), helper: "Total income entries" },
+      { label: "Categories", value: String(core.incomeCategories ?? 0), helper: "Income categories" },
+      { label: "Payments", value: String(core.payments?.length ?? 0), helper: "Auto from payments" },
+      { label: "Outstanding", value: naira(overview.outstanding), helper: "Still to collect" },
+    ],
+    expenses: [
+      { label: "Expense Records", value: String(core.expenseCount ?? 0), helper: "Total expense entries" },
+      { label: "Categories", value: String(core.expenseCategories ?? 0), helper: "Expense categories" },
+      { label: "Bills", value: String(core.bills?.length ?? 0), helper: "Generated bills" },
+      { label: "Outstanding", value: naira(overview.outstanding), helper: "Still to collect" },
+    ],
+    debtors: [
+      { label: "Outstanding", value: naira(overview.outstanding), helper: "Unpaid balances" },
+      { label: "Bills", value: String(core.bills?.length ?? 0), helper: "Total bills" },
+      { label: "Paid", value: naira(overview.totalPaid), helper: "Collected so far" },
+      { label: "Payments", value: String(core.payments?.length ?? 0), helper: "Payment entries" },
+    ],
+    ledger: [
+      { label: "Income", value: String(core.incomeCount ?? 0), helper: "Income entries" },
+      { label: "Expenses", value: String(core.expenseCount ?? 0), helper: "Expense entries" },
+      { label: "Net Position", value: naira((overview.totalPaid ?? 0) - (core.totalExpenses ?? 0)), helper: "Revenue minus costs" },
+      { label: "Transactions", value: String((core.incomeCount ?? 0) + (core.expenseCount ?? 0)), helper: "Total entries" },
+    ],
+    revenue: [
+      { label: "Total Income", value: naira(overview.totalPaid ?? 0), helper: "All collections" },
+      { label: "Total Expenses", value: naira(core.totalExpenses ?? 0), helper: "All spending" },
+      { label: "Net Revenue", value: naira((overview.totalPaid ?? 0) - (core.totalExpenses ?? 0)), helper: "Profit / Loss" },
+      { label: "Bills", value: String(core.bills?.length ?? 0), helper: "Billing records" },
     ],
     invoices: [
-      { label: "Bills", value: String(core.bills.length), helper: "Generated bills" },
+      { label: "Bills", value: String(core.bills?.length ?? 0), helper: "Generated bills" },
       { label: "Paid", value: naira(overview.totalPaid), helper: "Collected value" },
       { label: "Outstanding", value: naira(overview.outstanding), helper: "Open balances" },
-      { label: "Receipts", value: String(core.bills.filter((item) => item.receipt).length), helper: "Issued proof of payment" },
+      { label: "Receipts", value: String((core.bills ?? []).filter((item: any) => item.receipt).length), helper: "Issued proof of payment" },
     ],
     payments: [
-      { label: "Payments", value: String(core.payments.length), helper: "Recorded collections" },
+      { label: "Payments", value: String(core.payments?.length ?? 0), helper: "Recorded collections" },
       { label: "Collected", value: naira(overview.totalPaid), helper: "Actual receipts" },
-      { label: "Bills", value: String(core.bills.length), helper: "Billing queue" },
-      { label: "Receipts", value: String(core.bills.filter((item) => item.receipt).length), helper: "Validated payments" },
+      { label: "Bills", value: String(core.bills?.length ?? 0), helper: "Billing queue" },
+      { label: "Receipts", value: String((core.bills ?? []).filter((item: any) => item.receipt).length), helper: "Validated payments" },
     ],
     results: [
-      { label: "Assessment Types", value: String(academic.assessmentTypes.length), helper: "Weightable scoring blocks" },
-      { label: "Grading Bands", value: String(academic.gradingSystem.length), helper: "Configured thresholds" },
-      { label: "Scores", value: String(core.scores.length), helper: "Captured marks" },
+      { label: "Assessment Types", value: String(academic.assessmentTypes?.length ?? 0), helper: "Weightable scoring blocks" },
+      { label: "Grading Bands", value: String(academic.gradingSystem?.length ?? 0), helper: "Configured thresholds" },
+      { label: "Scores", value: String(core.scores?.length ?? 0), helper: "Captured marks" },
       { label: "Reports", value: core.result ? "Draft" : "Pending", helper: "Current publication state" },
     ],
     lms: [
-      { label: "Lessons", value: String(core.lessons.length), helper: "Lesson notes" },
-      { label: "Assignments", value: String(core.assignments.length), helper: "Classwork items" },
-      { label: "Quizzes", value: String(core.quizzes.length), helper: "CBT activities" },
-      { label: "Online Classes", value: String(core.onlineClasses.length), helper: "Live sessions" },
+      { label: "Lessons", value: String(core.lessons?.length ?? 0), helper: "Lesson notes" },
+      { label: "Assignments", value: String(core.assignments?.length ?? 0), helper: "Classwork items" },
+      { label: "Quizzes", value: String(core.quizzes?.length ?? 0), helper: "CBT activities" },
+      { label: "Online Classes", value: String(core.onlineClasses?.length ?? 0), helper: "Live sessions" },
     ],
     attendance: [
-      { label: "Attendance", value: String(core.attendance.length), helper: "Logged entries" },
+      { label: "Attendance", value: String(overview.attendance), helper: "Logged entries" },
       { label: "Classes", value: String(overview.classes), helper: "Tracked groups" },
-      { label: "Present", value: String(core.attendance.filter((item) => item.status === "PRESENT").length), helper: "Marked present" },
-      { label: "Excused", value: String(core.attendance.filter((item) => item.status === "EXCUSED").length), helper: "Approved absences" },
+      { label: "Present", value: String((core.attendance ?? []).filter((item: any) => item.status === "PRESENT").length), helper: "Marked present" },
+      { label: "Excused", value: String((core.attendance ?? []).filter((item: any) => item.status === "EXCUSED").length), helper: "Approved absences" },
     ],
     announcements: [
-      { label: "Announcements", value: String(core.announcements.length), helper: "Broadcast posts" },
+      { label: "Announcements", value: String(overview.announcements), helper: "Broadcast posts" },
       { label: "Parents", value: String(overview.parents), helper: "Targeted recipients" },
       { label: "Teachers", value: String(overview.teachers), helper: "Staff recipients" },
       { label: "Students", value: String(overview.students), helper: "Learner recipients" },
     ],
     transport: [
-      { label: "Routes", value: "Ready", helper: "Route planning bucket" },
-      { label: "Drivers", value: "Ready", helper: "Driver roster bucket" },
-      { label: "Pickup Stops", value: "Ready", helper: "Pickup allocation bucket" },
-      { label: "Fleet", value: "Future", helper: "Transport module is scaffolded" },
+      { label: "Routes", value: "—", helper: "No routes configured" },
+      { label: "Drivers", value: "—", helper: "No drivers configured" },
+      { label: "Vehicles", value: "—", helper: "No vehicles configured" },
+      { label: "Stops", value: "—", helper: "No stops configured" },
     ],
     settings: [
       { label: "Config Versions", value: String(activeConfig.version), helper: activeConfig.source },
-      { label: "Branding", value: profile.school.branding ? "Ready" : "Pending", helper: "Logo and colors" },
-      { label: "Visibility", value: "On", helper: "Portal access rules" },
+      { label: "Branding", value: profile.school.branding ? "Configured" : "None", helper: "Logo and colors" },
+      { label: "Setup", value: setup.status.setupCompleted ? "Complete" : "Incomplete", helper: "Setup wizard" },
       { label: "Calendar", value: String(academic.sessions.length), helper: "Sessions configured" },
     ],
+    users: [
+      { label: "Users", value: String(userCount), helper: "Total system users" },
+      { label: "Active", value: String(overview.students), helper: "Active learners" },
+      { label: "Staff", value: String(overview.teachers), helper: "Teaching workforce" },
+      { label: "Parents", value: String(overview.parents), helper: "Linked guardians" },
+    ],
+    roles: [
+      { label: "Roles", value: String(roleCount), helper: "System roles" },
+      { label: "Privileges", value: String(privilegeCount), helper: "Available permissions" },
+      { label: "Assignments", value: String(rolePrivilegeCount), helper: "Role-privilege links" },
+      { label: "Overrides", value: String(userPrivilegeCount), helper: "User-specific grants" },
+    ],
+    privileges: [
+      { label: "Privileges", value: String(privilegeCount), helper: "Total in system" },
+      { label: "Categories", value: String(categoryCount), helper: "Feature groups" },
+      { label: "Role Links", value: String(rolePrivilegeCount), helper: "Default assignments" },
+      { label: "User Overrides", value: String(userPrivilegeCount), helper: "Custom grants/denials" },
+    ],
+    profile: [],
   };
 
   const metrics = metricsBySection[section as AllowedSection];
@@ -320,33 +476,8 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
     submodules: [{ name: "General", screens: ["Overview"] }],
   };
 
-  const classRows = academic.classes.map((item) => ({
-    name: item.name,
-    detail: `${item.arms?.length ?? 0} arm${(item.arms?.length ?? 0) === 1 ? "" : "s"}`,
-    status: (item.arms?.length ?? 0) ? item.arms?.map((arm) => `${arm.name}: ${arm.subjects?.length ?? 0}`).join(" | ") ?? "No arms yet" : "No arms yet",
-  }));
-
-  const subjectRows = academic.subjects.map((item) => ({
-    name: item.name,
-    detail: [item.className, item.armName].filter(Boolean).join(" / ") || "Unassigned",
-    status: "Subject allocation",
-  }));
-
-  const feeRows = finance.feeStructures.slice(0, 8).map((item) => ({
-    name: item.name,
-    detail: `${item.category} • ${naira(item.amount)}`,
-    status: item.isActive === false ? "Inactive" : item.className ?? "Global",
-  }));
-
   return (
-    <ModernPortalShell
-      role={user.role}
-      schoolName={profile.school.name}
-      schoolLogoUrl={profile.school.branding?.logoUrl ?? undefined}
-      userName={user.name ?? "Admin"}
-      pathname={`/admin/${section}`}
-    >
-      <div className="space-y-6">
+    <div className="space-y-6">
         {!setup.status.setupCompleted ? (
           <Card className="border-amber-200 bg-amber-50" data-testid="setup-incomplete-banner">
             <CardHeader className="pb-2">
@@ -410,18 +541,30 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
         </div>
 
         {(section === "payments" || section === "finance") && !setupLocked ? (
-          <AdminApprovalActions mode="payments" sessionId={context.session?.id} termId={context.term?.id} />
+          <AdminApprovalActions mode="payments" sessionId={context.session?.id == null ? undefined : String(context.session.id)} termId={context.term?.id == null ? undefined : String(context.term.id)} />
         ) : null}
 
         {section === "results" && !setupLocked ? (
-          <AdminApprovalActions mode="results" sessionId={context.session?.id} termId={context.term?.id} />
+          <AdminApprovalActions mode="results" sessionId={context.session?.id == null ? undefined : String(context.session.id)} termId={context.term?.id == null ? undefined : String(context.term.id)} />
         ) : null}
 
         {section === "invoices" && !setupLocked ? <BillContestReviewPanel currentRole={user.role} /> : null}
 
-        {(section === "fees" || section === "finance") && !setupLocked ? <FeeProfileManager /> : null}
+        {(section === "fees") && !setupLocked ? <FeeProfileManager /> : null}
 
-        {section === "students" ? <StudentManager /> : null}
+        {section === "finance" && !setupLocked ? <FinanceManager /> : null}
+
+        {section === "income" && !setupLocked ? <FinanceManager defaultTab="income" /> : null}
+
+        {section === "expenses" && !setupLocked ? <FinanceManager defaultTab="expense" /> : null}
+
+        {section === "debtors" && !setupLocked ? <FinanceManager defaultTab="debtors" /> : null}
+
+        {section === "ledger" && !setupLocked ? <FinanceManager defaultTab="ledger" /> : null}
+
+        {section === "revenue" && !setupLocked ? <FinanceManager defaultTab="revenue" /> : null}
+
+        {section === "students" ? <StudentManager sessionId={context.session?.id == null ? null : String(context.session.id)} termId={context.term?.id == null ? null : String(context.term.id)} /> : null}
 
         {section === "parents" ? <ParentManager /> : null}
 
@@ -430,6 +573,8 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
         {section === "classes" ? <ClassManager /> : null}
 
         {section === "subjects" ? <SubjectManager /> : null}
+
+        {section === "assessments" ? <AssessmentManager /> : null}
 
         {section === "attendance" ? <AttendanceManager /> : null}
 
@@ -443,6 +588,14 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
 
         {section === "bills" ? <BillManager /> : null}
 
+        {section === "users" ? <UserManager /> : null}
+
+        {section === "roles" ? <RoleManager /> : null}
+
+        {section === "privileges" ? <PrivilegeManager /> : null}
+
+        {section === "profile" ? <ProfileManager /> : null}
+
         {setupLocked ? (
           <Card className="border-rose-200 bg-rose-50">
             <CardHeader>
@@ -455,8 +608,8 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
         ) : null}
 
 
-        {/* Module Scope - Hidden for sections that show it in their manager */}
-        {!["students", "reception", "classes"].includes(section) && (
+        {/* Module Scope - Hidden for all sections with functional managers */}
+        {!["dashboard", "students", "reception", "classes", "parents", "teachers", "subjects", "assessments", "attendance", "lms", "announcements", "transport", "fees", "finance", "income", "expenses", "debtors", "ledger", "revenue", "invoices", "payments", "bills", "results", "settings", "users", "roles", "privileges", "profile"].includes(section) && (
           <SectionCard title={`${moduleScope.module} Module Scope`}>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
@@ -479,6 +632,5 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
           </SectionCard>
         )}
       </div>
-    </ModernPortalShell>
   );
 }

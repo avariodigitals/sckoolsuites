@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
@@ -39,11 +40,15 @@ const routeStopSchema = z.object({
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
 }
 
 export async function GET() {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "transport");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -83,7 +88,7 @@ export async function GET() {
   ]);
 
   return NextResponse.json({
-    vehicles: vehicles.map((v) => ({
+    vehicles: vehicles.map((v: any) => ({
       id: v.id,
       name: v.name,
       type: v.type,
@@ -94,7 +99,7 @@ export async function GET() {
       driverName: v.driver?.user?.name ?? null,
       routeCount: v.routes.length,
     })),
-    drivers: drivers.map((d) => ({
+    drivers: drivers.map((d: any) => ({
       id: d.id,
       userId: d.userId,
       name: d.user.name,
@@ -105,7 +110,7 @@ export async function GET() {
       isActive: d.isActive,
       vehicleCount: d.vehicles.length,
     })),
-    routes: routes.map((r) => ({
+    routes: routes.map((r: any) => ({
       id: r.id,
       name: r.name,
       vehicleId: r.vehicleId,
@@ -123,7 +128,7 @@ export async function GET() {
         pickupTime: s.pickupTime,
       })) ?? [],
     })),
-    routeStops: routeStops.map((s) => ({
+    routeStops: routeStops.map((s: any) => ({
       id: s.id,
       routeId: s.routeId,
       name: s.name,
@@ -137,6 +142,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "transport");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

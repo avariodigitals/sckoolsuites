@@ -3,23 +3,20 @@ import { GraduationCap } from "lucide-react";
 import { auth } from "@/auth";
 import { LoginForm } from "@/app/login/login-form";
 import { roleDefaultRoute } from "@/lib/constants";
-import { queryOne } from "@/lib/db";
+import { prisma } from "@/lib/db";
 
 export default async function LoginPage() {
   // Check if setup is complete
-  const school = await queryOne<{ is_setup: boolean; is_active: boolean }>(
-    'SELECT is_setup, is_active FROM school WHERE id = $1',
-    ['default']
-  );
-  
-  const admin = await queryOne<{ id: string }>(
-    `SELECT u.id FROM "user" u 
-     JOIN role r ON u.role_id = r.id 
-     WHERE r.name = 'SCHOOL_ADMIN' LIMIT 1`
-  );
+  const school = await prisma.school.findUnique({
+    where: { id: "default" },
+  });
 
-  // If setup not complete, redirect to setup
-  if (!school?.is_setup || !admin) {
+  const admin = await prisma.user.findFirst({
+    where: { role: { name: { in: ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL"] } } },
+  });
+
+  // If setup not complete (no school or no admin), redirect to setup
+  if (!school || !admin) {
     redirect("/setup");
   }
 

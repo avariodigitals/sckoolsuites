@@ -29,7 +29,7 @@ export async function GET() {
     take: 100,
   });
 
-  const complaints = items.map((item) => ({
+  const complaints = items.map((item: any) => ({
     id: item.id,
     category: item.category,
     subject: item.subject,

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
@@ -13,13 +15,6 @@ const schema = z.object({
   logoUrl: z.string().optional().nullable(),
   primaryColor: z.string().min(4),
   secondaryColor: z.string().min(4),
-  reportCardTheme: z.string().min(2),
-  invoiceTheme: z.string().min(2),
-  receiptTheme: z.string().min(2),
-  bankName: z.string().optional().nullable(),
-  bankAccountName: z.string().optional().nullable(),
-  bankAccountNumber: z.string().optional().nullable(),
-  bankInstructions: z.string().optional().nullable(),
   principalSignature: z.string().optional().nullable(),
   teacherSignature: z.string().optional().nullable(),
   schoolStamp: z.string().optional().nullable(),
@@ -27,7 +22,11 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user || !["SCHOOL_ADMIN", "PRINCIPAL"].includes(session.user.role)) {
+  const allowed = await crudPrivilege(session, "POST", "branding");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (!session?.user || !["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"].includes(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -60,13 +59,6 @@ export async function POST(request: Request) {
       logoUrl: parsed.data.logoUrl,
       primaryColor: parsed.data.primaryColor,
       secondaryColor: parsed.data.secondaryColor,
-      reportCardTheme: parsed.data.reportCardTheme,
-      invoiceTheme: parsed.data.invoiceTheme,
-      receiptTheme: parsed.data.receiptTheme,
-      bankName: parsed.data.bankName,
-      bankAccountName: parsed.data.bankAccountName,
-      bankAccountNumber: parsed.data.bankAccountNumber,
-      bankInstructions: parsed.data.bankInstructions,
       principalSignature: parsed.data.principalSignature,
       teacherSignature: parsed.data.teacherSignature,
       schoolStamp: parsed.data.schoolStamp,
@@ -76,18 +68,15 @@ export async function POST(request: Request) {
       logoUrl: parsed.data.logoUrl,
       primaryColor: parsed.data.primaryColor,
       secondaryColor: parsed.data.secondaryColor,
-      reportCardTheme: parsed.data.reportCardTheme,
-      invoiceTheme: parsed.data.invoiceTheme,
-      receiptTheme: parsed.data.receiptTheme,
-      bankName: parsed.data.bankName,
-      bankAccountName: parsed.data.bankAccountName,
-      bankAccountNumber: parsed.data.bankAccountNumber,
-      bankInstructions: parsed.data.bankInstructions,
       principalSignature: parsed.data.principalSignature,
       teacherSignature: parsed.data.teacherSignature,
       schoolStamp: parsed.data.schoolStamp,
     },
   });
+
+  // Invalidate cached pages so logo/colors update immediately
+  revalidatePath("/admin", "layout");
+  revalidatePath("/admin/settings", "layout");
 
   return NextResponse.json({ ok: true });
 }

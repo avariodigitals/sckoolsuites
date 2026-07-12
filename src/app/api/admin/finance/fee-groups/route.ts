@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
@@ -12,11 +13,15 @@ const createSchema = z.object({
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(role) : false;
 }
 
 export async function GET() {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "fees");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -28,7 +33,7 @@ export async function GET() {
   });
 
   return NextResponse.json({
-    groups: groups.map((group) => ({
+    groups: groups.map((group: any) => ({
       id: group.id,
       name: group.name,
       code: group.code,
@@ -43,6 +48,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "fees");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

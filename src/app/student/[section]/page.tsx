@@ -58,7 +58,7 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
     termId: context.term?.id,
   });
 
-  const studentProfile = core.students.find((student) => student.userId === user.id);
+  const studentProfile = core.students.find((student: any) => student.userId === user.id);
   const sectionKey = section as (typeof allowed)[number];
 
   if (!studentProfile) {
@@ -71,8 +71,8 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
         pathname={`/student/${section}`}
         currentSessionName={context.session?.name}
         currentTermName={context.term?.name}
-        sessions={core.sessions.map((item) => ({ id: item.id, name: item.name }))}
-        terms={core.terms.map((item) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
+        sessions={core.sessions.map((item: any) => ({ id: item.id, name: item.name }))}
+        terms={core.terms.map((item: any) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
         selectedSessionId={context.session?.id}
         selectedTermId={context.term?.id}
         primaryColor={core.school?.branding?.primaryColor}
@@ -90,10 +90,10 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
 
   const student = studentProfile;
 
-  const mySubjects = core.subjects.filter((subject) => subject.classId === student.classId);
-  const myAssignments = core.assignments.filter((assignment) => assignment.studentId === student.id);
-  const myAttendance = core.attendance.filter((attendance) => attendance.studentId === student.id);
-  const myScores = core.scores.filter((score) => score.studentId === student.id);
+  const mySubjects = core.subjects.filter((subject: any) => subject.classId === student.classId);
+  const myAssignments = core.assignments.filter((assignment: any) => assignment.studentId === student.id);
+  const myAttendance = core.attendance.filter((attendance: any) => attendance.studentId === student.id);
+  const myScores = core.scores.filter((score: any) => score.studentId === student.id);
   const approvedResult = await (async () => {
     const whereBase = {
       schoolId,
@@ -118,7 +118,7 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
 
       return null;
     }
-  })();
+  })() as { fileUrl: string | null; fileName: string | null } | null;
 
   const activeConfig = core.school ? await getActiveSchoolConfig(core.school.id) : null;
   const gradingBands = (activeConfig?.config.academic.gradingSystem ?? []).map((band) => ({
@@ -127,9 +127,9 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
     gpa: Number(band.gpa),
   }));
 
-  const pendingAssignments = myAssignments.filter((assignment) => !assignment.submittedAt).length;
-  const presentCount = myAttendance.filter((item) => item.status === "PRESENT").length;
-  const avgScore = myScores.length ? myScores.reduce((sum, score) => sum + score.total, 0) / myScores.length : 0;
+  const pendingAssignments = myAssignments.filter((assignment: any) => !assignment.submittedAt).length;
+  const presentCount = myAttendance.filter((item: any) => item.status === "PRESENT").length;
+  const avgScore = myScores.length ? myScores.reduce((sum: any, score: any) => sum + score.total, 0) / myScores.length : 0;
   const topScore = myScores.length ? [...myScores].sort((a, b) => b.total - a.total)[0] : null;
   const topScoreMeta = topScore ? calculateGradeFromBands(topScore.total, gradingBands) : null;
 
@@ -158,7 +158,7 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
               <CardTitle>My Subjects</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {mySubjects.length ? mySubjects.map((subject) => (
+              {mySubjects.length ? mySubjects.map((subject: any) => (
                 <div key={subject.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">{subject.name}</p>
                   <p>Teacher: {subject.teacher?.user.name ?? "Not assigned"}</p>
@@ -175,7 +175,7 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
               <CardTitle>Class Timetable</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {mySubjects.length ? mySubjects.map((subject, index) => (
+              {mySubjects.length ? mySubjects.map((subject: any, index: any) => (
                 <div key={subject.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">{subject.name}</p>
                   <p>Schedule Slot {index + 1} • Teacher: {subject.teacher?.user.name ?? "Not assigned"}</p>
@@ -192,7 +192,7 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
               <CardTitle>Assignments</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {myAssignments.length ? myAssignments.map((assignment) => (
+              {myAssignments.length ? myAssignments.map((assignment: any) => (
                 <div key={assignment.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">{assignment.title}</p>
                   <p>{assignment.subject?.name ?? "Subject"} • Due: {formatDate(assignment.dueDate)}</p>
@@ -211,7 +211,7 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <p>Present days: {presentCount} / {myAttendance.length}</p>
-              {myAttendance.slice(0, 20).map((item) => (
+              {myAttendance.slice(0, 20).map((item: any) => (
                 <div key={item.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">{humanizeEnum(item.status)}</p>
                   <p>{formatDate(item.date)} • Class: {item.class?.name ?? "-"}</p>
@@ -229,13 +229,13 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
               <CardTitle>LMS Content</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {core.lessons.filter((lesson) => lesson.classId === student.classId).slice(0, 20).map((lesson) => (
+              {core.lessons.filter((lesson: any) => lesson.classId === student.classId).slice(0, 20).map((lesson: any) => (
                 <div key={lesson.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">{lesson.title}</p>
                   <p>{lesson.subject?.name ?? "Subject"} • Uploaded: {formatDate(lesson.createdAt)}</p>
                 </div>
               ))}
-              {!core.lessons.filter((lesson) => lesson.classId === student.classId).length ? <p className="text-slate-500">No lesson notes available.</p> : null}
+              {!core.lessons.filter((lesson: any) => lesson.classId === student.classId).length ? <p className="text-slate-500">No lesson notes available.</p> : null}
             </CardContent>
           </Card>
         );
@@ -263,11 +263,24 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
                 </div>
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">Top Score</p>
-                  <p className="mt-1 text-xl font-extrabold text-slate-900">{myScores.length ? `${Math.max(...myScores.map((s) => s.total)).toFixed(1)}%` : "-"}</p>
+                  <p className="mt-1 text-xl font-extrabold text-slate-900">{myScores.length ? `${Math.max(...myScores.map((s: any) => s.total)).toFixed(1)}%` : "-"}</p>
                 </div>
               </div>
 
-              {approvedResult && myScores.length ? (
+              {approvedResult && approvedResult.fileUrl ? (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm text-slate-700">Your result was uploaded as a PDF.</p>
+                  <a
+                    href={approvedResult.fileUrl}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-block rounded-md bg-[var(--brand-primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                  >
+                    Download Result PDF
+                  </a>
+                </div>
+              ) : approvedResult && myScores.length ? (
                 <div className="overflow-hidden rounded-xl border border-slate-200">
                   <div className="border-b border-slate-200 bg-slate-50 px-3 py-2">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">Subject Performance</p>
@@ -284,7 +297,7 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
                         </tr>
                       </thead>
                       <tbody>
-                        {myScores.slice(0, 20).map((score, idx) => (
+                        {myScores.slice(0, 20).map((score: any, idx: any) => (
                           <tr key={score.id} className={idx % 2 ? "bg-white" : "bg-slate-50/70"}>
                             <td className="px-3 py-2 font-medium text-slate-800">{score.subject.name}</td>
                             <td className="px-3 py-2 text-right font-semibold text-slate-900">{score.total.toFixed(1)}%</td>
@@ -317,7 +330,7 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
               <p>Term: {context.term?.name ?? "-"}</p>
               {approvedResult ? (
                 <Link href={`/reports/${student.id}`} className="inline-block text-[var(--brand-primary)] underline">
-                  Open My Report Card
+                  {approvedResult.fileUrl ? "Open My Report Card / PDF" : "Open My Report Card"}
                 </Link>
               ) : (
                 <p className="text-slate-500">Report card will be available once result is approved and published.</p>
@@ -333,7 +346,7 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
               <CardTitle>Announcements</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {core.announcements.slice(0, 20).map((item) => (
+              {core.announcements.slice(0, 20).map((item: any) => (
                 <div key={item.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">{item.title}</p>
                   <p className="text-slate-600">{item.body.slice(0, 180)}</p>
@@ -356,8 +369,8 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
       pathname={`/student/${section}`}
       currentSessionName={context.session?.name}
       currentTermName={context.term?.name}
-      sessions={core.sessions.map((item) => ({ id: item.id, name: item.name }))}
-      terms={core.terms.map((item) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
+      sessions={core.sessions.map((item: any) => ({ id: item.id, name: item.name }))}
+      terms={core.terms.map((item: any) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
       selectedSessionId={context.session?.id}
       selectedTermId={context.term?.id}
       primaryColor={core.school?.branding?.primaryColor}

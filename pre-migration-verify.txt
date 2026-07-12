@@ -1,0 +1,838 @@
+(node:91891) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+--- Prisma migrate diff output ---
+◇ injected env (10) from .env.local // tip: ⌘ suppress logs { quiet: true }
+
+[-] Removed tables
+  - payment_method
+  - school_bank_account
+
+[*] Changed the `admission_application` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (session_id)
+  [-] Removed foreign key on columns (applying_for_class_id)
+  [-] Removed foreign key on columns (converted_student_id)
+  [-] Removed unique index on columns (converted_student_id)
+  [*] Altered column `enrollment_type` (changed from Required to Nullable)
+  [*] Altered column `date_of_registration` (changed from Required to Nullable, default changed from `Some(Now)` to `Some(DbGenerated(Some("CURRENT_DATE")))`, type changed)
+  [*] Altered column `name` (changed from Required to Nullable, default changed from `None` to `Some(DbGenerated(Some("((first_name || ' '::text) || last_name)")))`)
+  [*] Altered column `date_of_birth` (type changed)
+  [*] Altered column `present_address` (default changed from `None` to `Some(Value(String("{}")))`)
+  [*] Altered column `permanent_address` (default changed from `None` to `Some(Value(String("{}")))`)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `admission_application_school_id_idx` to `idx_admission_school`
+  [*] Renamed index `admission_application_status_idx` to `idx_admission_status`
+  [*] Renamed index `admission_application_session_id_idx` to `idx_admission_session`
+
+[*] Changed the `admission_document` table
+  [-] Removed foreign key on columns (application_id)
+  [*] Altered column `issue_date` (type changed)
+  [*] Altered column `validity_start` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `admission_document_application_id_idx` to `idx_admission_document_app`
+
+[*] Changed the `admission_guardian` table
+  [-] Removed foreign key on columns (application_id)
+  [-] Removed column `employer_name`
+  [-] Removed column `home_address`
+  [-] Removed column `id_document_number`
+  [-] Removed column `id_document_type`
+  [-] Removed column `id_document_url`
+  [-] Removed column `is_primary`
+  [-] Removed column `photo_url`
+  [-] Removed column `work_address`
+  [-] Removed column `work_phone`
+  [*] Altered column `is_new` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `admission_guardian_application_id_idx` to `idx_admission_guardian_app`
+
+[*] Changed the `admission_qualification` table
+  [-] Removed foreign key on columns (application_id)
+  [*] Altered column `start_date` (type changed)
+  [*] Altered column `end_date` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `admission_qualification_application_id_idx` to `idx_admission_qualification_app`
+
+[*] Changed the `announcement` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (session_id)
+  [-] Removed foreign key on columns (term_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (type changed)
+  [*] Renamed index `announcement_session_id_idx` to `idx_announcement_session_id`
+  [*] Renamed index `announcement_term_id_idx` to `idx_announcement_term_id`
+
+[*] Changed the `assessment` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `school_id` (default changed from `Some(Value(String("default")))` to `None`, type changed)
+  [*] Altered column `name` (type changed)
+  [*] Altered column `created_at` (type changed)
+  [*] Altered column `updated_at` (type changed)
+
+[*] Changed the `assignment` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (lesson_id)
+  [-] Removed foreign key on columns (class_id)
+  [-] Removed foreign key on columns (subject_id)
+  [-] Removed foreign key on columns (teacher_id)
+  [-] Removed foreign key on columns (student_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (student_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `due_date` (type changed)
+  [*] Altered column `submitted_at` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `assignment_teacher_id_idx` to `idx_assignment_teacher`
+
+[*] Changed the `attendance` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (session_id)
+  [-] Removed foreign key on columns (term_id)
+  [-] Removed foreign key on columns (student_id)
+  [-] Removed foreign key on columns (class_id)
+  [-] Removed foreign key on columns (teacher_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (class_id)
+  [-] Removed index on columns (teacher_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `date` (type changed)
+  [*] Altered column `status` (default changed from `None` to `Some(Value(Enum("PRESENT")))`)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (type changed)
+  [*] Renamed index `attendance_session_id_idx` to `idx_attendance_session_id`
+  [*] Renamed index `attendance_term_id_idx` to `idx_attendance_term_id`
+  [*] Renamed index `attendance_student_id_idx` to `idx_attendance_student`
+  [*] Renamed index `attendance_date_idx` to `idx_attendance_date`
+
+[*] Changed the `audit_log` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (actor_user_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (actor_user_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `audit_log_created_at_idx` to `idx_audit_log_created`
+
+[*] Changed the `call_log` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `status` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `class` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (class_group_id)
+  [-] Removed foreign key on columns (teacher_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (class_group_id)
+  [-] Removed index on columns (teacher_id)
+  [-] Removed unique index on columns (school_id, name)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `class_arm` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (class_id)
+  [-] Removed foreign key on columns (teacher_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (class_id)
+  [-] Removed index on columns (teacher_id)
+  [-] Removed unique index on columns (class_id, name)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `is_active` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `class_assessment` table
+  [-] Removed foreign key on columns (class_id)
+  [-] Removed foreign key on columns (assessment_id)
+  [-] Removed index on columns (class_id)
+  [-] Removed index on columns (assessment_id)
+  [*] Altered column `created_at` (type changed)
+  [*] Altered column `updated_at` (type changed)
+
+[*] Changed the `class_group` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `class_group_assessment` table
+  [-] Removed foreign key on columns (class_group_id)
+  [-] Removed foreign key on columns (assessment_id)
+  [-] Removed index on columns (class_group_id)
+  [-] Removed index on columns (assessment_id)
+  [*] Altered column `created_at` (type changed)
+  [*] Altered column `updated_at` (type changed)
+
+[*] Changed the `correspondence` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `received_date` (type changed)
+  [*] Altered column `dispatched_date` (type changed)
+  [*] Altered column `status` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `driver` table
+  [-] Removed foreign key on columns (user_id)
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed index on columns (user_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `is_active` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `enquiry` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `follow_up_date` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `enquiry_stage_idx` to `idx_enquiry_stage`
+
+[*] Changed the `expense` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (category_id)
+  [-] Removed index on columns (category_id)
+  [*] Altered column `amount` (type changed)
+  [*] Altered column `date` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `expense_school_id_idx` to `idx_expense_school_id`
+  [*] Renamed index `expense_date_idx` to `idx_expense_date`
+
+[*] Changed the `expense_category` table
+  [-] Removed foreign key on columns (school_id)
+  [*] Altered column `is_active` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `expense_category_school_id_idx` to `idx_expense_category_school_id`
+
+[*] Changed the `fee_component` table
+  [*] Altered column `is_active` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `fee_group` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed unique index on columns (school_id, name)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `is_active` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `fee_item` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (fee_group_id)
+  [-] Removed foreign key on columns (class_id)
+  [-] Removed foreign key on columns (arm_id)
+  [-] Removed foreign key on columns (session_id)
+  [-] Removed foreign key on columns (term_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (class_id)
+  [-] Removed index on columns (arm_id)
+  [-] Removed index on columns (session_id)
+  [-] Removed index on columns (term_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `amount` (type changed)
+  [*] Altered column `is_optional` (changed from Required to Nullable)
+  [*] Altered column `due_date` (type changed)
+  [*] Altered column `sort_order` (changed from Required to Nullable)
+  [*] Altered column `is_active` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `fee_item_fee_group_id_idx` to `idx_fee_item_group_id`
+
+[*] Changed the `fee_profile` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (fee_group_id)
+  [-] Removed foreign key on columns (session_id)
+  [-] Removed foreign key on columns (term_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (fee_group_id)
+  [*] Altered column `due_date` (type changed)
+  [*] Altered column `is_active` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `fee_profile_arm` table
+  [-] Removed foreign key on columns (fee_profile_id)
+  [-] Removed foreign key on columns (arm_id)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `fee_profile_class` table
+  [-] Removed foreign key on columns (fee_profile_id)
+  [-] Removed foreign key on columns (class_id)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `fee_profile_item` table
+  [-] Removed foreign key on columns (fee_profile_id)
+  [-] Removed foreign key on columns (fee_component_id)
+  [*] Altered column `amount` (type changed)
+  [*] Altered column `is_optional` (changed from Required to Nullable)
+  [*] Altered column `sort_order` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `gate_pass` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (issued_by_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (issued_by_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `exit_time` (type changed)
+  [*] Altered column `expected_return` (type changed)
+  [*] Altered column `actual_return` (type changed)
+  [*] Altered column `status` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `income` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (category_id)
+  [-] Removed foreign key on columns (payment_id)
+  [-] Removed unique index on columns (payment_id)
+  [-] Removed index on columns (category_id)
+  [-] Removed index on columns (payment_id)
+  [*] Altered column `amount` (type changed)
+  [*] Altered column `date` (type changed)
+  [*] Altered column `is_from_payment` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `income_school_id_idx` to `idx_income_school_id`
+  [*] Renamed index `income_date_idx` to `idx_income_date`
+
+[*] Changed the `income_category` table
+  [-] Removed foreign key on columns (school_id)
+  [*] Altered column `is_active` (changed from Required to Nullable)
+  [*] Altered column `is_default` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `income_category_school_id_idx` to `idx_income_category_school_id`
+
+[*] Changed the `invoice` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (student_id)
+  [-] Removed foreign key on columns (parent_id)
+  [-] Removed foreign key on columns (class_id)
+  [-] Removed foreign key on columns (term_id)
+  [-] Removed foreign key on columns (session_id)
+  [-] Removed foreign key on columns (created_by_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (parent_id)
+  [-] Removed index on columns (class_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `total_amount` (type changed)
+  [*] Altered column `amount_paid` (changed from Required to Nullable, type changed)
+  [*] Altered column `balance` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `due_date` (type changed)
+  [*] Altered column `updated_at` (type changed)
+  [*] Renamed index `invoice_student_id_idx` to `idx_invoice_student`
+  [*] Renamed index `invoice_term_id_idx` to `idx_invoice_term`
+  [*] Renamed index `invoice_session_id_idx` to `idx_invoice_session_id`
+
+[*] Changed the `invoice_contest_audit` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (invoice_id)
+  [-] Removed foreign key on columns (actor_user_id)
+  [*] Altered column `created_at` (type changed)
+
+[*] Changed the `invoice_item` table
+  [-] Removed foreign key on columns (invoice_id)
+  [-] Removed foreign key on columns (fee_item_id)
+  [-] Removed index on columns (invoice_id)
+  [-] Removed index on columns (fee_item_id)
+  [*] Altered column `amount` (type changed)
+  [*] Altered column `created_at` (type changed)
+
+[*] Changed the `lesson` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (class_id)
+  [-] Removed foreign key on columns (subject_id)
+  [-] Removed foreign key on columns (teacher_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (subject_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `lesson_teacher_id_idx` to `idx_lesson_teacher`
+
+[*] Changed the `online_class` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (class_id)
+  [-] Removed foreign key on columns (subject_id)
+  [-] Removed foreign key on columns (teacher_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (teacher_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `start_time` (type changed)
+  [*] Altered column `end_time` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `parent` table
+  [-] Removed foreign key on columns (user_id)
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed column `employer_name`
+  [-] Removed column `home_address`
+  [-] Removed column `id_document_number`
+  [-] Removed column `id_document_type`
+  [-] Removed column `id_document_url`
+  [-] Removed column `photo_url`
+  [-] Removed column `work_address`
+  [-] Removed column `work_phone`
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `parent_user_id_idx` to `idx_parent_user`
+
+[*] Changed the `parent_complaint` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (parent_id)
+  [-] Removed foreign key on columns (reviewed_by_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (parent_id)
+  [-] Removed index on columns (reviewed_by_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `parent_message` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (parent_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (parent_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `payment` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (invoice_id)
+  [-] Removed foreign key on columns (student_id)
+  [-] Removed foreign key on columns (received_by_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (student_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `amount` (type changed)
+  [*] Altered column `confirmed_at` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (type changed)
+  [*] Renamed index `payment_invoice_id_idx` to `idx_payment_invoice`
+
+[*] Changed the `payment_method` table
+  [-] Removed foreign key on columns (school_id)
+
+[*] Changed the `payment_proof` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (payment_id)
+  [-] Removed foreign key on columns (reviewed_by_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (payment_id)
+  [-] Removed index on columns (reviewed_by_id)
+  [*] Altered column `payment_date` (type changed)
+  [*] Altered column `reviewed_at` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `privilege` table
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `privilege_code_idx` to `idx_privilege_code`
+  [*] Renamed index `privilege_category_idx` to `idx_privilege_category`
+
+[*] Changed the `query` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (responded_by_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (responded_by_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `status` (changed from Required to Nullable)
+  [*] Altered column `responded_at` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `quiz` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (class_id)
+  [-] Removed foreign key on columns (subject_id)
+  [-] Removed foreign key on columns (teacher_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (teacher_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `total_marks` (changed from Required to Nullable, type changed)
+  [*] Altered column `due_date` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `receipt` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (invoice_id)
+  [-] Removed foreign key on columns (student_id)
+  [-] Removed foreign key on columns (parent_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (invoice_id)
+  [-] Removed index on columns (student_id)
+  [*] Altered column `amount` (type changed)
+  [*] Altered column `balance` (type changed)
+  [*] Altered column `payment_date` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `reception_complaint` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (resolved_by_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (resolved_by_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `status` (changed from Required to Nullable)
+  [*] Altered column `resolved_at` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `result` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (student_id)
+  [-] Removed foreign key on columns (term_id)
+  [-] Removed foreign key on columns (session_id)
+  [-] Removed foreign key on columns (uploaded_by_id)
+  [-] Removed foreign key on columns (approved_by_id)
+  [-] Removed foreign key on columns (published_by_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (student_id)
+  [-] Removed index on columns (term_id)
+  [-] Removed index on columns (session_id)
+  [-] Removed index on columns (approved_by_id)
+  [-] Removed index on columns (published_by_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `cumulative_total` (type changed)
+  [*] Altered column `average` (type changed)
+  [*] Altered column `term_percentage` (type changed)
+  [*] Altered column `term_gpa` (type changed)
+  [*] Altered column `attendance_present` (changed from Required to Nullable)
+  [*] Altered column `attendance_total` (changed from Required to Nullable)
+  [*] Altered column `next_term_resumption` (type changed)
+  [*] Altered column `approved_at` (type changed)
+  [*] Altered column `published_at` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (type changed)
+
+[*] Changed the `role` table
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `role_privilege` table
+  [-] Removed foreign key on columns (role_id)
+  [-] Removed foreign key on columns (privilege_id)
+  [*] Altered column `is_granted` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `role_privilege_role_id_idx` to `idx_role_privilege_role_id`
+  [*] Renamed index `role_privilege_privilege_id_idx` to `idx_role_privilege_privilege_id`
+
+[*] Changed the `route` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (vehicle_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (vehicle_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `is_active` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `route_stop` table
+  [-] Removed foreign key on columns (route_id)
+  [-] Removed index on columns (route_id)
+  [+] Added column `school_id`
+  [*] Altered column `order` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `school` table
+  [*] Altered column `is_active` (changed from Required to Nullable)
+  [*] Altered column `is_setup` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `school_bank_account` table
+  [-] Removed foreign key on columns (school_id)
+
+[*] Changed the `school_branding` table
+  [-] Removed foreign key on columns (school_id)
+  [*] Altered column `school_id` (changed from Required to Nullable, default changed from `None` to `Some(Value(String("default")))`)
+  [*] Altered column `primary_color` (changed from Required to Nullable)
+  [*] Altered column `secondary_color` (changed from Required to Nullable)
+  [*] Altered column `report_card_theme` (changed from Required to Nullable)
+  [*] Altered column `invoice_theme` (changed from Required to Nullable)
+  [*] Altered column `receipt_theme` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `school_config_version` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed index on columns (is_active)
+  [*] Altered column `is_active` (changed from Required to Nullable)
+  [*] Altered column `config` (changed from Required to Nullable)
+  [*] Altered column `source` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [+] Added index on columns (school_id, is_active)
+  [*] Renamed index `school_config_version_school_id_idx` to `idx_school_config_version_school_id`
+
+[*] Changed the `school_setting` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `school_id` (changed from Required to Nullable, default changed from `None` to `Some(Value(String("default")))`)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `school_setting_key_idx` to `idx_school_setting_key`
+
+[*] Changed the `school_template` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `is_active` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `score` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (student_id)
+  [-] Removed foreign key on columns (subject_id)
+  [-] Removed foreign key on columns (teacher_id)
+  [-] Removed foreign key on columns (term_id)
+  [-] Removed foreign key on columns (session_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `ca_score` (changed from Nullable to Required, type changed)
+  [*] Altered column `exam_score` (changed from Nullable to Required, type changed)
+  [*] Altered column `total` (changed from Nullable to Required, type changed)
+  [*] Altered column `grade` (changed from Nullable to Required)
+  [*] Altered column `gpa` (changed from Nullable to Required, type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (type changed)
+  [*] Renamed index `score_student_id_idx` to `idx_score_student`
+  [*] Renamed index `score_subject_id_idx` to `idx_score_subject`
+  [*] Renamed index `score_term_id_idx` to `idx_score_term_id`
+  [*] Renamed index `score_session_id_idx` to `idx_score_session_id`
+
+[*] Changed the `session` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `is_current` (changed from Required to Nullable)
+  [*] Altered column `start_date` (type changed)
+  [*] Altered column `end_date` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `student` table
+  [-] Removed foreign key on columns (user_id)
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (parent_id)
+  [-] Removed foreign key on columns (teacher_id)
+  [-] Removed foreign key on columns (class_id)
+  [-] Removed foreign key on columns (arm_id)
+  [-] Removed foreign key on columns (route_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `student_user_id_idx` to `idx_student_user`
+  [*] Renamed index `student_parent_id_idx` to `idx_student_parent`
+  [*] Renamed index `student_class_id_idx` to `idx_student_class`
+
+[*] Changed the `student_enrollment` table
+  [-] Removed foreign key on columns (student_id)
+  [-] Removed foreign key on columns (session_id)
+  [-] Removed foreign key on columns (term_id)
+  [-] Removed foreign key on columns (class_id)
+  [*] Altered column `promotion_status` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `student_enrollment_student_id_idx` to `idx_student_enrollment_student_id`
+  [*] Renamed index `student_enrollment_session_id_idx` to `idx_student_enrollment_session_id`
+  [*] Renamed index `student_enrollment_term_id_idx` to `idx_student_enrollment_term_id`
+  [*] Renamed index `student_enrollment_class_id_idx` to `idx_student_enrollment_class_id`
+
+[*] Changed the `student_guardian` table
+  [-] Removed foreign key on columns (student_id)
+  [-] Removed foreign key on columns (parent_id)
+  [*] Altered column `is_primary` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `student_guardian_student_id_idx` to `idx_student_guardian_student`
+  [*] Renamed index `student_guardian_parent_id_idx` to `idx_student_guardian_parent`
+
+[*] Changed the `subject` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (class_id)
+  [-] Removed foreign key on columns (class_group_id)
+  [-] Removed foreign key on columns (teacher_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (class_id)
+  [-] Removed index on columns (teacher_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `teacher` table
+  [-] Removed foreign key on columns (user_id)
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `teacher_user_id_idx` to `idx_teacher_user`
+
+[*] Changed the `term` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (session_id)
+  [-] Removed index on columns (school_id)
+  [-] Removed index on columns (session_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `is_current` (changed from Required to Nullable)
+  [*] Altered column `start_date` (type changed)
+  [*] Altered column `end_date` (type changed)
+  [*] Altered column `resumption_date` (type changed)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `user` table
+  [-] Removed foreign key on columns (role_id)
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `school_id` (type changed)
+  [*] Altered column `is_active` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `user_email_idx` to `idx_user_email`
+  [*] Renamed index `user_role_id_idx` to `idx_user_role`
+
+[*] Changed the `user_privilege` table
+  [-] Removed foreign key on columns (user_id)
+  [-] Removed foreign key on columns (privilege_id)
+  [*] Altered column `is_granted` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `user_privilege_user_id_idx` to `idx_user_privilege_user_id`
+  [*] Renamed index `user_privilege_privilege_id_idx` to `idx_user_privilege_privilege_id`
+
+[*] Changed the `vehicle` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed foreign key on columns (driver_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `is_active` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+
+[*] Changed the `visitor` table
+  [-] Removed foreign key on columns (school_id)
+  [-] Removed index on columns (school_id)
+  [*] Altered column `school_id` (changed from Required to Nullable)
+  [*] Altered column `check_in_time` (changed from Required to Nullable, type changed)
+  [*] Altered column `check_out_time` (type changed)
+  [*] Altered column `status` (changed from Required to Nullable)
+  [*] Altered column `created_at` (changed from Required to Nullable, type changed)
+  [*] Altered column `updated_at` (changed from Required to Nullable, type changed)
+  [*] Renamed index `visitor_status_idx` to `idx_visitor_status`
+Loaded Prisma config from prisma.config.ts.
+
+
+
+Existing Database Verification Report
+=====================================
+
+[PASS] Table exists: school
+[PASS] Table exists: school_branding
+[PASS] Table exists: role
+[PASS] Table exists: privilege
+[PASS] Table exists: role_privilege
+[PASS] Table exists: user_privilege
+[PASS] Table exists: user
+[PASS] Table exists: session
+[PASS] Table exists: term
+[PASS] Table exists: class
+[PASS] Table exists: class_arm
+[PASS] Table exists: subject
+[PASS] Table exists: student
+[PASS] Table exists: parent
+[PASS] Table exists: teacher
+[PASS] Table exists: fee_group
+[PASS] Table exists: fee_item
+[PASS] Table exists: invoice
+[PASS] Table exists: invoice_item
+[PASS] Table exists: payment
+[PASS] Table exists: receipt
+[PASS] Table exists: score
+[PASS] Table exists: result
+[PASS] Table exists: attendance
+[PASS] Table exists: income
+[PASS] Table exists: expense
+[PASS] Table exists: income_category
+[PASS] Table exists: expense_category
+[PASS] Table exists: announcement
+[PASS] Table exists: school_setting
+[PASS] Table exists: admission_application
+[PASS] Table exists: admission_guardian
+[PASS] Table exists: admission_document
+[PASS] Table exists: admission_qualification
+[FAIL] Missing table: payment_method
+[FAIL] Missing table: school_bank_account
+[PASS] Table exists: school_template
+[PASS] Column exists: income.payment_method
+[PASS] Column exists: expense.payment_method
+[PASS] Column exists: school_template.term_name
+[PASS] Column exists: result.file_url
+[PASS] Column exists: result.file_name
+[PASS] Column exists: result.uploaded_by_id
+[PASS] Column exists: admission_application.test_score
+[PASS] Column exists: admission_guardian.occupation
+[FAIL] Missing column: admission_guardian.employer_name
+[FAIL] Missing column: admission_guardian.work_address
+[FAIL] Missing column: admission_guardian.work_phone
+[FAIL] Missing column: admission_guardian.home_address
+[FAIL] Missing column: admission_guardian.id_document_type
+[FAIL] Missing column: admission_guardian.id_document_number
+[FAIL] Missing column: admission_guardian.id_document_url
+[FAIL] Missing column: admission_guardian.photo_url
+[FAIL] Missing column: admission_guardian.is_primary
+[PASS] Column exists: parent.occupation
+[FAIL] Missing column: parent.employer_name
+[FAIL] Missing column: parent.work_address
+[FAIL] Missing column: parent.work_phone
+[FAIL] Missing column: parent.home_address
+[FAIL] Missing column: parent.id_document_type
+[FAIL] Missing column: parent.id_document_number
+[FAIL] Missing column: parent.id_document_url
+[FAIL] Missing column: parent.photo_url
+[PASS] Role exists: SUPER_ADMIN
+[PASS] Role exists: SCHOOL_ADMIN
+[PASS] Role exists: HEAD_OF_SCHOOL
+[PASS] Role exists: PRINCIPAL
+[PASS] Role exists: ACCOUNTANT
+[PASS] Role exists: REGISTRAR
+[PASS] Role exists: TEACHER
+[PASS] Role exists: PARENT
+[PASS] Role exists: STUDENT
+[PASS] Role exists: RECEPTIONIST
+[PASS] No duplicate roles
+[PASS] Prisma migrations recorded: 20260710225000_add_result_file_fields, 20260711110000_initial_baseline, 20260711210000_add_missing_columns, 20260710150000_add_missing_enums, 20260711200000_post_baseline_reconciliation, 20260711220000_full_baseline_reconciliation, 20260711220000_full_baseline_reconciliation
+[PASS] Baseline migration 20260711110000_initial_baseline is recorded
+[FAIL] Schema drift detected between prisma/schema.prisma and the database (material differences present)
+
+=====================================
+[FAIL] 20 check(s) failed. Resolve the issues before running migrate resolve/deploy.

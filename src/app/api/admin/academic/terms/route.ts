@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
 import { AcademicStatus } from "@/lib/db-types";
 
 const createTermSchema = z.object({
-  sessionId: z.string().min(5),
+  sessionId: z.string().min(1),
   name: z.string().min(3),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
@@ -16,12 +18,20 @@ const createTermSchema = z.object({
 
 const service = new AcademicCalendarService();
 
+async function getSchoolId(userId: number): Promise<string> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  return user?.schoolId || "default";
+}
+
 export async function POST(request: Request) {
   try {
     const session = await auth();
-    console.log("Term API - user:", session?.user);
-    if (!session?.user || !["SUPER_ADMIN", "SCHOOL_ADMIN", "PRINCIPAL"].includes(session.user.role)) {
-      return NextResponse.json({ error: `Unauthorized - no school assigned. Role: ${session?.user?.role}, ` }, { status: 401 });
+    const allowed = await crudPrivilege(session, "POST", "terms");
+    if (!allowed) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (!session?.user || !["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"].includes(session.user.role)) {
+      return NextResponse.json({ error: `Unauthorized. Role: ${session?.user?.role}` }, { status: 401 });
     }
 
     const payload = await request.json();
@@ -30,8 +40,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
+    const schoolId = await getSchoolId(session.user.id);
     const created = await service.createTerm({
-      schoolId: "default",
+      schoolId,
       ...parsed.data,
     });
 

@@ -11,20 +11,18 @@ export default async function SuperAdminDashboardPage() {
     redirect("/login");
   }
 
-  // Check if school is already set up
   const school = await prisma.school.findUnique({
     where: { id: "default" },
   });
-
-  // If school is set up and active, redirect to admin dashboard
-  if (school?.isSetup && school?.isActive) {
-    redirect("/admin/dashboard");
-  }
+  const dbUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { avatarUrl: true } });
 
   return (
     <ModernPortalShell
       role="SUPER_ADMIN"
+      schoolName={school?.name}
+      schoolLogoUrl={undefined}
       userName={session.user.name ?? "System Administrator"}
+      avatarUrl={dbUser?.avatarUrl ?? undefined}
       pathname="/super-admin/dashboard"
     >
       <div className="max-w-4xl mx-auto py-12">

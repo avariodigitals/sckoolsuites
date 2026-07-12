@@ -15,8 +15,9 @@ async function getParentContext() {
   const session = await auth();
   if (!session?.user || session.user.role !== "PARENT" ) return null;
 
+  const schoolId = session.user.schoolId || "default";
   const parent = await prisma.parent.findFirst({
-    where: { schoolId: "default", userId: session.user.id },
+    where: { schoolId, userId: session.user.id },
     include: { user: true },
   });
 
@@ -40,7 +41,7 @@ export async function GET() {
     },
   });
 
-  const map = new Map(settings.map((item) => [item.key, item.value]));
+  const map = new Map(settings.map((item: any) => [item.key, item.value] as [any, any]));
 
   return NextResponse.json({
     name: context.parent.user.name,

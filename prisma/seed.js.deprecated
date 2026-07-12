@@ -1,0 +1,296 @@
+const { Pool } = require("pg");
+const { PrismaPg } = require("@prisma/adapter-pg");
+const { PrismaClient } = require("@prisma/client");
+const { hash } = require("bcryptjs");
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: false,
+});
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg(pool),
+});
+
+const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL || "superadmin@sckoolsuite.com";
+const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || "TestAdmin123!";
+
+const roles = [
+  { name: "SUPER_ADMIN", label: "Super Admin", description: "Full system access" },
+  { name: "SCHOOL_ADMIN", label: "School Admin", description: "School-level administration" },
+  { name: "HEAD_OF_SCHOOL", label: "Head of School", description: "Head of School access" },
+  { name: "PRINCIPAL", label: "Principal", description: "Principal access" },
+  { name: "ACCOUNTANT", label: "Accountant", description: "Finance access" },
+  { name: "REGISTRAR", label: "Registrar", description: "Records access" },
+  { name: "TEACHER", label: "Teacher", description: "Teacher access" },
+  { name: "PARENT", label: "Parent", description: "Parent access" },
+  { name: "STUDENT", label: "Student", description: "Student access" },
+  { name: "RECEPTIONIST", label: "Receptionist", description: "Reception access" },
+];
+
+// Mirrors src/lib/privileges.ts so the test DB has the same defaults.
+const ALL_PRIVILEGES = [
+  { code: "students.view", name: "View Students", category: "students" },
+  { code: "students.manage", name: "Manage Students", category: "students" },
+  { code: "parents.view", name: "View Parents", category: "parents" },
+  { code: "parents.manage", name: "Manage Parents", category: "parents" },
+  { code: "teachers.view", name: "View Teachers", category: "teachers" },
+  { code: "teachers.manage", name: "Manage Teachers", category: "teachers" },
+  { code: "classes.view", name: "View Classes", category: "academic" },
+  { code: "classes.manage", name: "Manage Classes", category: "academic" },
+  { code: "subjects.view", name: "View Subjects", category: "academic" },
+  { code: "subjects.manage", name: "Manage Subjects", category: "academic" },
+  { code: "sessions.view", name: "View Sessions", category: "academic" },
+  { code: "sessions.manage", name: "Manage Sessions", category: "academic" },
+  { code: "terms.view", name: "View Terms", category: "academic" },
+  { code: "terms.manage", name: "Manage Terms", category: "academic" },
+  { code: "attendance.view", name: "View Attendance", category: "attendance" },
+  { code: "attendance.manage", name: "Manage Attendance", category: "attendance" },
+  { code: "results.view", name: "View Results", category: "results" },
+  { code: "results.manage", name: "Manage Results", category: "results" },
+  { code: "fees.view", name: "View Fees", category: "finance" },
+  { code: "fees.manage", name: "Manage Fees", category: "finance" },
+  { code: "bills.view", name: "View Bills", category: "finance" },
+  { code: "bills.manage", name: "Manage Bills", category: "finance" },
+  { code: "payments.view", name: "View Payments", category: "finance" },
+  { code: "payments.manage", name: "Manage Payments", category: "finance" },
+  { code: "income.view", name: "View Income", category: "finance" },
+  { code: "income.manage", name: "Manage Income", category: "finance" },
+  { code: "expenses.view", name: "View Expenses", category: "finance" },
+  { code: "expenses.manage", name: "Manage Expenses", category: "finance" },
+  { code: "debtors.view", name: "View Debtors", category: "finance" },
+  { code: "ledger.view", name: "View Ledger", category: "finance" },
+  { code: "revenue.view", name: "View Revenue", category: "finance" },
+  { code: "announcements.view", name: "View Announcements", category: "communication" },
+  { code: "announcements.manage", name: "Manage Announcements", category: "communication" },
+  { code: "transport.view", name: "View Transport", category: "transport" },
+  { code: "transport.manage", name: "Manage Transport", category: "transport" },
+  { code: "settings.view", name: "View Settings", category: "settings" },
+  { code: "settings.manage", name: "Manage Settings", category: "settings" },
+  { code: "users.view", name: "View Users", category: "users" },
+  { code: "users.manage", name: "Manage Users", category: "users" },
+  { code: "roles.view", name: "View Roles", category: "users" },
+  { code: "roles.manage", name: "Manage Roles", category: "users" },
+  { code: "privileges.view", name: "View Privileges", category: "users" },
+  { code: "privileges.manage", name: "Manage Privileges", category: "users" },
+  { code: "profile.view", name: "View Profile", category: "profile" },
+  { code: "profile.edit", name: "Edit Profile", category: "profile" },
+  { code: "profile.change_password", name: "Change Password", category: "profile" },
+];
+
+const DEFAULT_ROLE_PRIVILEGES = {
+  SUPER_ADMIN: ALL_PRIVILEGES.map((p) => p.code),
+  SCHOOL_ADMIN: [
+    "students.view", "students.manage",
+    "parents.view", "parents.manage",
+    "teachers.view", "teachers.manage",
+    "classes.view", "classes.manage",
+    "subjects.view", "subjects.manage",
+    "sessions.view", "sessions.manage",
+    "terms.view", "terms.manage",
+    "attendance.view", "attendance.manage",
+    "results.view", "results.manage",
+    "fees.view", "fees.manage",
+    "bills.view", "bills.manage",
+    "payments.view", "payments.manage",
+    "income.view", "income.manage",
+    "expenses.view", "expenses.manage",
+    "debtors.view", "ledger.view", "revenue.view",
+    "announcements.view", "announcements.manage",
+    "transport.view", "transport.manage",
+    "settings.view", "settings.manage",
+    "users.view", "users.manage",
+    "roles.view", "roles.manage",
+    "privileges.view", "privileges.manage",
+    "profile.view", "profile.edit", "profile.change_password",
+  ],
+  HEAD_OF_SCHOOL: [
+    "students.view", "students.manage",
+    "parents.view", "parents.manage",
+    "teachers.view", "teachers.manage",
+    "classes.view", "classes.manage",
+    "subjects.view", "subjects.manage",
+    "sessions.view", "sessions.manage",
+    "terms.view", "terms.manage",
+    "attendance.view", "attendance.manage",
+    "results.view", "results.manage",
+    "fees.view", "fees.manage",
+    "bills.view", "bills.manage",
+    "payments.view", "payments.manage",
+    "income.view", "income.manage",
+    "expenses.view", "expenses.manage",
+    "debtors.view", "ledger.view", "revenue.view",
+    "announcements.view", "announcements.manage",
+    "transport.view", "transport.manage",
+    "settings.view", "settings.manage",
+    "users.view", "users.manage",
+    "roles.view", "roles.manage",
+    "privileges.view", "privileges.manage",
+    "profile.view", "profile.edit", "profile.change_password",
+  ],
+  PRINCIPAL: [
+    "students.view", "students.manage",
+    "parents.view", "parents.manage",
+    "teachers.view", "teachers.manage",
+    "classes.view", "classes.manage",
+    "subjects.view", "subjects.manage",
+    "sessions.view", "terms.view",
+    "attendance.view", "attendance.manage",
+    "results.view", "results.manage",
+    "fees.view", "bills.view", "payments.view",
+    "income.view", "expenses.view", "debtors.view", "ledger.view", "revenue.view",
+    "announcements.view", "announcements.manage",
+    "transport.view",
+    "settings.view",
+    "users.view",
+    "roles.view",
+    "privileges.view",
+    "profile.view", "profile.edit", "profile.change_password",
+  ],
+  TEACHER: [
+    "students.view",
+    "classes.view",
+    "subjects.view",
+    "attendance.view", "attendance.manage",
+    "results.view", "results.manage",
+    "announcements.view",
+    "profile.view", "profile.edit", "profile.change_password",
+  ],
+  PARENT: [
+    "students.view",
+    "attendance.view",
+    "results.view",
+    "bills.view",
+    "payments.view",
+    "announcements.view",
+    "profile.view", "profile.edit", "profile.change_password",
+  ],
+  STUDENT: [
+    "attendance.view",
+    "results.view",
+    "bills.view",
+    "payments.view",
+    "announcements.view",
+    "profile.view", "profile.edit", "profile.change_password",
+  ],
+  RECEPTIONIST: [
+    "students.view",
+    "parents.view",
+    "attendance.view", "attendance.manage",
+    "announcements.view",
+    "profile.view", "profile.edit", "profile.change_password",
+  ],
+};
+
+async function seed() {
+  const school = await prisma.school.upsert({
+    where: { id: "default" },
+    update: {},
+    create: {
+      id: "default",
+      name: "Test School",
+      email: "test@school.com",
+      phone: "+2340000000000",
+      address: "123 Test Street",
+      website: "https://test.school",
+      motto: "Knowledge is power",
+      isActive: true,
+      isSetup: true,
+    },
+  });
+
+  await prisma.schoolBranding.upsert({
+    where: { schoolId: school.id },
+    update: {},
+    create: {
+      schoolId: school.id,
+      primaryColor: "#0B1F4D",
+      secondaryColor: "#0E9F6E",
+      reportCardTheme: "classic",
+      invoiceTheme: "clean",
+      receiptTheme: "simple",
+    },
+  });
+
+  await Promise.all(
+    roles.map((role) =>
+      prisma.role.upsert({
+        where: { name: role.name },
+        update: { label: role.label, description: role.description },
+        create: role,
+      })
+    )
+  );
+
+  // Seed privileges and default role privileges.
+  const privilegeRecords = await Promise.all(
+    ALL_PRIVILEGES.map((priv) =>
+      prisma.privilege.upsert({
+        where: { code: priv.code },
+        update: { name: priv.name, category: priv.category },
+        create: {
+          code: priv.code,
+          name: priv.name,
+          category: priv.category,
+          description: null,
+        },
+      })
+    )
+  );
+
+  const seededRoles = await prisma.role.findMany();
+  const roleIdByName = new Map(seededRoles.map((r) => [r.name, r.id]));
+  const privIdByCode = new Map(privilegeRecords.map((p) => [p.code, p.id]));
+
+  for (const [roleName, codes] of Object.entries(DEFAULT_ROLE_PRIVILEGES)) {
+    const roleId = roleIdByName.get(roleName);
+    if (!roleId) continue;
+    for (const code of codes) {
+      const privilegeId = privIdByCode.get(code);
+      if (!privilegeId) continue;
+      try {
+        await prisma.rolePrivilege.create({
+          data: { roleId, privilegeId, isGranted: true },
+        });
+      } catch (err) {
+        if (err?.code !== "P2002") throw err;
+      }
+    }
+  }
+
+  const adminRole = await prisma.role.findUniqueOrThrow({
+    where: { name: "SCHOOL_ADMIN" },
+  });
+
+  const hashedPassword = await hash(ADMIN_PASSWORD, 10);
+
+  await prisma.user.upsert({
+    where: { email: ADMIN_EMAIL },
+    update: {
+      name: "Test School Admin",
+      roleId: adminRole.id,
+      schoolId: school.id,
+      password: hashedPassword,
+      isActive: true,
+    },
+    create: {
+      name: "Test School Admin",
+      email: ADMIN_EMAIL,
+      roleId: adminRole.id,
+      schoolId: school.id,
+      password: hashedPassword,
+      isActive: true,
+    },
+  });
+
+  console.log("Seeded test school, branding, roles, and admin user.");
+}
+
+seed()
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

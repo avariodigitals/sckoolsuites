@@ -83,7 +83,7 @@ export async function POST() {
       select: { id: true, name: true },
     });
     
-    const adminRoleIds = adminRoleRecords.map((r) => r.id);
+    const adminRoleIds = adminRoleRecords.map((r: any) => r.id);
     
     // Delete students first (they have users)
     await prisma.student.deleteMany();

@@ -9,17 +9,19 @@ import { getActiveSchoolConfig } from "@/lib/school-config";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
 
 const schema = z.object({
-  studentId: z.string().min(5),
-  subjectId: z.string().min(5),
+  studentId: z.coerce.number().int().min(1),
+  subjectId: z.coerce.number().int().min(1),
   caScore: z.coerce.number().min(0).max(100),
   examScore: z.coerce.number().min(0).max(100),
 });
 
 const calendarService = new AcademicCalendarService();
 
+const allowedRoles = new Set(["TEACHER", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"]);
+
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.id  || session.user.role !== "TEACHER") {
+  if (!session?.user?.id || !allowedRoles.has(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -29,48 +31,62 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const teacher = await prisma.teacher.findFirst({ where: { schoolId: "default", userId: session.user.id } });
-  if (!teacher) {
+  const schoolId = session.user.schoolId || "default";
+  const subjectId = parsed.data.subjectId;
+  const studentId = parsed.data.studentId;
+
+  const isAdmin = ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(session.user.role);
+  const teacher = isAdmin
+    ? null
+    : await prisma.teacher.findFirst({ where: { schoolId, userId: session.user.id } });
+  if (!isAdmin && !teacher) {
     return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 });
   }
 
   const subject = await prisma.subject.findFirst({
-    where: { id: parsed.data.subjectId, schoolId: "default" },
+    where: { id: subjectId, schoolId },
   });
   if (!subject) {
     return NextResponse.json({ error: "Subject not found" }, { status: 404 });
   }
 
-  if (subject.teacherId && subject.teacherId !== teacher.id) {
-    return NextResponse.json({ error: "You can only enter scores for your assigned subjects" }, { status: 403 });
-  }
-
   const student = await prisma.student.findFirst({
-    where: { id: parsed.data.studentId, schoolId: "default" },
+    where: { id: studentId, schoolId },
     include: {
-      class: {
-        include: {
-          classGroup: true,
-        },
-      },
+      class: { include: { classGroup: true } },
+      classArm: true,
     },
   });
   if (!student) {
     return NextResponse.json({ error: "Student not found" }, { status: 404 });
   }
 
+  // Server-side authorization: teacher must be assigned to the subject,
+  // the student's class, or the student's arm.
+  if (!isAdmin) {
+    const assignedToSubject = subject.teacherId === teacher?.id;
+    const assignedToClass = student.class?.teacherId === teacher?.id;
+    const assignedToArm = student.classArm?.teacherId === teacher?.id;
+    if (!assignedToSubject && !assignedToClass && !assignedToArm) {
+      return NextResponse.json(
+        { error: "You can only enter scores for students in your assigned class, arm, or subject" },
+        { status: 403 }
+      );
+    }
+  }
+
   if (subject.classId && student.classId && subject.classId !== student.classId) {
     return NextResponse.json({ error: "Student class does not match this subject" }, { status: 400 });
   }
 
-  const context = await calendarService.getUserContext("default", session.user.id);
+  const context = await calendarService.getUserContext(schoolId, session.user.id);
   if (!context.sessionId || !context.termId) {
     return NextResponse.json({ error: "Academic context is not selected" }, { status: 400 });
   }
 
   const [activeConfig, classGroupProfiles] = await Promise.all([
-    getActiveSchoolConfig("default"),
-    getClassGroupGradingProfiles("default"),
+    getActiveSchoolConfig(schoolId),
+    getClassGroupGradingProfiles(schoolId),
   ]);
 
   const classGroupProfile = resolveClassGroupProfile(classGroupProfiles, student.class?.classGroup?.name);
@@ -99,14 +115,14 @@ export async function POST(request: Request) {
   const score = await prisma.score.upsert({
     where: {
       studentId_subjectId_termId_sessionId: {
-        studentId: student.id,
-        subjectId: subject.id,
+        studentId,
+        subjectId,
         termId: context.termId,
         sessionId: context.sessionId,
       },
     },
     update: {
-      teacherId: teacher.id,
+      teacherId: teacher?.id ?? null,
       caScore: parsed.data.caScore,
       examScore: parsed.data.examScore,
       total,
@@ -114,10 +130,10 @@ export async function POST(request: Request) {
       gpa: grade.gpa,
     },
     create: {
-      schoolId: "default",
-      studentId: student.id,
-      subjectId: subject.id,
-      teacherId: teacher.id,
+      schoolId,
+      studentId,
+      subjectId,
+      teacherId: teacher?.id ?? null,
       termId: context.termId,
       sessionId: context.sessionId,
       caScore: parsed.data.caScore,
@@ -129,11 +145,11 @@ export async function POST(request: Request) {
   });
 
   await createAuditLog({
-    schoolId: "default",
+    schoolId,
     actorUserId: session.user.id,
     action: "SCORE_UPSERTED",
     targetType: "Score",
-    targetId: score.id,
+    targetId: String(score.id),
     metadata: {
       studentId: student.id,
       subjectId: subject.id,

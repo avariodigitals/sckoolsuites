@@ -1,17 +1,31 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { parseNumericId } from "@/lib/id-helpers";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "PATCH", "classes");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const user = session?.user;
   const { id } = await params;
 
   if (!user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let parsedId: number;
+  try {
+    parsedId = parseNumericId(id, "class group id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid class group id";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   try {
@@ -27,7 +41,7 @@ export async function PATCH(
 
     // Check if class group exists and belongs to this school
     const existing = await prisma.classGroup.findFirst({
-      where: { id, schoolId: "default" },
+      where: { id: parsedId, schoolId: "default" },
     });
 
     if (!existing) {
@@ -42,7 +56,7 @@ export async function PATCH(
       where: {
         schoolId: "default",
         name: name.trim(),
-        id: { not: id },
+        id: { not: parsedId },
       },
     });
 
@@ -54,7 +68,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.classGroup.update({
-      where: { id },
+      where: { id: parsedId },
       data: { name: name.trim() },
     });
 
@@ -73,6 +87,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "DELETE", "classes");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const user = session?.user;
   const { id } = await params;
 
@@ -80,10 +98,18 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  let parsedId: number;
+  try {
+    parsedId = parseNumericId(id, "class group id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid class group id";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
   try {
     // Check if class group exists and belongs to this school
     const classGroup = await prisma.classGroup.findFirst({
-      where: { id, schoolId: "default" },
+      where: { id: parsedId, schoolId: "default" },
       include: { classes: true },
     });
 
@@ -103,7 +129,7 @@ export async function DELETE(
     }
 
     await prisma.classGroup.delete({
-      where: { id },
+      where: { id: parsedId },
     });
 
     return NextResponse.json({ success: true });

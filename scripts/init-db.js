@@ -1,57 +1,20 @@
 #!/usr/bin/env node
 /**
- * Database Initialization Script
- * 
- * This script initializes the PostgreSQL database with the schema.
- * Run with: node scripts/init-db.js
+ * DEPRECATED — Database Initialization Script
+ *
+ * This script is no longer used for provisioning. The repository now uses
+ * versioned Prisma migrations as the single source of truth.
+ *
+ * Use the following commands instead:
+ *   npm run db:setup      # generate + migrate + seed
+ *   npm run db:migrate    # prisma migrate deploy
+ *   npm run db:seed       # prisma db seed
+ *
+ * scripts/schema.sql is retained for historical reference only and must not
+ * be used to provision new or existing databases.
  */
 
-const { Pool } = require('pg');
-const fs = require('fs');
-const path = require('path');
-
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-});
-
-async function initDatabase() {
-  const client = await pool.connect();
-  
-  try {
-    console.log('Connected to database');
-    
-    // Read schema file
-    const schemaPath = path.join(__dirname, 'schema.sql');
-    const schema = fs.readFileSync(schemaPath, 'utf8');
-    
-    console.log('Executing schema...');
-    await client.query(schema);
-    
-    console.log('✅ Database schema created successfully!');
-    console.log('');
-    console.log('Default roles created:');
-    console.log('  - SUPER_ADMIN (for initial setup)');
-    console.log('  - SCHOOL_ADMIN (main administrator)');
-    console.log('  - PRINCIPAL');
-    console.log('  - ACCOUNTANT');
-    console.log('  - TEACHER');
-    console.log('  - PARENT');
-    console.log('  - STUDENT');
-    console.log('');
-    console.log('Next steps:');
-    console.log('  1. Start the application: npm run dev');
-    console.log('  2. Login as Super Admin to complete setup');
-    console.log('  3. Or use /setup to initialize your school');
-    
-  } catch (error) {
-    console.error('❌ Error initializing database:', error.message);
-    process.exit(1);
-  } finally {
-    client.release();
-    await pool.end();
-  }
-}
-
-initDatabase();
+console.error('❌ scripts/init-db.js is deprecated.');
+console.error('   Use: npm run db:setup');
+console.error('   Or:  npx prisma migrate deploy && npx prisma db seed');
+process.exit(1);

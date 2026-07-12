@@ -6,17 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface SessionStepProps {
-  schoolId: string;
-  onComplete: (session: { id: string; name: string }) => void;
+  onComplete: (session: { name: string; startDate: string; endDate: string }) => void;
   onBack: () => void;
   isLoading: boolean;
-  initialData: { id: string; name: string } | null;
+  initialData: { name: string; startDate: string; endDate: string } | null;
 }
 
-export function SessionStep({ schoolId, onComplete, onBack, isLoading, initialData }: SessionStepProps) {
+export function SessionStep({ onComplete, onBack, isLoading, initialData }: SessionStepProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
@@ -35,31 +34,7 @@ export function SessionStep({ schoolId, onComplete, onBack, isLoading, initialDa
       return;
     }
 
-    try {
-      const res = await fetch("/api/setup/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          schoolId,
-          name,
-          startDate,
-          endDate,
-        }),
-      });
-
-      const result = await res.json();
-      if (!res.ok) {
-        setErrors({ submit: result.error || `Error: ${res.status}` });
-        return;
-      }
-      if (result.id) {
-        onComplete({ id: result.id, name: result.name || name });
-      } else {
-        setErrors({ submit: "Invalid response from server" });
-      }
-    } catch (err) {
-      setErrors({ submit: err instanceof Error ? err.message : "Failed to create session" });
-    }
+    onComplete({ name, startDate, endDate });
   };
 
   return (

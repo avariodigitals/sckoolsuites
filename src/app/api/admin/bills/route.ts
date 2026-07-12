@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
+import { parseNumericSearchParamResponse } from "@/lib/id-helpers";
 
 const createBillSchema = z.object({
-  studentId: z.string().min(1),
-  classId: z.string().optional().nullable(),
-  termId: z.string().min(1),
-  sessionId: z.string().min(1),
+  studentId: z.coerce.number().min(1),
+  classId: z.coerce.number().optional().nullable(),
+  termId: z.coerce.number().min(1),
+  sessionId: z.coerce.number().min(1),
   items: z.array(
     z.object({
-      feeItemId: z.string().min(1),
+      feeItemId: z.coerce.number().min(1),
       amount: z.number().min(0),
     })
   ).min(1),
@@ -20,17 +22,21 @@ const createBillSchema = z.object({
 });
 
 const recordPaymentSchema = z.object({
-  invoiceId: z.string().min(1),
+  invoiceId: z.coerce.number().min(1),
   amount: z.number().min(0.01),
   method: z.string().min(1),
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN", "BURSAR", "ACCOUNTANT"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN", "BURSAR", "ACCOUNTANT"].includes(role) : false;
 }
 
 export async function GET(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "bills");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -40,20 +46,26 @@ export async function GET(request: Request) {
   // Get query params
   const url = new URL(request.url);
   const statusFilter = url.searchParams.get("status");
-  const studentId = url.searchParams.get("studentId");
-  const classId = url.searchParams.get("classId");
+  const rawStudentId = url.searchParams.get("studentId");
+  const rawClassId = url.searchParams.get("classId");
   const searchQuery = url.searchParams.get("q");
+
+  const parsedStudentId = parseNumericSearchParamResponse(rawStudentId, "studentId");
+  if (!parsedStudentId.ok) return parsedStudentId.response;
+
+  const parsedClassId = parseNumericSearchParamResponse(rawClassId, "classId");
+  if (!parsedClassId.ok) return parsedClassId.response;
 
   const where: Record<string, unknown> = { schoolId };
 
   if (statusFilter && ["PAID", "UNPAID", "PART_PAYMENT", "PENDING"].includes(statusFilter)) {
     where.status = statusFilter;
   }
-  if (studentId) {
-    where.studentId = studentId;
+  if (parsedStudentId.value !== undefined) {
+    where.studentId = parsedStudentId.value;
   }
-  if (classId) {
-    where.classId = classId;
+  if (parsedClassId.value !== undefined) {
+    where.classId = parsedClassId.value;
   }
 
   const invoices = await prisma.invoice.findMany({
@@ -126,7 +138,7 @@ export async function GET(request: Request) {
   if (searchQuery) {
     const query = searchQuery.toLowerCase();
     filteredInvoices = invoices.filter(
-      (inv) =>
+      (inv: any) =>
         inv.invoiceNumber.toLowerCase().includes(query) ||
         inv.student.user.name.toLowerCase().includes(query) ||
         inv.student.user.email?.toLowerCase().includes(query)
@@ -134,7 +146,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    bills: filteredInvoices.map((inv) => ({
+    bills: filteredInvoices.map((inv: any) => ({
       id: inv.id,
       invoiceNumber: inv.invoiceNumber,
       studentId: inv.studentId,
@@ -174,7 +186,7 @@ export async function GET(request: Request) {
       totalOutstanding: totalOutstanding._sum?.balance ?? 0,
       totalOverdue,
     },
-    students: students.map((s) => ({
+    students: students.map((s: any) => ({
       id: s.id,
       name: s.user.name,
       email: s.user.email,
@@ -182,9 +194,9 @@ export async function GET(request: Request) {
       className: s.class?.name ?? null,
     })),
     classes,
-    terms: terms.map((t) => ({ id: t.id, name: t.name })),
-    sessions: sessions.map((s) => ({ id: s.id, name: s.name })),
-    feeGroups: feeGroups.map((fg) => ({
+    terms: terms.map((t: any) => ({ id: t.id, name: t.name })),
+    sessions: sessions.map((s: any) => ({ id: s.id, name: s.name })),
+    feeGroups: feeGroups.map((fg: any) => ({
       id: fg.id,
       name: fg.name,
       feeItems: fg.feeItems?.map((fi: any) => ({
@@ -200,6 +212,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "bills");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -268,7 +284,7 @@ export async function POST(request: Request) {
       actorUserId: session.user.id,
       action: "BILL_CREATED",
       targetType: "Invoice",
-      targetId: invoice.id,
+      targetId: String(invoice.id),
       metadata: {
         invoiceId: invoice.id,
         invoiceNumber,
@@ -281,12 +297,12 @@ export async function POST(request: Request) {
       {
         bill: {
           id: invoiceWithData!.id,
-          invoiceNumber: invoiceWithData!.invoice_number,
-          studentName: (invoiceWithData as any)?.student?.user?.name ?? "",
-          totalAmount: invoiceWithData!.total_amount,
+          invoiceNumber: invoiceWithData!.invoiceNumber,
+          studentName: invoiceWithData?.student?.user?.name ?? "",
+          totalAmount: invoiceWithData!.totalAmount,
           balance: invoiceWithData!.balance,
           status: invoiceWithData!.status,
-          createdAt: invoiceWithData!.created_at?.toISOString?.() ?? new Date().toISOString(),
+          createdAt: invoiceWithData!.createdAt?.toISOString?.() ?? new Date().toISOString(),
         },
       },
       { status: 201 }
@@ -299,6 +315,10 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "PATCH", "bills");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -335,6 +355,25 @@ export async function PATCH(request: Request) {
         receivedById: session.user.id,
       },
     });
+
+    // Auto-create income entry from payment
+    const schoolFeeCategory = await prisma.incomeCategory.findFirst({
+      where: { schoolId, isDefault: true },
+    });
+    if (schoolFeeCategory) {
+      await prisma.income.create({
+        data: {
+          schoolId,
+          categoryId: schoolFeeCategory.id,
+          amount: data.amount,
+          description: `Payment for invoice ${invoice.invoiceNumber}`,
+          source: `Payment #${payment.id}`,
+          date: new Date(),
+          isFromPayment: true,
+          paymentId: payment.id,
+        },
+      });
+    }
 
     // Update invoice
     const newAmountPaid = invoice.amountPaid + data.amount;
@@ -374,7 +413,7 @@ export async function PATCH(request: Request) {
       actorUserId: session.user.id,
       action: "PAYMENT_RECORDED",
       targetType: "Payment",
-      targetId: payment.id,
+      targetId: String(payment.id),
       metadata: {
         paymentId: payment.id,
         invoiceId: data.invoiceId,

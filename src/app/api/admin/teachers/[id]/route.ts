@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
+import { parseNumericId } from "@/lib/id-helpers";
 
 const updateSchema = z.object({
   name: z.string().min(2).max(120).optional(),
@@ -10,33 +12,48 @@ const updateSchema = z.object({
 });
 
 const assignSchema = z.object({
-  classId: z.string().min(5).optional(),
-  subjectId: z.string().min(5).optional(),
+  classId: z.coerce.number().int().min(1).optional(),
+  armId: z.coerce.number().int().min(1).optional(),
+  subjectId: z.coerce.number().int().min(1).optional(),
   action: z.enum(["ASSIGN", "UNASSIGN"]),
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
 }
+
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "PATCH", "teachers");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = await params;
+  const { id: rawTeacherId } = await params;
+
+  let teacherId: number;
+  try {
+    teacherId = parseNumericId(rawTeacherId, "teacher id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid teacher ID";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
   const payload = await request.json();
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
 
   // Check if this is an assignment action
   const assignParsed = assignSchema.safeParse(payload);
-  if (assignParsed.success && (assignParsed.data.classId || assignParsed.data.subjectId)) {
-    const { classId, subjectId, action } = assignParsed.data;
+  if (assignParsed.success && (assignParsed.data.classId || assignParsed.data.armId || assignParsed.data.subjectId)) {
+    const { classId, armId, subjectId, action } = assignParsed.data;
 
     // Verify teacher exists
     const teacher = await prisma.teacher.findFirst({
-      where: { id, schoolId },
+      where: { id: teacherId, schoolId },
     });
     if (!teacher) {
       return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
@@ -54,7 +71,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
       if (action === "ASSIGN") {
         // Check if class already has a different teacher
-        if (classExists.teacherId && classExists.teacherId !== id && classExists.teacher?.user) {
+        if (classExists.teacherId && classExists.teacherId !== teacherId && classExists.teacher?.user) {
           return NextResponse.json(
             { error: `Class is already assigned to ${classExists.teacher.user.name}` },
             { status: 409 }
@@ -63,7 +80,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
         await prisma.class.update({
           where: { id: classId },
-          data: { teacherId: id },
+          data: { teacherId },
         });
 
         await createAuditLog({
@@ -71,14 +88,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           actorUserId: session.user.id,
           action: "CLASS_ASSIGNED_TO_TEACHER",
           targetType: "Teacher",
-          targetId: id,
-          metadata: { teacherId: id, classId },
+          targetId: String(teacherId),
+          metadata: { teacherId, classId },
         });
 
         return NextResponse.json({ ok: true, message: "Class assigned successfully" });
       } else {
         // UNASSIGN
-        if (classExists.teacherId !== id) {
+        if (classExists.teacherId !== teacherId) {
           return NextResponse.json(
             { error: "Class is not assigned to this teacher" },
             { status: 400 }
@@ -95,11 +112,72 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           actorUserId: session.user.id,
           action: "CLASS_UNASSIGNED_FROM_TEACHER",
           targetType: "Teacher",
-          targetId: id,
-          metadata: { teacherId: id, classId },
+          targetId: String(teacherId),
+          metadata: { teacherId, classId },
         });
 
         return NextResponse.json({ ok: true, message: "Class unassigned successfully" });
+      }
+    }
+
+    if (armId) {
+      // Verify arm exists
+      const armExists = await prisma.classArm.findFirst({
+        where: { id: armId, schoolId },
+        include: { teacher: { include: { user: true } } },
+      });
+      if (!armExists) {
+        return NextResponse.json({ error: "Class arm not found" }, { status: 404 });
+      }
+
+      if (action === "ASSIGN") {
+        // Check if arm already has a different teacher
+        if (armExists.teacherId && armExists.teacherId !== teacherId && armExists.teacher?.user) {
+          return NextResponse.json(
+            { error: `Class arm is already assigned to ${armExists.teacher.user.name}` },
+            { status: 409 }
+          );
+        }
+
+        await prisma.classArm.update({
+          where: { id: armId },
+          data: { teacherId },
+        });
+
+        await createAuditLog({
+          schoolId,
+          actorUserId: session.user.id,
+          action: "ARM_ASSIGNED_TO_TEACHER",
+          targetType: "Teacher",
+          targetId: String(teacherId),
+          metadata: { teacherId, armId },
+        });
+
+        return NextResponse.json({ ok: true, message: "Class arm assigned successfully" });
+      } else {
+        // UNASSIGN
+        if (armExists.teacherId !== teacherId) {
+          return NextResponse.json(
+            { error: "Class arm is not assigned to this teacher" },
+            { status: 400 }
+          );
+        }
+
+        await prisma.classArm.update({
+          where: { id: armId },
+          data: { teacherId: null },
+        });
+
+        await createAuditLog({
+          schoolId,
+          actorUserId: session.user.id,
+          action: "ARM_UNASSIGNED_FROM_TEACHER",
+          targetType: "Teacher",
+          targetId: String(teacherId),
+          metadata: { teacherId, armId },
+        });
+
+        return NextResponse.json({ ok: true, message: "Class arm unassigned successfully" });
       }
     }
 
@@ -115,7 +193,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       if (action === "ASSIGN") {
         await prisma.subject.update({
           where: { id: subjectId },
-          data: { teacherId: id },
+          data: { teacherId },
         });
 
         await createAuditLog({
@@ -123,14 +201,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           actorUserId: session.user.id,
           action: "SUBJECT_ASSIGNED_TO_TEACHER",
           targetType: "Teacher",
-          targetId: id,
-          metadata: { teacherId: id, subjectId },
+          targetId: String(teacherId),
+          metadata: { teacherId, subjectId },
         });
 
         return NextResponse.json({ ok: true, message: "Subject assigned successfully" });
       } else {
         // UNASSIGN
-        if (subjectExists.teacherId !== id) {
+        if (subjectExists.teacherId !== teacherId) {
           return NextResponse.json(
             { error: "Subject is not assigned to this teacher" },
             { status: 400 }
@@ -147,8 +225,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           actorUserId: session.user.id,
           action: "SUBJECT_UNASSIGNED_FROM_TEACHER",
           targetType: "Teacher",
-          targetId: id,
-          metadata: { teacherId: id, subjectId },
+          targetId: String(teacherId),
+          metadata: { teacherId, subjectId },
         });
 
         return NextResponse.json({ ok: true, message: "Subject unassigned successfully" });
@@ -166,7 +244,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   // Check teacher exists
   const existing = await prisma.teacher.findFirst({
-    where: { id, schoolId },
+    where: { id: teacherId, schoolId },
     include: { user: true },
   });
   if (!existing) {
@@ -190,9 +268,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       actorUserId: session.user.id,
       action: "TEACHER_UPDATED",
       targetType: "Teacher",
-      targetId: id,
+      targetId: String(teacherId),
       metadata: {
-        teacherId: id,
+        teacherId,
         updates: Object.keys(data),
       },
     });
@@ -206,26 +284,46 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "DELETE", "teachers");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = await params;
-  const schoolId = "default";
+  const { id: rawTeacherId } = await params;
+
+  let teacherId: number;
+  try {
+    teacherId = parseNumericId(rawTeacherId, "teacher id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid teacher ID";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
+  const schoolId = session.user.schoolId || "default";
 
   // Check teacher exists
   const existing = await prisma.teacher.findFirst({
-    where: { id, schoolId },
-    include: { user: true, classes: true, subjects: true },
+    where: { id: teacherId, schoolId },
+    include: { user: true, classes: true, classArms: true, subjects: true },
   });
   if (!existing) {
     return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
   }
 
-  // Check if teacher has assigned classes or subjects
+  // Check if teacher has assigned classes, arms, or subjects
   if (existing.classes.length > 0) {
     return NextResponse.json(
       { error: `Cannot deactivate teacher with ${existing.classes.length} assigned class(es). Unassign all classes first.` },
+      { status: 409 }
+    );
+  }
+
+  if (existing.classArms.length > 0) {
+    return NextResponse.json(
+      { error: `Cannot deactivate teacher with ${existing.classArms.length} assigned class arm(s). Unassign all arms first.` },
       { status: 409 }
     );
   }
@@ -249,9 +347,9 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       actorUserId: session.user.id,
       action: "TEACHER_DEACTIVATED",
       targetType: "Teacher",
-      targetId: id,
+      targetId: String(teacherId),
       metadata: {
-        teacherId: id,
+        teacherId,
         userId: existing.userId,
         name: existing.user.name,
       },

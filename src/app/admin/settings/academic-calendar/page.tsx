@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { requireRole } from "@/lib/auth-guards";
@@ -6,7 +8,7 @@ import { prisma } from "@/lib/db";
 import { AcademicCalendarClient } from "@/app/admin/settings/academic-calendar/academic-calendar-client";
 
 export default async function AcademicCalendarPage() {
-  const user = await requireRole(["SCHOOL_ADMIN", "PRINCIPAL"]);
+  const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
   const profile = await getCurrentSchoolByUser(user.id);
 
   if (!profile?.school) {
@@ -31,28 +33,35 @@ export default async function AcademicCalendarPage() {
     }),
   ]);
 
-  const initialSessions = sessions.map((item) => ({
-    id: item.id,
+  const toISO = (d: any) => {
+    if (!d) return null;
+    if (d instanceof Date) return d.toISOString();
+    if (typeof d === "string") return new Date(d).toISOString();
+    return null;
+  };
+
+  const initialSessions = sessions.map((item: { id: number; name: string; isCurrent: boolean; status: string; startDate: Date | string | null; endDate: Date | string | null }) => ({
+    id: String(item.id),
     name: item.name,
     isCurrent: item.isCurrent,
-    status: item.status,
-    startDate: item.startDate?.toISOString() ?? null,
-    endDate: item.endDate?.toISOString() ?? null,
+    status: item.status as "DRAFT" | "ACTIVE" | "CLOSED" | "ARCHIVED",
+    startDate: toISO(item.startDate),
+    endDate: toISO(item.endDate),
   }));
 
-  const initialTerms = terms.map((item) => ({
-    id: item.id,
+  const initialTerms = terms.map((item: { id: number; name: string; isCurrent: boolean; status: string; sessionId: number; startDate: Date | string | null; endDate: Date | string | null; resumptionDate: Date | string | null }) => ({
+    id: String(item.id),
     name: item.name,
     isCurrent: item.isCurrent,
-    status: item.status,
-    sessionId: item.sessionId,
-    startDate: item.startDate?.toISOString() ?? null,
-    endDate: item.endDate?.toISOString() ?? null,
-    resumptionDate: item.resumptionDate?.toISOString() ?? null,
+    status: item.status as "DRAFT" | "ACTIVE" | "CLOSED" | "ARCHIVED",
+    sessionId: String(item.sessionId),
+    startDate: toISO(item.startDate),
+    endDate: toISO(item.endDate),
+    resumptionDate: toISO(item.resumptionDate),
   }));
 
-  const activeSession = sessions.find((item) => item.isCurrent);
-  const activeTerm = terms.find((item) => item.isCurrent);
+  const activeSession = sessions.find((item: { isCurrent: boolean }) => item.isCurrent);
+  const activeTerm = terms.find((item: { isCurrent: boolean }) => item.isCurrent);
 
   return (
     <ModernPortalShell
@@ -60,6 +69,7 @@ export default async function AcademicCalendarPage() {
       schoolName={profile.school.name}
       schoolLogoUrl={profile.school.branding?.logoUrl ?? undefined}
       userName={user.name ?? "Admin"}
+      avatarUrl={profile?.avatarUrl ?? undefined}
       pathname="/admin/settings/academic-calendar"
     >
       <div className="space-y-6">
@@ -72,8 +82,8 @@ export default async function AcademicCalendarPage() {
             <AcademicCalendarClient
               initialSessions={initialSessions}
               initialTerms={initialTerms}
-              initialSessionId={activeSession?.id}
-              initialTermId={activeTerm?.id}
+              initialSessionId={activeSession?.id == null ? undefined : String(activeSession.id)}
+              initialTermId={activeTerm?.id == null ? undefined : String(activeTerm.id)}
             />
           </div>
         </div>

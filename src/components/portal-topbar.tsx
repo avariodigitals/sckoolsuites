@@ -40,9 +40,11 @@ function subscribeTheme(callback: () => void) {
 export function PortalTopbar({
   pathname,
   userName,
+  avatarUrl,
 }: {
   pathname: string;
   userName: string;
+  avatarUrl?: string;
 }) {
   const router = useRouter();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -475,8 +477,12 @@ export function PortalTopbar({
 
         <details className="group relative ml-auto">
           <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg border border-slate-200 bg-white p-1.5 pr-2 text-sm text-slate-700 transition hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-600">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-[11px] font-semibold text-white dark:bg-slate-700">
-              {userInitials || "U"}
+            <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-slate-800 text-[11px] font-semibold text-white dark:bg-slate-700">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={userName} className="h-8 w-8 object-cover" />
+              ) : (
+                userInitials || "U"
+              )}
             </span>
             <span className="max-w-32 truncate font-semibold text-slate-700 dark:text-slate-100">{displayName}</span>
             <ChevronDown className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />

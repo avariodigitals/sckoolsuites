@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
@@ -7,12 +8,12 @@ import { getSetupWizardState } from "@/lib/setup-wizard";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
 
 const schema = z.object({
-  studentId: z.string().min(5),
+  studentId: z.coerce.number().min(1),
   includeOptional: z.boolean().optional().default(false),
   dueDate: z.string().optional(),
   paymentInstructions: z.string().max(1000).optional(),
-  termId: z.string().min(5).optional(),
-  sessionId: z.string().min(5).optional(),
+  termId: z.coerce.number().min(1).optional(),
+  sessionId: z.coerce.number().min(1).optional(),
 });
 
 const calendarService = new AcademicCalendarService();
@@ -25,11 +26,15 @@ async function nextInvoiceNumber(schoolId: string) {
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "bills");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user?.id ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!["SCHOOL_ADMIN", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(session.user.role)) {
+  if (!["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -65,7 +70,7 @@ export async function POST(request: Request) {
     where: { schoolId: "default", isActive: true },
     select: { id: true },
   });
-  const activeGroupIds = activeGroups.map((g) => g.id);
+  const activeGroupIds = activeGroups.map((g: { id: number }) => g.id);
 
   const classFilter = student.classId
     ? { OR: [{ classId: student.classId }, { classId: null }] }
@@ -85,7 +90,7 @@ export async function POST(request: Request) {
     include: { feeGroup: true },
   });
 
-  const selectedItems = feeItems.filter((item) => {
+  const selectedItems = feeItems.filter((item: any) => {
     if (item.amount <= 0) return false;
     if (parsed.data.includeOptional) return true;
     return !item.isOptional;
@@ -100,31 +105,31 @@ export async function POST(request: Request) {
     where: { schoolId: "default", studentId: student.id, sessionId, termId },
     select: { id: true },
   });
-  const existingInvoiceIds = existingInvoices.map((inv) => inv.id);
+  const existingInvoiceIds = existingInvoices.map((inv: any) => inv.id);
 
   const existingItemRows = existingInvoiceIds.length
     ? await prisma.invoiceItem.findMany({
-        where: { feeItemId: { in: selectedItems.map((item) => item.id) }, invoiceId: { in: existingInvoiceIds } },
+        where: { feeItemId: { in: selectedItems.map((item: any) => item.id) }, invoiceId: { in: existingInvoiceIds } },
         select: { feeItemId: true },
       })
     : [];
 
-  const billedFeeItemIds = new Set(existingItemRows.map((row) => row.fee_item_id));
-  const netNewItems = selectedItems.filter((item) => !billedFeeItemIds.has(item.id));
+  const billedFeeItemIds = new Set(existingItemRows.map((row: any) => row.feeItemId));
+  const netNewItems = selectedItems.filter((item: any) => !billedFeeItemIds.has(item.id));
 
   if (!netNewItems.length) {
     return NextResponse.json({ error: "All selected fee items are already billed for this student/session/term." }, { status: 409 });
   }
 
-  const totalAmount = netNewItems.reduce((sum, item) => sum + item.amount, 0);
+  const totalAmount = netNewItems.reduce((sum: number, item: any) => sum + item.amount, 0);
 
   // Create invoice without nested items (shim strips nested creates)
   const invoice = await prisma.invoice.create({
     data: {
       schoolId: "default",
       studentId: student.id,
-      parentId: student.parent_id ?? null,
-      classId: student.class_id ?? null,
+      parentId: student.parentId ?? null,
+      classId: student.classId ?? null,
       termId,
       sessionId,
       invoiceNumber: await nextInvoiceNumber("default"),
@@ -169,7 +174,7 @@ export async function POST(request: Request) {
     actorUserId: session.user.id,
     action: "INVOICE_GENERATED",
     targetType: "Invoice",
-    targetId: invoice.id,
+    targetId: String(invoice.id),
     metadata: {
       studentId: student.id,
       sessionId,
@@ -186,16 +191,16 @@ export async function POST(request: Request) {
     ok: true,
     invoice: {
       id: invoiceWithData.id,
-      invoiceNumber: invoiceWithData.invoice_number,
-      totalAmount: invoiceWithData.total_amount,
+      invoiceNumber: invoiceWithData.invoiceNumber,
+      totalAmount: invoiceWithData.totalAmount,
       balance: invoiceWithData.balance,
       status: invoiceWithData.status,
-      studentName: (invoiceWithData.student as any)?.user?.name ?? "",
-      termName: (invoiceWithData.term as any)?.name ?? "",
-      sessionName: (invoiceWithData.session as any)?.name ?? "",
-      items: (invoiceWithData as any).items?.map((item: any) => ({
+      studentName: invoiceWithData.student?.user?.name ?? "",
+      termName: invoiceWithData.term?.name ?? "",
+      sessionName: invoiceWithData.session?.name ?? "",
+      items: invoiceWithData.items?.map((item) => ({
         id: item.id,
-        feeItemId: item.fee_item_id,
+        feeItemId: item.feeItemId,
         feeGroupName: item.feeItem?.feeGroup?.name,
         name: item.feeItem?.name,
         category: item.feeItem?.category,

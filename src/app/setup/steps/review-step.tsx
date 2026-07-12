@@ -12,8 +12,8 @@ interface ReviewStepProps {
     website: string | null;
     motto: string | null;
   };
-  session: { id: string; name: string };
-  term: { id: string; name: string };
+  session: { name: string; startDate: string; endDate: string };
+  term: { name: string; startDate: string; endDate: string };
   adminUser: { name: string; email: string };
   onActivate: () => void;
   onBack: () => void;

@@ -1,5 +1,22 @@
+-- =============================================================================
+-- DEPRECATED — Historical Reference Only
+-- =============================================================================
+-- This file is no longer used to provision databases. It is kept as a
+-- historical reference of the hand-written schema that existed before the
+-- repository adopted Prisma Migrate as the single source of truth.
+--
+-- To provision a new database, use:
+--   npm run db:setup
+--   or
+--   npx prisma generate
+--   npx prisma migrate deploy
+--   npx prisma db seed
+--
+-- DO NOT RUN THIS FILE AGAINST PRODUCTION OR DEVELOPMENT DATABASES.
+-- =============================================================================
+
 -- Sckool Suite - Single School Database Schema
--- PostgreSQL Raw SQL Schema
+-- PostgreSQL Raw SQL Schema (historical)
 
 -- Drop tables if they exist (clean slate)
 DROP TABLE IF EXISTS query CASCADE;
@@ -16,6 +33,14 @@ DROP TABLE IF EXISTS vehicle CASCADE;
 DROP TABLE IF EXISTS audit_log CASCADE;
 DROP TABLE IF EXISTS parent_complaint CASCADE;
 DROP TABLE IF EXISTS parent_message CASCADE;
+DROP TABLE IF EXISTS user_privilege CASCADE;
+DROP TABLE IF EXISTS role_privilege CASCADE;
+DROP TABLE IF EXISTS privilege CASCADE;
+DROP TABLE IF EXISTS school_config_version CASCADE;
+DROP TABLE IF EXISTS expense CASCADE;
+DROP TABLE IF EXISTS income CASCADE;
+DROP TABLE IF EXISTS expense_category CASCADE;
+DROP TABLE IF EXISTS income_category CASCADE;
 DROP TABLE IF EXISTS school_setting CASCADE;
 DROP TABLE IF EXISTS announcement CASCADE;
 DROP TABLE IF EXISTS online_class CASCADE;
@@ -43,6 +68,7 @@ DROP TABLE IF EXISTS subject CASCADE;
 DROP TABLE IF EXISTS class_arm CASCADE;
 DROP TABLE IF EXISTS class CASCADE;
 DROP TABLE IF EXISTS class_group CASCADE;
+DROP TABLE IF EXISTS student_enrollment CASCADE;
 DROP TABLE IF EXISTS student CASCADE;
 DROP TABLE IF EXISTS teacher CASCADE;
 DROP TABLE IF EXISTS parent CASCADE;
@@ -95,7 +121,7 @@ CREATE TABLE school_branding (
 -- Roles
 CREATE TABLE role (
     id SERIAL PRIMARY KEY,
-    name TEXT UNIQUE NOT NULL CHECK (name IN ('SUPER_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'ACCOUNTANT', 'TEACHER', 'PARENT', 'STUDENT')),
+    name TEXT UNIQUE NOT NULL CHECK (name IN ('SUPER_ADMIN', 'SCHOOL_ADMIN', 'HEAD_OF_SCHOOL', 'PRINCIPAL', 'ACCOUNTANT', 'REGISTRAR', 'TEACHER', 'PARENT', 'STUDENT', 'RECEPTIONIST')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -106,6 +132,8 @@ CREATE TABLE "user" (
     name TEXT NOT NULL,
     avatar_url TEXT,
     email TEXT UNIQUE NOT NULL,
+    phone TEXT,
+    address TEXT,
     password TEXT NOT NULL,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -146,6 +174,19 @@ CREATE TABLE student (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Student Enrollment (session/term scoped with promotion status)
+CREATE TABLE student_enrollment (
+    id SERIAL PRIMARY KEY,
+    student_id INTEGER NOT NULL,
+    session_id INTEGER NOT NULL,
+    term_id INTEGER NOT NULL,
+    class_id INTEGER,
+    promotion_status TEXT DEFAULT 'ACTIVE' CHECK (promotion_status IN ('PROMOTED', 'REPEATING', 'WITHDRAWN', 'ACTIVE')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(student_id, session_id, term_id)
+);
+
 -- Class Groups
 CREATE TABLE class_group (
     id SERIAL PRIMARY KEY,
@@ -165,8 +206,9 @@ CREATE TABLE class (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Add foreign key to student after class is created
+-- Add foreign keys after dependent tables exist
 ALTER TABLE student ADD FOREIGN KEY (class_id) REFERENCES class(id) ON DELETE SET NULL;
+ALTER TABLE student_enrollment ADD FOREIGN KEY (student_id) REFERENCES student(id) ON DELETE CASCADE;
 
 -- Class Arms
 CREATE TABLE class_arm (
@@ -182,17 +224,21 @@ CREATE TABLE class_arm (
 -- Academic Sessions
 CREATE TABLE session (
     id SERIAL PRIMARY KEY,
-    name TEXT UNIQUE NOT NULL,
+    school_id TEXT DEFAULT 'default' REFERENCES school(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    UNIQUE(school_id, name),
     is_current BOOLEAN DEFAULT false,
     status TEXT DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'ACTIVE', 'CLOSED', 'ARCHIVED')),
     start_date DATE,
     end_date DATE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Terms
 CREATE TABLE term (
     id SERIAL PRIMARY KEY,
+    school_id TEXT DEFAULT 'default' REFERENCES school(id) ON DELETE CASCADE,
     session_id INTEGER NOT NULL REFERENCES session(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     is_current BOOLEAN DEFAULT false,
@@ -202,8 +248,14 @@ CREATE TABLE term (
     resumption_date DATE,
     break_dates JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(session_id, name)
 );
+
+-- Add remaining student_enrollment foreign keys
+ALTER TABLE student_enrollment ADD FOREIGN KEY (session_id) REFERENCES session(id) ON DELETE CASCADE;
+ALTER TABLE student_enrollment ADD FOREIGN KEY (term_id) REFERENCES term(id) ON DELETE CASCADE;
+ALTER TABLE student_enrollment ADD FOREIGN KEY (class_id) REFERENCES class(id) ON DELETE SET NULL;
 
 -- Subjects
 CREATE TABLE subject (
@@ -492,6 +544,9 @@ CREATE TABLE online_class (
 -- Announcements
 CREATE TABLE announcement (
     id SERIAL PRIMARY KEY,
+    school_id TEXT DEFAULT 'default' REFERENCES school(id) ON DELETE CASCADE,
+    session_id INTEGER REFERENCES session(id) ON DELETE CASCADE,
+    term_id INTEGER REFERENCES term(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     body TEXT NOT NULL,
     audience TEXT NOT NULL,
@@ -501,10 +556,12 @@ CREATE TABLE announcement (
 -- School Settings
 CREATE TABLE school_setting (
     id SERIAL PRIMARY KEY,
-    key TEXT UNIQUE NOT NULL,
+    school_id TEXT DEFAULT 'default' REFERENCES school(id) ON DELETE CASCADE,
+    key TEXT NOT NULL,
     value TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(school_id, key)
 );
 
 -- Parent Messages
@@ -763,9 +820,146 @@ CREATE TRIGGER update_fee_item_updated_at BEFORE UPDATE ON fee_item FOR EACH ROW
 INSERT INTO role (name) VALUES 
     ('SUPER_ADMIN'),
     ('SCHOOL_ADMIN'),
+    ('HEAD_OF_SCHOOL'),
     ('PRINCIPAL'),
     ('ACCOUNTANT'),
+    ('REGISTRAR'),
     ('TEACHER'),
     ('PARENT'),
-    ('STUDENT')
+    ('STUDENT'),
+    ('RECEPTIONIST')
 ON CONFLICT (name) DO NOTHING;
+
+-- Performance indexes for school-scoped queries
+-- Note: school_id indexes are added after migrations add the column
+CREATE INDEX IF NOT EXISTS idx_student_user_id ON student(user_id);
+CREATE INDEX IF NOT EXISTS idx_student_parent_id ON student(parent_id);
+CREATE INDEX IF NOT EXISTS idx_student_class_id ON student(class_id);
+CREATE INDEX IF NOT EXISTS idx_teacher_user_id ON teacher(user_id);
+CREATE INDEX IF NOT EXISTS idx_parent_user_id ON parent(user_id);
+CREATE INDEX IF NOT EXISTS idx_fee_item_group_id ON fee_item(fee_group_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_session_id ON invoice(session_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_term_id ON invoice(term_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_student_id ON invoice(student_id);
+CREATE INDEX IF NOT EXISTS idx_payment_invoice_id ON payment(invoice_id);
+CREATE INDEX IF NOT EXISTS idx_score_session_id ON score(session_id);
+CREATE INDEX IF NOT EXISTS idx_score_term_id ON score(term_id);
+CREATE INDEX IF NOT EXISTS idx_score_student_id ON score(student_id);
+CREATE INDEX IF NOT EXISTS idx_score_subject_id ON score(subject_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_session_id ON attendance(session_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_term_id ON attendance(term_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(date);
+CREATE INDEX IF NOT EXISTS idx_announcement_session_id ON announcement(session_id);
+CREATE INDEX IF NOT EXISTS idx_announcement_term_id ON announcement(term_id);
+CREATE INDEX IF NOT EXISTS idx_student_enrollment_student_id ON student_enrollment(student_id);
+CREATE INDEX IF NOT EXISTS idx_student_enrollment_session_id ON student_enrollment(session_id);
+CREATE INDEX IF NOT EXISTS idx_student_enrollment_term_id ON student_enrollment(term_id);
+CREATE INDEX IF NOT EXISTS idx_student_enrollment_class_id ON student_enrollment(class_id);
+CREATE INDEX IF NOT EXISTS idx_school_setting_key ON school_setting(key);
+
+-- Income & Expense Categories
+CREATE TABLE income_category (
+    id SERIAL PRIMARY KEY,
+    school_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT true,
+    is_default BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE expense_category (
+    id SERIAL PRIMARY KEY,
+    school_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Income Ledger (auto from payments + manual entries)
+CREATE TABLE income (
+    id SERIAL PRIMARY KEY,
+    school_id TEXT NOT NULL,
+    category_id INTEGER REFERENCES income_category(id),
+    amount DECIMAL(12,2) NOT NULL,
+    description TEXT,
+    source TEXT,
+    date DATE NOT NULL,
+    is_from_payment BOOLEAN DEFAULT false,
+    payment_id INTEGER REFERENCES payment(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Expense Ledger
+CREATE TABLE expense (
+    id SERIAL PRIMARY KEY,
+    school_id TEXT NOT NULL,
+    category_id INTEGER REFERENCES expense_category(id),
+    amount DECIMAL(12,2) NOT NULL,
+    description TEXT,
+    date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_income_category_school_id ON income_category(school_id);
+CREATE INDEX IF NOT EXISTS idx_expense_category_school_id ON expense_category(school_id);
+CREATE INDEX IF NOT EXISTS idx_income_school_id ON income(school_id);
+CREATE INDEX IF NOT EXISTS idx_income_date ON income(date);
+CREATE INDEX IF NOT EXISTS idx_expense_school_id ON expense(school_id);
+CREATE INDEX IF NOT EXISTS idx_expense_date ON expense(date);
+
+CREATE TABLE IF NOT EXISTS school_config_version (
+    id SERIAL PRIMARY KEY,
+    school_id TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    config JSONB DEFAULT '{}',
+    source TEXT DEFAULT 'manual',
+    notes TEXT,
+    created_by_id TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_school_config_version_school_id ON school_config_version(school_id);
+CREATE INDEX IF NOT EXISTS idx_school_config_version_active ON school_config_version(school_id, is_active);
+
+-- Privilege System
+CREATE TABLE privilege (
+    id SERIAL PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    description TEXT,
+    category TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Role Privilege (default privileges per role)
+CREATE TABLE role_privilege (
+    id SERIAL PRIMARY KEY,
+    role_id INTEGER NOT NULL REFERENCES "role"(id) ON DELETE CASCADE,
+    privilege_id INTEGER NOT NULL REFERENCES privilege(id) ON DELETE CASCADE,
+    is_granted BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(role_id, privilege_id)
+);
+
+-- User Privilege (user-specific overrides)
+CREATE TABLE user_privilege (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    privilege_id INTEGER NOT NULL REFERENCES privilege(id) ON DELETE CASCADE,
+    is_granted BOOLEAN DEFAULT true,
+    granted_by INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, privilege_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_privilege_code ON privilege(code);
+CREATE INDEX IF NOT EXISTS idx_privilege_category ON privilege(category);
+CREATE INDEX IF NOT EXISTS idx_role_privilege_role_id ON role_privilege(role_id);
+CREATE INDEX IF NOT EXISTS idx_role_privilege_privilege_id ON role_privilege(privilege_id);
+CREATE INDEX IF NOT EXISTS idx_user_privilege_user_id ON user_privilege(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_privilege_privilege_id ON user_privilege(privilege_id);

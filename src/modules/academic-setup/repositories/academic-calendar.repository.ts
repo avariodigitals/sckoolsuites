@@ -2,6 +2,21 @@ import { AcademicStatus } from "@/lib/db-types";
 import { prisma } from "@/lib/db";
 
 export class AcademicCalendarRepository {
+  private toIntId(value: string | number | undefined | null): number | undefined {
+    if (value === undefined || value === null || value === "") return undefined;
+    if (typeof value === "number") {
+      return Number.isInteger(value) && Number.isFinite(value) ? value : undefined;
+    }
+    const raw = Number(value);
+    return Number.isInteger(raw) && Number.isFinite(raw) ? raw : undefined;
+  }
+
+  private requireIntId(value: string | number | undefined | null): number {
+    const id = this.toIntId(value);
+    if (id === undefined) throw new Error(`Invalid numeric id: ${value}`);
+    return id;
+  }
+
   async getSchoolAcademicSetup(schoolId: string) {
     const [sessions, terms] = await Promise.all([
       prisma.session.findMany({
@@ -23,6 +38,9 @@ export class AcademicCalendarRepository {
   }
 
   async createTerm(data: Record<string, any>) {
+    if (data.sessionId !== undefined) {
+      data.sessionId = this.requireIntId(data.sessionId);
+    }
     return prisma.term.create({ data });
   }
 
@@ -40,30 +58,34 @@ export class AcademicCalendarRepository {
     });
   }
 
-  async setSessionActive(sessionId: string) {
+  async setSessionActive(sessionId: string | number) {
+    const id = this.requireIntId(sessionId);
     return prisma.session.update({
-      where: { id: sessionId },
+      where: { id },
       data: { isCurrent: true, status: AcademicStatus.ACTIVE },
     });
   }
 
-  async setTermActive(termId: string) {
+  async setTermActive(termId: string | number) {
+    const id = this.requireIntId(termId);
     return prisma.term.update({
-      where: { id: termId },
+      where: { id },
       data: { isCurrent: true, status: AcademicStatus.ACTIVE },
     });
   }
 
-  async updateSessionStatus(sessionId: string, status: AcademicStatus) {
+  async updateSessionStatus(sessionId: string | number, status: AcademicStatus) {
+    const id = this.requireIntId(sessionId);
     return prisma.session.update({
-      where: { id: sessionId },
+      where: { id },
       data: { status, ...(status === AcademicStatus.CLOSED || status === AcademicStatus.ARCHIVED ? { isCurrent: false } : {}) },
     });
   }
 
-  async updateTermStatus(termId: string, status: AcademicStatus) {
+  async updateTermStatus(termId: string | number, status: AcademicStatus) {
+    const id = this.requireIntId(termId);
     return prisma.term.update({
-      where: { id: termId },
+      where: { id },
       data: { status, ...(status === AcademicStatus.CLOSED || status === AcademicStatus.ARCHIVED ? { isCurrent: false } : {}) },
     });
   }
@@ -88,14 +110,14 @@ export class AcademicCalendarRepository {
       this.getSchoolSetting(schoolId, "active_term_id"),
     ]);
 
-    const configuredSessionId = activeSessionSetting?.value?.trim();
-    const configuredTermId = activeTermSetting?.value?.trim();
+    const configuredSessionId = this.toIntId(activeSessionSetting?.value?.trim());
+    const configuredTermId = this.toIntId(activeTermSetting?.value?.trim());
 
     const [configuredSession, configuredTerm] = await Promise.all([
-      configuredSessionId
+      configuredSessionId !== undefined
         ? prisma.session.findFirst({ where: { id: configuredSessionId, schoolId } })
         : Promise.resolve(null),
-      configuredTermId
+      configuredTermId !== undefined
         ? prisma.term.findFirst({ where: { id: configuredTermId, schoolId }, include: { session: true } })
         : Promise.resolve(null),
     ]);
@@ -112,11 +134,13 @@ export class AcademicCalendarRepository {
     return { session, term };
   }
 
-  async getTermById(termId: string) {
-    return prisma.term.findUnique({ where: { id: termId } });
+  async getTermById(termId: string | number) {
+    const id = this.toIntId(termId);
+    return id !== undefined ? prisma.term.findUnique({ where: { id } }) : null;
   }
 
-  async getSessionById(sessionId: string) {
-    return prisma.session.findUnique({ where: { id: sessionId } });
+  async getSessionById(sessionId: string | number) {
+    const id = this.toIntId(sessionId);
+    return id !== undefined ? prisma.session.findUnique({ where: { id } }) : null;
   }
 }

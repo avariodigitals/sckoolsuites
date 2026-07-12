@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 
 type AuditInput = {
   schoolId: string;
-  actorUserId?: string | null;
+  actorUserId?: number | null;
   action: string;
   targetType: string;
   targetId?: string | null;

@@ -1,0 +1,354 @@
+model AdmissionApplication {
+  id                     Int      @id @default(autoincrement())
+  schoolId               String   @default("default") @map("school_id")
+  sessionId              Int?     @map("session_id")
+  applicantNumber        String   @unique @map("applicant_number")
+  enrollmentType         String   @default("REGULAR") @map("enrollment_type")
+  dateOfRegistration     DateTime @default(now()) @map("date_of_registration")
+  firstName              String   @map("first_name")
+  lastName               String   @map("last_name")
+  name                   String
+  email                  String
+  contactNumber          String?  @map("contact_number")
+  alternateContactNumber String?  @map("alternate_contact_number")
+  alternateEmail         String?  @map("alternate_email")
+  gender                 String?
+  dateOfBirth            DateTime? @map("date_of_birth")
+  age                    Int?
+  birthPlace             String?  @map("birth_place")
+  nationality            String?
+  motherTongue           String?  @map("mother_tongue")
+  bloodGroup             String?  @map("blood_group")
+  religion               String?
+  address                String?
+  presentAddress         Json?    @map("present_address")
+  permanentAddress       Json?    @map("permanent_address")
+  previousInstitute      String?  @map("previous_institute")
+  previousClass          String?  @map("previous_class")
+  applyingForClassId     Int?     @map("applying_for_class_id")
+  status                 String   @default("PENDING")
+  testScore              Int?     @map("test_score")
+  interviewNotes         String?  @map("interview_notes")
+  notes                  String?
+  lastSchoolReportUrl    String?  @map("last_school_report_url")
+  photoUrl               String?  @map("photo_url")
+  convertedStudentId     Int?     @unique @map("converted_student_id")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school           School                  @relation(fields: [schoolId], references: [id])
+  session          Session?                @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  applyingForClass Class?                  @relation(fields: [applyingForClassId], references: [id], onDelete: SetNull)
+  convertedStudent Student?                @relation("ConvertedStudent", fields: [convertedStudentId], references: [id], onDelete: SetNull)
+  guardians        AdmissionGuardian[]
+  documents        AdmissionDocument[]
+  qualifications   AdmissionQualification[]
+
+  @@index([schoolId])
+  @@index([status])
+  @@index([sessionId])
+  @@map("admission_application")
+}
+
+model AdmissionGuardian {
+  id               Int      @id @default(autoincrement())
+  applicationId    Int      @map("application_id")
+  name             String
+  email            String?
+  contactNumber    String?  @map("contact_number")
+  relationship     String
+  isNew            Boolean  @default(true) @map("is_new")
+  occupation       String?
+  employerName     String?  @map("employer_name")
+  workAddress      String?  @map("work_address")
+  workPhone        String?  @map("work_phone")
+  homeAddress      String?  @map("home_address")
+  idDocumentType   String?  @map("id_document_type")
+  idDocumentNumber String?  @map("id_document_number")
+  idDocumentUrl    String?  @map("id_document_url")
+  photoUrl         String?  @map("photo_url")
+  isPrimary        Boolean  @default(false) @map("is_primary")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  application AdmissionApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("admission_guardian")
+}
+
+model AdmissionDocument {
+  id            Int       @id @default(autoincrement())
+  applicationId Int       @map("application_id")
+  documentType  String?   @map("document_type")
+  title         String
+  issueDate     DateTime? @map("issue_date")
+  validityStart DateTime? @map("validity_start")
+  description   String?
+  fileUrl       String?   @map("file_url")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  application AdmissionApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("admission_document")
+}
+
+model AdmissionQualification {
+  id                 Int       @id @default(autoincrement())
+  applicationId      Int       @map("application_id")
+  qualificationLevel String?   @map("qualification_level")
+  course             String?
+  session            String?
+  institute          String?
+  instituteAddress   String?   @map("institute_address")
+  affiliatedTo       String?   @map("affiliated_to")
+  startDate          DateTime? @map("start_date")
+  endDate            DateTime? @map("end_date")
+  result             String?
+  fileUrl            String?   @map("file_url")
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  application AdmissionApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("admission_qualification")
+}
+
+model Vehicle {
+  id          Int      @id @default(autoincrement())
+  schoolId    String   @default("default") @map("school_id")
+  name        String
+  type        String
+  plateNumber String   @map("plate_number")
+  capacity    Int
+  driverId    Int?     @map("driver_id")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school  School  @relation(fields: [schoolId], references: [id])
+  driver  Driver? @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  routes  Route[]
+
+  @@index([schoolId])
+  @@map("vehicle")
+}
+
+model Driver {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique @map("user_id")
+  schoolId      String   @default("default") @map("school_id")
+  licenseNumber String   @map("license_number")
+  phone         String?
+  address       String?
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school   School    @relation(fields: [schoolId], references: [id])
+  vehicles Vehicle[]
+
+  @@index([userId])
+  @@index([schoolId])
+  @@map("driver")
+}
+
+model Route {
+  id          Int      @id @default(autoincrement())
+  schoolId    String   @default("default") @map("school_id")
+  name        String
+  vehicleId   Int?     @map("vehicle_id")
+  pickupTime  String?  @map("pickup_time")
+  dropoffTime String?  @map("dropoff_time")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school   School      @relation(fields: [schoolId], references: [id])
+  vehicle  Vehicle?    @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  stops    RouteStop[]
+  students Student[]
+
+  @@index([schoolId])
+  @@index([vehicleId])
+  @@map("route")
+}
+
+model RouteStop {
+  id         Int      @id @default(autoincrement())
+  routeId    Int      @map("route_id")
+  name       String
+  address    String
+  order      Int      @default(0)
+  pickupTime String?  @map("pickup_time")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  route Route @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@index([routeId])
+  @@map("route_stop")
+}
+
+model Visitor {
+  id           Int      @id @default(autoincrement())
+  schoolId     String   @default("default") @map("school_id")
+  name         String
+  phone        String?
+  email        String?
+  purpose      String
+  whomToSee    String?  @map("whom_to_see")
+  department   String?
+  checkInTime  DateTime @default(now()) @map("check_in_time")
+  checkOutTime DateTime? @map("check_out_time")
+  status       String   @default("CHECKED_IN")
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([status])
+  @@map("visitor")
+}
+
+model Enquiry {
+  id             Int       @id @default(autoincrement())
+  schoolId       String    @default("default") @map("school_id")
+  enquiryNumber  String    @unique @map("enquiry_number")
+  name           String
+  phone          String?
+  email          String?
+  source         String
+  type           String
+  stage          String
+  subject        String
+  notes          String?
+  followUpDate   DateTime? @map("follow_up_date")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([stage])
+  @@map("enquiry")
+}
+
+model GatePass {
+  id              Int       @id @default(autoincrement())
+  schoolId        String    @default("default") @map("school_id")
+  passNumber      String    @unique @map("pass_number")
+  personName      String    @map("person_name")
+  personType      String    @map("person_type")
+  purpose         String
+  destination     String?
+  exitTime        DateTime  @map("exit_time")
+  expectedReturn  DateTime? @map("expected_return")
+  actualReturn    DateTime? @map("actual_return")
+  issuedById      Int?      @map("issued_by_id")
+  status          String    @default("ACTIVE")
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  school   School @relation(fields: [schoolId], references: [id])
+  issuedBy User?  @relation("IssuedGatePasses", fields: [issuedById], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([issuedById])
+  @@map("gate_pass")
+}
+
+model ReceptionComplaint {
+  id              Int       @id @default(autoincrement())
+  schoolId        String    @default("default") @map("school_id")
+  complaintNumber String    @unique @map("complaint_number")
+  complainantName String    @map("complainant_name")
+  complainantType String    @map("complainant_type")
+  phone           String?
+  email           String?
+  complaintType   String    @map("complaint_type")
+  subject         String
+  description     String
+  status          String    @default("OPEN")
+  resolution      String?
+  resolvedById    Int?      @map("resolved_by_id")
+  resolvedAt      DateTime? @map("resolved_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  school     School @relation(fields: [schoolId], references: [id])
+  resolvedBy User?  @relation("ResolvedReceptionComplaints", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([resolvedById])
+  @@map("reception_complaint")
+}
+
+model CallLog {
+  id          Int      @id @default(autoincrement())
+  schoolId    String   @default("default") @map("school_id")
+  callNumber  String   @unique @map("call_number")
+  callerName  String   @map("caller_name")
+  callerPhone String  @map("caller_phone")
+  purpose     String
+  recipient   String?
+  duration    Int?
+  status      String   @default("COMPLETED")
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@map("call_log")
+}
+
+model Correspondence {
+  id              Int       @id @default(autoincrement())
+  schoolId        String    @default("default") @map("school_id")
+  refNumber       String    @unique @map("ref_number")
+  senderName      String    @map("sender_name")
+  senderAddress   String?   @map("sender_address")
+  type            String
+  subject         String
+  description     String
+  receivedDate    DateTime? @map("received_date")
+  dispatchedDate  DateTime? @map("dispatched_date")
+  status          String    @default("PENDING")
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@map("correspondence")
+}
+
+model Query {
+  id              Int       @id @default(autoincrement())
+  schoolId        String    @default("default") @map("school_id")
+  queryNumber     String    @unique @map("query_number")
+  queryType       String    @map("query_type")
+  querierName     String    @map("querier_name")
+  querierContact  String?   @map("querier_contact")
+  subject         String
+  description     String
+  response        String?
+  status          String    @default("PENDING")
+  respondedById   Int?      @map("responded_by_id")
+  respondedAt     DateTime? @map("responded_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  school      School @relation(fields: [schoolId], references: [id])
+  respondedBy User? @relation("RespondedQueries", fields: [respondedById], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([respondedById])
+  @@map("query")
+}

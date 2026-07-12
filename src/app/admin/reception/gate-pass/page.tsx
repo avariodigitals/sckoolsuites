@@ -1,10 +1,12 @@
 import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { requireRole } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
+import { prisma } from "@/lib/db";
 import { GatePassClient } from "./gate-pass-client";
 
 export default async function GatePassPage() {
-  const user = await requireRole(["SCHOOL_ADMIN", "PRINCIPAL", "RECEPTIONIST"]);
+  const user = await requireRole(["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "RECEPTIONIST"]);
+  const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
   const profile = await getCurrentSchoolByUser(user.id);
 
   if (!profile?.school) {
@@ -23,6 +25,7 @@ export default async function GatePassPage() {
       schoolName={profile.school.name}
       schoolLogoUrl={profile.school.branding?.logoUrl ?? undefined}
       userName={user.name ?? "Admin"}
+      avatarUrl={dbUser?.avatarUrl ?? undefined}
       pathname="/admin/reception/gate-pass"
     >
       <GatePassClient schoolId={profile.schoolId} />

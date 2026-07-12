@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { DashboardHeader } from "@/components/modern-dashboard";
 import { requireRole } from "@/lib/auth-guards";
@@ -6,7 +8,7 @@ import { prisma } from "@/lib/db";
 import { SchoolForm } from "./school-form";
 
 export default async function SchoolPage() {
-  const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "PRINCIPAL"]);
+  const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
   const profile = await getCurrentSchoolByUser(user.id);
   
   // Check if schools already exist (for Super Admin)
@@ -22,6 +24,7 @@ export default async function SchoolPage() {
       schoolName={profile?.school?.name ?? "Setup"}
       schoolLogoUrl={profile?.school?.branding?.logoUrl ?? undefined}
       userName={user.name ?? "Admin"}
+      avatarUrl={profile?.avatarUrl ?? undefined}
       pathname="/admin/settings/school"
     >
       <div className="space-y-6">

@@ -1,0 +1,84 @@
+
+Existing Database Verification Report
+=====================================
+
+[PASS] Table exists: school
+[PASS] Table exists: school_branding
+[PASS] Table exists: role
+[PASS] Table exists: privilege
+[PASS] Table exists: role_privilege
+[PASS] Table exists: user_privilege
+[PASS] Table exists: user
+[PASS] Table exists: session
+[PASS] Table exists: term
+[PASS] Table exists: class
+[PASS] Table exists: class_arm
+[PASS] Table exists: subject
+[PASS] Table exists: student
+[PASS] Table exists: parent
+[PASS] Table exists: teacher
+[PASS] Table exists: fee_group
+[PASS] Table exists: fee_item
+[PASS] Table exists: invoice
+[PASS] Table exists: invoice_item
+[PASS] Table exists: payment
+[PASS] Table exists: receipt
+[PASS] Table exists: score
+[PASS] Table exists: result
+[PASS] Table exists: attendance
+[PASS] Table exists: income
+[PASS] Table exists: expense
+[PASS] Table exists: income_category
+[PASS] Table exists: expense_category
+[PASS] Table exists: announcement
+[PASS] Table exists: school_setting
+[PASS] Table exists: admission_application
+[PASS] Table exists: admission_guardian
+[PASS] Table exists: admission_document
+[PASS] Table exists: admission_qualification
+[PASS] Table exists: payment_method
+[PASS] Table exists: school_bank_account
+[PASS] Table exists: school_template
+[PASS] Column exists: income.payment_method
+[PASS] Column exists: expense.payment_method
+[PASS] Column exists: school_template.term_name
+[PASS] Column exists: result.file_url
+[PASS] Column exists: result.file_name
+[PASS] Column exists: result.uploaded_by_id
+[PASS] Column exists: admission_application.test_score
+[PASS] Column exists: admission_guardian.occupation
+[PASS] Column exists: admission_guardian.employer_name
+[PASS] Column exists: admission_guardian.work_address
+[PASS] Column exists: admission_guardian.work_phone
+[PASS] Column exists: admission_guardian.home_address
+[PASS] Column exists: admission_guardian.id_document_type
+[PASS] Column exists: admission_guardian.id_document_number
+[PASS] Column exists: admission_guardian.id_document_url
+[PASS] Column exists: admission_guardian.photo_url
+[PASS] Column exists: admission_guardian.is_primary
+[PASS] Column exists: parent.occupation
+[PASS] Column exists: parent.employer_name
+[PASS] Column exists: parent.work_address
+[PASS] Column exists: parent.work_phone
+[PASS] Column exists: parent.home_address
+[PASS] Column exists: parent.id_document_type
+[PASS] Column exists: parent.id_document_number
+[PASS] Column exists: parent.id_document_url
+[PASS] Column exists: parent.photo_url
+[PASS] Role exists: SUPER_ADMIN
+[PASS] Role exists: SCHOOL_ADMIN
+[PASS] Role exists: HEAD_OF_SCHOOL
+[PASS] Role exists: PRINCIPAL
+[PASS] Role exists: ACCOUNTANT
+[PASS] Role exists: REGISTRAR
+[PASS] Role exists: TEACHER
+[PASS] Role exists: PARENT
+[PASS] Role exists: STUDENT
+[PASS] Role exists: RECEPTIONIST
+[PASS] No duplicate roles
+[PASS] Prisma migrations recorded: 20260710225000_add_result_file_fields, 20260711110000_initial_baseline, 20260711210000_add_missing_columns, 20260711230000_focused_reconciliation, 20260710150000_add_missing_enums, 20260711200000_post_baseline_reconciliation, 20260711220000_full_baseline_reconciliation, 20260711220000_full_baseline_reconciliation
+[PASS] Baseline migration 20260711110000_initial_baseline is recorded
+[FAIL] Schema drift detected between prisma/schema.prisma and the database (material differences present)
+
+=====================================
+[FAIL] 1 check(s) failed. Resolve the issues before running migrate resolve/deploy.

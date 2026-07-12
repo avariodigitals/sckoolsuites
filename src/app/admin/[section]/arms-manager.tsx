@@ -16,44 +16,34 @@ import { cn } from "@/lib/utils";
 type ClassArm = {
   id: string;
   name: string;
-  classId: string;
-  className: string;
-  studentCount: number;
+  capacity: number | null;
   isActive: boolean;
   createdAt: string;
 };
 
-type ClassOption = {
-  id: string;
-  name: string;
-};
-
 export function ArmsManager() {
   const [arms, setArms] = useState<ClassArm[]>([]);
-  const [classes, setClasses] = useState<ClassOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ classId: "", name: "" });
+  const [form, setForm] = useState({ name: "", capacity: "" });
 
   // Analytics
   const stats = useMemo(() => {
     const total = arms.length;
     const active = arms.filter(a => a.isActive).length;
-    const withStudents = arms.filter(a => a.studentCount > 0).length;
-    const totalStudents = arms.reduce((acc, a) => acc + a.studentCount, 0);
-    return { total, active, withStudents, totalStudents };
+    const withCapacity = arms.filter(a => a.capacity !== null).length;
+    const totalCapacity = arms.reduce((acc, a) => acc + (a.capacity ?? 0), 0);
+    return { total, active, withCapacity, totalCapacity };
   }, [arms]);
 
   const filteredArms = useMemo(() => {
     if (!searchQuery.trim()) return arms;
     const query = searchQuery.toLowerCase();
     return arms.filter(
-      (a) =>
-        a.name.toLowerCase().includes(query) ||
-        a.className.toLowerCase().includes(query)
+      (a) => a.name.toLowerCase().includes(query)
     );
   }, [arms, searchQuery]);
 
@@ -63,17 +53,10 @@ export function ArmsManager() {
       setLoading(true);
       setStatus("");
       try {
-        const [armsRes, classesRes] = await Promise.all([
-          fetch("/api/admin/class-arms", { cache: "no-store" }),
-          fetch("/api/admin/classes", { cache: "no-store" }),
-        ]);
-        
+        const armsRes = await fetch("/api/admin/class-arms?preset=1", { cache: "no-store" });
         const armsData = await armsRes.json().catch(() => []);
-        const classesData = await classesRes.json().catch(() => []);
-        
         if (!cancelled) {
           setArms(armsData.arms ?? []);
-          setClasses(classesData.classes ?? []);
         }
       } catch {
         if (!cancelled) setStatus("Failed to load data.");
@@ -86,18 +69,21 @@ export function ArmsManager() {
   }, []);
 
   async function handleSubmit() {
-    if (!form.classId || !form.name.trim()) {
-      setStatus("Please select a class and enter arm name.");
+    if (!form.name.trim()) {
+      setStatus("Please enter an arm name.");
       return;
     }
-    
+
     setStatus("");
     setSubmitting(true);
     try {
       const response = await fetch("/api/admin/class-arms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: form.name.trim(),
+          capacity: form.capacity ? parseInt(form.capacity, 10) : undefined,
+        }),
       });
 
       if (!response.ok) {
@@ -106,12 +92,12 @@ export function ArmsManager() {
         return;
       }
 
-      setForm({ classId: "", name: "" });
+      setForm({ name: "", capacity: "" });
       setShowForm(false);
       setStatus("Arm created successfully.");
-      
+
       // Reload data
-      const armsRes = await fetch("/api/admin/class-arms", { cache: "no-store" });
+      const armsRes = await fetch("/api/admin/class-arms?preset=1", { cache: "no-store" });
       const armsData = await armsRes.json().catch(() => []);
       setArms(armsData.arms ?? []);
     } catch {
@@ -132,7 +118,7 @@ export function ArmsManager() {
       });
       if (!response.ok) throw new Error("Failed");
       setStatus("Arm deactivated.");
-      const armsRes = await fetch("/api/admin/class-arms", { cache: "no-store" });
+      const armsRes = await fetch("/api/admin/class-arms?preset=1", { cache: "no-store" });
       const armsData = await armsRes.json().catch(() => []);
       setArms(armsData.arms ?? []);
     } catch {
@@ -173,23 +159,23 @@ export function ArmsManager() {
               <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">Create Arms</h3>
               <div className="flex flex-wrap gap-2">
                 <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">Arm A, B, C</span>
-                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">Class Binding</span>
                 <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">Capacity Setting</span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">Reusable across classes</span>
               </div>
             </div>
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">Manage Arms</h3>
               <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">View Students</span>
-                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">Arm Status</span>
-                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">Reassignment</span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">Edit Names</span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">Update Capacity</span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">Activate / Deactivate</span>
               </div>
             </div>
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">Arm Analytics</h3>
               <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">Student Count</span>
-                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">Distribution</span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">Total Presets</span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">Active Presets</span>
                 <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">Capacity</span>
               </div>
             </div>
@@ -227,21 +213,21 @@ export function ArmsManager() {
         <div className="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-600">With Students</p>
-              <p className="mt-2 text-3xl font-bold text-slate-900">{stats.withStudents}</p>
-              <p className="text-xs text-slate-500 mt-1">arms populated</p>
+              <p className="text-sm font-medium text-slate-600">With Capacity</p>
+              <p className="mt-2 text-3xl font-bold text-slate-900">{stats.withCapacity}</p>
+              <p className="text-xs text-slate-500 mt-1">arms configured</p>
             </div>
             <div className="rounded-lg bg-blue-50 p-3">
               <GraduationCap className="h-6 w-6 text-blue-600" />
             </div>
           </div>
         </div>
-        
+
         <div className="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-600">Total Students</p>
-              <p className="mt-2 text-3xl font-bold text-slate-900">{stats.totalStudents}</p>
+              <p className="text-sm font-medium text-slate-600">Total Capacity</p>
+              <p className="mt-2 text-3xl font-bold text-slate-900">{stats.totalCapacity}</p>
               <p className="text-xs text-slate-500 mt-1">across all arms</p>
             </div>
             <div className="rounded-lg bg-purple-50 p-3">
@@ -277,19 +263,6 @@ export function ArmsManager() {
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Create New Arm</h3>
           <div className="grid gap-4 md:grid-cols-3 items-end">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Class</label>
-              <select
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white"
-                value={form.classId}
-                onChange={(e) => setForm((p) => ({ ...p, classId: e.target.value }))}
-              >
-                <option value="">Select class</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Arm Name</label>
               <Input
                 placeholder="e.g., A, B, C, Gold, Silver"
@@ -297,9 +270,18 @@ export function ArmsManager() {
                 onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
               />
             </div>
-            <Button 
-              onClick={handleSubmit} 
-              disabled={submitting || !form.classId || !form.name.trim()}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Capacity (optional)</label>
+              <Input
+                type="number"
+                placeholder="e.g., 30"
+                value={form.capacity}
+                onChange={(e) => setForm((p) => ({ ...p, capacity: e.target.value }))}
+              />
+            </div>
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting || !form.name.trim()}
               className="bg-indigo-600 hover:bg-indigo-700"
             >
               {submitting ? "Creating..." : "Create Arm"}
@@ -309,19 +291,18 @@ export function ArmsManager() {
       )}
 
       {/* Arms Table */}
-      <div className="rounded-xl bg-white shadow-sm border border-slate-200">
+        <div className="rounded-xl bg-white shadow-sm border border-slate-200">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-900">Class Arms</h2>
+          <h2 className="font-semibold text-slate-900">Preset Arms</h2>
           <span className="text-sm text-slate-500">{filteredArms.length} of {arms.length} arms</span>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                 <th className="px-6 py-3 font-medium">Arm</th>
-                <th className="px-6 py-3 font-medium">Class</th>
-                <th className="px-6 py-3 font-medium">Students</th>
+                <th className="px-6 py-3 font-medium">Capacity</th>
                 <th className="px-6 py-3 font-medium">Status</th>
                 <th className="px-6 py-3 font-medium">Actions</th>
               </tr>
@@ -329,12 +310,12 @@ export function ArmsManager() {
             <tbody className="divide-y divide-slate-100">
               {filteredArms.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
                     <div className="flex flex-col items-center gap-2">
                       <div className="rounded-full bg-slate-100 p-3">
                         <UsersRound className="h-6 w-6 text-slate-400" />
                       </div>
-                      <p>No arms found</p>
+                      <p>No preset arms found</p>
                     </div>
                   </td>
                 </tr>
@@ -343,19 +324,18 @@ export function ArmsManager() {
                   <tr key={arm.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm">
-                          {arm.name}
+                        <div className="h-8 w-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-xs shrink-0">
+                          {arm.name.charAt(0).toUpperCase()}
                         </div>
-                        <span className="font-medium text-slate-900">Arm {arm.name}</span>
+                        <span className="font-medium text-slate-900">{arm.name}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-slate-600">{arm.className}</td>
                     <td className="px-6 py-4">
                       <span className={cn(
                         "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                        arm.studentCount > 0 ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
+                        arm.capacity !== null ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
                       )}>
-                        {arm.studentCount} students
+                        {arm.capacity !== null ? `${arm.capacity} students` : "Not set"}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -369,9 +349,9 @@ export function ArmsManager() {
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
                         {arm.isActive && (
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => handleDeactivate(arm.id)}
                             className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                           >

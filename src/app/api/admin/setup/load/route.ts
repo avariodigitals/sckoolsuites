@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"].includes(role) : false;
 }
 
 export async function GET() {
@@ -29,13 +29,13 @@ export async function GET() {
   return NextResponse.json({
     school,
     academic: {
-      sessions: sessions.map(s => ({
+      sessions: sessions.map((s: any) => ({
         id: s.id,
         name: s.name,
         startDate: s.startDate?.toISOString().split("T")[0] || "",
         endDate: s.endDate?.toISOString().split("T")[0] || "",
       })),
-      terms: terms.map(t => ({
+      terms: terms.map((t: any) => ({
         id: t.id,
         name: t.name,
         sessionId: t.sessionId,

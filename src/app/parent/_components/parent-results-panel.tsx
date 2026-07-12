@@ -21,6 +21,8 @@ type ChildResultSummary = {
   termGpa: number | null;
   classTeacherComment: string | null;
   principalComment: string | null;
+  fileUrl: string | null;
+  fileName: string | null;
   subjects: SubjectScore[];
 };
 
@@ -58,6 +60,7 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
         <section className="space-y-3">
           {data.map((item) => {
             const average = item.subjects.length ? item.subjects.reduce((sum, row) => sum + row.total, 0) / item.subjects.length : 0;
+            const isUploadedPdf = Boolean(item.fileUrl);
 
             return (
               <article key={item.studentId} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -66,7 +69,21 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
                   <p className="text-xs text-white/80">{item.className} • {item.termName || "-"} / {item.sessionName || "-"}</p>
                 </div>
 
-                <div className="space-y-4 p-4">
+                {isUploadedPdf ? (
+                  <div className="space-y-3 p-4">
+                    <p className="text-sm text-slate-600">This result was uploaded as a PDF by the class teacher.</p>
+                    <a
+                      href={item.fileUrl!}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex rounded-lg bg-[var(--brand-primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                    >
+                      Download PDF ({item.fileName || "result.pdf"})
+                    </a>
+                  </div>
+                ) : (
+                  <div className="space-y-4 p-4">
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">Term Percentage</p>
@@ -131,6 +148,7 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
                     ) : <p className="p-3 text-sm text-slate-500">No subject performance records.</p>}
                   </section>
                 </div>
+                )}
               </article>
             );
           })}

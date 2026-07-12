@@ -8,7 +8,7 @@ import { getAdminOverview, getCoreSchoolData, getCurrentSchoolByUser, statusLabe
 import { formatDate, naira } from "@/lib/utils";
 
 const roleAliases: Record<string, string[]> = {
-  admin: ["SCHOOL_ADMIN", "PRINCIPAL"],
+  admin: ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"],
   teacher: ["TEACHER"],
   accountant: ["ACCOUNTANT"],
   parent: ["PARENT"],
@@ -37,7 +37,7 @@ export async function PortalPage({
       orderBy: { createdAt: "desc" },
     });
 
-    const activeSchools = schools.filter((s) => s.isActive).length;
+    const activeSchools = schools.filter((s: any) => s.isActive).length;
     const totalRevenue = schools.reduce((sum: number, school: any) => sum + (school.payments?.reduce((acc: number, payment: any) => acc + payment.amount, 0) || 0), 0);
 
     return (
@@ -53,7 +53,7 @@ export async function PortalPage({
         <SimpleTable
           title="School Usage"
           headers={["School", "Users", "Students", "Status"]}
-          rows={schools.map((school) => [school.name, String(school.users.length), String(school.students.length), school.isActive ? "Active" : "Inactive"])}
+          rows={schools.map((school: any) => [school.name, String(school.users.length), String(school.students.length), school.isActive ? "Active" : "Inactive"])}
         />
       </PortalShell>
     );
@@ -102,7 +102,7 @@ export async function PortalPage({
         <SimpleTable
           title="Bills"
           headers={["No", "Student", "Total", "Paid", "Balance", "Status"]}
-          rows={core.bills.slice(0, 6).map((bill) => [
+          rows={core.bills.slice(0, 6).map((bill: any) => [
             bill.invoiceNumber,
             bill.student.user.name,
             naira(bill.totalAmount),
@@ -115,7 +115,7 @@ export async function PortalPage({
         <SimpleTable
           title="Recent Scores"
           headers={["Subject", "CA", "Exam", "Total", "Grade", "GPA"]}
-          rows={core.scores.slice(0, 8).map((score) => [
+          rows={core.scores.slice(0, 8).map((score: any) => [
             score.subject.name,
             String(score.caScore),
             String(score.examScore),
@@ -130,7 +130,7 @@ export async function PortalPage({
         <SimpleTable
           title="LMS Assignments"
           headers={["Title", "Subject", "Due", "Student"]}
-          rows={core.assignments.slice(0, 6).map((item) => [
+          rows={core.assignments.slice(0, 6).map((item: any) => [
             item.title,
             item.subject?.name ?? "-",
             formatDate(item.dueDate),

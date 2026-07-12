@@ -1,0 +1,1 @@
+ALTER TABLE "assessment" ADD COLUMN IF NOT EXISTS "type" TEXT;

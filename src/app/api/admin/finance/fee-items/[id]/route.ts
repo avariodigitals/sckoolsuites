@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
-import { buildFeeItemDedupeKey } from "@/lib/finance";
+import { parseNumericId } from "@/lib/id-helpers";
 
 const updateSchema = z.object({
-  feeGroupId: z.string().min(5).optional(),
+  feeGroupId: z.coerce.number().int().min(1).optional(),
   name: z.string().min(2).max(150).optional(),
   category: z.string().min(2).max(120).optional(),
-  classId: z.string().min(5).optional().nullable(),
-  armId: z.string().min(5).optional().nullable(),
-  sessionId: z.string().min(5).optional(),
-  termId: z.string().min(5).optional(),
+  classId: z.coerce.number().int().min(1).optional().nullable(),
+  armId: z.coerce.number().int().min(1).optional().nullable(),
+  sessionId: z.coerce.number().int().min(1).optional(),
+  termId: z.coerce.number().int().min(1).optional(),
   description: z.string().max(500).optional().nullable(),
   amount: z.number().min(0).optional(),
   isOptional: z.boolean().optional(),
@@ -21,11 +22,15 @@ const updateSchema = z.object({
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(role) : false;
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "PATCH", "fees");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -38,30 +43,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const schoolId = "default";
-  const existing = await prisma.feeItem.findFirst({ where: { id, schoolId } });
+
+  let parsedId: number;
+  try {
+    parsedId = parseNumericId(id, "fee item id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid fee item id";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
+  const existing = await prisma.feeItem.findFirst({ where: { id: parsedId, schoolId } });
   if (!existing) {
     return NextResponse.json({ error: "Fee item not found" }, { status: 404 });
   }
 
-  const feeGroupId = parsed.data.feeGroupId ?? existing.feeGroupId;
-  const name = parsed.data.name?.trim() ?? existing.name;
-  const classId = parsed.data.classId !== undefined ? parsed.data.classId : existing.classId;
-  const armId = parsed.data.armId !== undefined ? parsed.data.armId : existing.armId;
-  const sessionId = parsed.data.sessionId ?? existing.sessionId;
-  const termId = parsed.data.termId ?? existing.termId;
-
-  const dedupeKey = buildFeeItemDedupeKey({
-    feeGroupId,
-    name,
-    classId,
-    armId,
-    sessionId,
-    termId,
-  });
-
   try {
     const updated = await prisma.feeItem.update({
-      where: { id },
+      where: { id: parsedId },
       data: {
         ...(parsed.data.feeGroupId !== undefined ? { feeGroupId: parsed.data.feeGroupId } : {}),
         ...(parsed.data.category !== undefined ? { category: parsed.data.category.trim() } : {}),
@@ -76,7 +74,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         ...(parsed.data.dueDate !== undefined ? { dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null } : {}),
         ...(parsed.data.sortOrder !== undefined ? { sortOrder: parsed.data.sortOrder } : {}),
         ...(parsed.data.isActive !== undefined ? { isActive: parsed.data.isActive } : {}),
-        dedupeKey,
       },
     });
 
@@ -89,14 +86,26 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "DELETE", "fees");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
 
+  let parsedId: number;
+  try {
+    parsedId = parseNumericId(id, "fee item id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid fee item id";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
   const updated = await prisma.feeItem.updateMany({
-    where: { id, schoolId: "default" },
+    where: { id: parsedId, schoolId: "default" },
     data: { isActive: false },
   });
 

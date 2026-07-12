@@ -4,11 +4,15 @@ import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TeacherAttendanceForm } from "@/app/teacher/_components/teacher-attendance-form";
 import { TeacherScoreEntryForm } from "@/app/teacher/_components/teacher-score-entry-form";
+import { TeacherResultUploadForm } from "@/app/teacher/_components/teacher-result-upload-form";
+import { TeacherProfilePanel } from "@/app/teacher/_components/teacher-profile-panel";
 import { requireRole } from "@/lib/auth-guards";
 import { getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
+import { prisma } from "@/lib/db";
 import { formatDate, humanizeEnum } from "@/lib/utils";
 
 const allowed = [
+  "profile",
   "my-classes",
   "my-subjects",
   "attendance",
@@ -26,6 +30,7 @@ const allowed = [
 type AllowedSection = (typeof allowed)[number];
 
 const aliases: Record<AllowedSection, Exclude<AllowedSection, "scores" | "comments">> = {
+  profile: "profile",
   "my-classes": "my-classes",
   "my-subjects": "my-subjects",
   attendance: "attendance",
@@ -41,6 +46,7 @@ const aliases: Record<AllowedSection, Exclude<AllowedSection, "scores" | "commen
 };
 
 const titles: Record<Exclude<AllowedSection, "scores" | "comments">, string> = {
+  profile: "My Profile",
   "my-classes": "My Classes",
   "my-subjects": "My Subjects",
   attendance: "Attendance",
@@ -54,6 +60,7 @@ const titles: Record<Exclude<AllowedSection, "scores" | "comments">, string> = {
 };
 
 const descriptions: Record<Exclude<AllowedSection, "scores" | "comments">, string> = {
+  profile: "Your personal and contact details as an employee of the school.",
   "my-classes": "View all classes assigned to you this session and term.",
   "my-subjects": "Review your subject load and mapped class groups.",
   attendance: "Mark and monitor attendance records for your classes.",
@@ -71,6 +78,7 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
   if (!(allowed as readonly string[]).includes(section)) notFound();
 
   const user = await requireRole(["TEACHER"]);
+  const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
   const profile = await getCurrentSchoolByUser(user.id);
   if (!profile?.schoolId || !profile.school) {
     return (
@@ -87,7 +95,7 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
     termId: context.term?.id,
   });
 
-  const teacher = core.teachers.find((item) => item.userId === user.id);
+  const teacher = core.teachers.find((item: any) => item.userId === user.id);
   if (!teacher) {
     return (
       <SetupRequiredScreen
@@ -97,26 +105,76 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
     );
   }
 
-  const myClasses = core.classes.filter((item) => item.teacherId === teacher.id);
-  const classIds = new Set(myClasses.map((item) => item.id));
-  const mySubjects = core.subjects.filter((item) => item.teacherId === teacher.id || (item.classId ? classIds.has(item.classId) : false));
-  const subjectIds = new Set(mySubjects.map((item) => item.id));
-  const myScores = core.scores.filter((item) => subjectIds.has(item.subjectId));
-  const myLessons = core.lessons.filter((item) => item.teacherId === teacher.id);
-  const myAssignments = core.assignments.filter((item) => item.subjectId && subjectIds.has(item.subjectId));
-  const myAttendance = core.attendance.filter((item) => item.classId && classIds.has(item.classId));
-  const myStudents = core.students.filter((item) => item.classId && classIds.has(item.classId));
+  const myClasses = core.classes.filter((item: any) => item.teacherId === teacher.id);
+  const classIds = new Set(myClasses.map((item: any) => item.id));
+  const mySubjects = core.subjects.filter((item: any) => item.teacherId === teacher.id || (item.classId ? classIds.has(item.classId) : false));
+  const subjectIds = new Set(mySubjects.map((item: any) => item.id));
+  const myScores = core.scores.filter((item: any) => subjectIds.has(item.subjectId));
+  const myLessons = core.lessons.filter((item: any) => item.teacherId === teacher.id);
+  const myAssignments = core.assignments.filter((item: any) => item.subjectId && subjectIds.has(item.subjectId));
+  const myAttendance = core.attendance.filter((item: any) => item.classId && classIds.has(item.classId));
+  const myStudents = core.students.filter((item: any) => item.classId && classIds.has(item.classId));
 
   const canonical = aliases[section as AllowedSection];
 
   function renderSection() {
     switch (canonical) {
+      case "profile":
+        return (
+          <section className="space-y-4">
+            <Card className="glass-panel">
+              <CardHeader>
+                <CardTitle>Teacher Profile</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
+                    <p className="text-[11px] text-slate-500">Full Name</p>
+                    <p className="font-medium text-slate-900">{teacher.user?.name}</p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
+                    <p className="text-[11px] text-slate-500">Email</p>
+                    <p className="font-medium text-slate-900">{teacher.user?.email}</p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
+                    <p className="text-[11px] text-slate-500">Phone</p>
+                    <p className="font-medium text-slate-900">{teacher.user?.phone ?? "—"}</p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
+                    <p className="text-[11px] text-slate-500">Address</p>
+                    <p className="font-medium text-slate-900">{teacher.user?.address ?? "—"}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="mb-2 text-sm font-semibold text-slate-900">Assigned Workload</h4>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
+                      <p className="text-[11px] text-slate-500">Classes</p>
+                      <p className="font-medium text-slate-900">{myClasses.length}</p>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
+                      <p className="text-[11px] text-slate-500">Subjects</p>
+                      <p className="font-medium text-slate-900">{mySubjects.length}</p>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
+                      <p className="text-[11px] text-slate-500">Students</p>
+                      <p className="font-medium text-slate-900">{myStudents.length}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <TeacherProfilePanel />
+          </section>
+        );
       case "my-classes":
         return (
           <Card>
             <CardHeader><CardTitle>Assigned Classes</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {myClasses.length ? myClasses.map((item) => (
+              {myClasses.length ? myClasses.map((item: any) => (
                 <div key={item.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">{item.name}</p>
                   <p>Students: {item.students.length}</p>
@@ -130,7 +188,7 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
           <Card>
             <CardHeader><CardTitle>Assigned Subjects</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {mySubjects.length ? mySubjects.map((item) => (
+              {mySubjects.length ? mySubjects.map((item: any) => (
                 <div key={item.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">{item.name}</p>
                   <p>Class: {item.class?.name ?? "No class mapping"}</p>
@@ -143,18 +201,18 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
         return (
           <div className="space-y-3">
             <TeacherAttendanceForm
-              classOptions={myClasses.map((item) => ({
+              classOptions={myClasses.map((item: any) => ({
                 id: item.id,
                 name: item.name,
                 students: myStudents
-                  .filter((student) => student.classId === item.id)
-                  .map((student) => ({ id: student.id, name: student.user.name })),
+                  .filter((student: any) => student.classId === item.id)
+                  .map((student: any) => ({ id: student.id, name: student.user.name })),
               }))}
             />
             <Card>
               <CardHeader><CardTitle>Attendance Records</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
-                {myAttendance.slice(0, 20).map((item) => (
+                {myAttendance.slice(0, 20).map((item: any) => (
                   <div key={item.id} className="glass-soft rounded-xl p-3">
                     <p className="font-medium">{item.student.user.name}</p>
                     <p>{item.class?.name ?? "Class"} • {humanizeEnum(item.status)} • {formatDate(item.date)}</p>
@@ -169,13 +227,14 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
         return (
           <div className="space-y-3">
             <TeacherScoreEntryForm
-              subjectOptions={mySubjects.map((item) => ({ id: item.id, name: item.name, classId: item.classId }))}
-              studentOptions={myStudents.map((item) => ({ id: item.id, name: item.user.name, classId: item.classId }))}
+              subjectOptions={mySubjects.map((item: any) => ({ id: item.id, name: item.name, classId: item.classId }))}
+              studentOptions={myStudents.map((item: any) => ({ id: item.id, name: item.user.name, classId: item.classId }))}
             />
+            <TeacherResultUploadForm studentOptions={myStudents.map((item: any) => ({ id: item.id, name: item.user.name }))} />
             <Card>
               <CardHeader><CardTitle>Score Entry Queue</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
-                {myScores.slice(0, 20).map((item) => (
+                {myScores.slice(0, 20).map((item: any) => (
                   <div key={item.id} className="glass-soft rounded-xl p-3">
                     <p className="font-medium">{item.student.user.name} • {item.subject.name}</p>
                     <p>CA: {item.caScore} • Exam: {item.examScore} • Total: {item.total}%</p>
@@ -191,7 +250,7 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
           <Card>
             <CardHeader><CardTitle>Assignments</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {myAssignments.slice(0, 20).map((item) => (
+              {myAssignments.slice(0, 20).map((item: any) => (
                 <div key={item.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">{item.title}</p>
                   <p>Subject: {item.subject?.name ?? "-"} • Due: {formatDate(item.dueDate)}</p>
@@ -206,7 +265,7 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
           <Card>
             <CardHeader><CardTitle>Lesson Notes</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {myLessons.slice(0, 20).map((item) => (
+              {myLessons.slice(0, 20).map((item: any) => (
                 <div key={item.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">{item.title}</p>
                   <p>Subject: {item.subject?.name ?? "-"} • Uploaded: {formatDate(item.createdAt)}</p>
@@ -221,7 +280,7 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
           <Card>
             <CardHeader><CardTitle>Teaching Timetable</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {mySubjects.length ? mySubjects.map((item, idx) => (
+              {mySubjects.length ? mySubjects.map((item: any, idx: any) => (
                 <div key={item.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">Period {idx + 1}: {item.name}</p>
                   <p>Class: {item.class?.name ?? "-"}</p>
@@ -235,7 +294,7 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
           <Card>
             <CardHeader><CardTitle>Student Reports</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {myScores.slice(0, 25).map((item) => (
+              {myScores.slice(0, 25).map((item: any) => (
                 <div key={item.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">{item.student.user.name}</p>
                   <p>{item.subject.name} • Grade: {item.grade} • GPA: {item.gpa.toFixed(2)}</p>
@@ -251,14 +310,14 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
             <Card>
               <CardHeader><CardTitle>LMS Lessons</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
-                {myLessons.slice(0, 12).map((item) => <p key={item.id}>{item.title}</p>)}
+                {myLessons.slice(0, 12).map((item: any) => <p key={item.id}>{item.title}</p>)}
                 {!myLessons.length ? <p className="text-slate-500">No lesson content yet.</p> : null}
               </CardContent>
             </Card>
             <Card>
               <CardHeader><CardTitle>LMS Assignments</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
-                {myAssignments.slice(0, 12).map((item) => <p key={item.id}>{item.title}</p>)}
+                {myAssignments.slice(0, 12).map((item: any) => <p key={item.id}>{item.title}</p>)}
                 {!myAssignments.length ? <p className="text-slate-500">No assignments yet.</p> : null}
               </CardContent>
             </Card>
@@ -269,7 +328,7 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
           <Card>
             <CardHeader><CardTitle>Announcements</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {core.announcements.slice(0, 15).map((item) => (
+              {core.announcements.slice(0, 15).map((item: any) => (
                 <div key={item.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">{item.title}</p>
                   <p className="text-slate-600">{item.body.slice(0, 180)}</p>
@@ -288,11 +347,12 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
       schoolName={core.school?.name}
       schoolLogoUrl={core.school?.branding?.logoUrl ?? undefined}
       userName={user.name ?? "Teacher"}
+      avatarUrl={dbUser?.avatarUrl ?? undefined}
       pathname={`/teacher/${section}`}
       currentSessionName={context.session?.name}
       currentTermName={context.term?.name}
-      sessions={core.sessions.map((item) => ({ id: item.id, name: item.name }))}
-      terms={core.terms.map((item) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
+      sessions={core.sessions.map((item: any) => ({ id: item.id, name: item.name }))}
+      terms={core.terms.map((item: any) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
       selectedSessionId={context.session?.id}
       selectedTermId={context.term?.id}
       primaryColor={core.school?.branding?.primaryColor}

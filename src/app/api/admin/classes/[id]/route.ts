@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
+import { parseNumericId } from "@/lib/id-helpers";
 
 const updateSchema = z.object({
   name: z.string().min(1).max(50).optional(),
-  classGroupId: z.string().min(5).optional().nullable(),
-  teacherId: z.string().min(5).optional().nullable(),
+  classGroupId: z.coerce.number().int().min(1).optional().nullable(),
+  teacherId: z.coerce.number().int().min(1).optional().nullable(),
+  armIds: z.array(z.coerce.number().int().min(1)).optional(),
+  assessmentIds: z.array(z.coerce.number().int().min(1)).optional(),
 });
 
 const armSchema = z.object({
@@ -16,21 +20,40 @@ const armSchema = z.object({
 });
 
 const subjectSchema = z.object({
-  subjectId: z.string().min(5),
+  subjectId: z.coerce.number().int().min(1),
   action: z.enum(["ADD_SUBJECT", "REMOVE_SUBJECT"]),
 });
 
+const armTeacherSchema = z.object({
+  armId: z.coerce.number().int().min(1),
+  teacherId: z.coerce.number().int().min(1),
+  action: z.literal("ASSIGN_ARM_TEACHER"),
+});
+
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "PATCH", "classes");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
+
+  let parsedId: number;
+  try {
+    parsedId = parseNumericId(id, "class id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid class id";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
   const payload = await request.json();
   const schoolId = "default";
 
@@ -41,7 +64,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     // Verify class exists
     const cls = await prisma.class.findFirst({
-      where: { id, schoolId },
+      where: { id: parsedId, schoolId },
     });
     if (!cls) {
       return NextResponse.json({ error: "Class not found" }, { status: 404 });
@@ -50,7 +73,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (action === "ADD_ARM") {
       // Check if arm name already exists for this class
       const existingArm = await prisma.classArm.findFirst({
-        where: { classId: id, name: armName, schoolId },
+        where: { classId: parsedId, name: armName, schoolId },
       });
       if (existingArm) {
         return NextResponse.json({ error: "Arm name already exists for this class" }, { status: 409 });
@@ -59,7 +82,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       const arm = await prisma.classArm.create({
         data: {
           schoolId,
-          classId: id,
+          classId: parsedId,
           name: armName.trim(),
           isActive: true,
         },
@@ -70,15 +93,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         actorUserId: session.user.id,
         action: "CLASS_ARM_ADDED",
         targetType: "Class",
-        targetId: id,
-        metadata: { classId: id, armId: arm.id, armName },
+        targetId: String(parsedId),
+        metadata: { classId: parsedId, armId: arm.id, armName },
       });
 
       return NextResponse.json({ ok: true, arm: { id: arm.id, name: arm.name, isActive: arm.isActive } });
     } else {
       // REMOVE_ARM
       const arm = await prisma.classArm.findFirst({
-        where: { classId: id, name: armName, schoolId },
+        where: { classId: parsedId, name: armName, schoolId },
       });
       if (!arm) {
         return NextResponse.json({ error: "Arm not found" }, { status: 404 });
@@ -94,8 +117,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         actorUserId: session.user.id,
         action: "CLASS_ARM_REMOVED",
         targetType: "Class",
-        targetId: id,
-        metadata: { classId: id, armId: arm.id, armName },
+        targetId: String(parsedId),
+        metadata: { classId: parsedId, armId: arm.id, armName },
       });
 
       return NextResponse.json({ ok: true, message: "Arm removed successfully" });
@@ -109,7 +132,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     // Verify class exists
     const cls = await prisma.class.findFirst({
-      where: { id, schoolId },
+      where: { id: parsedId, schoolId },
       include: { subjects: true },
     });
     if (!cls) {
@@ -134,7 +157,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       // Update subject to link to this class
       await prisma.subject.update({
         where: { id: subjectId },
-        data: { classId: id },
+        data: { classId: parsedId },
       });
 
       await createAuditLog({
@@ -142,8 +165,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         actorUserId: session.user.id,
         action: "SUBJECT_ADDED_TO_CLASS",
         targetType: "Class",
-        targetId: id,
-        metadata: { classId: id, subjectId },
+        targetId: String(parsedId),
+        metadata: { classId: parsedId, subjectId },
       });
 
       return NextResponse.json({ ok: true, message: "Subject added to class successfully" });
@@ -164,12 +187,51 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         actorUserId: session.user.id,
         action: "SUBJECT_REMOVED_FROM_CLASS",
         targetType: "Class",
-        targetId: id,
-        metadata: { classId: id, subjectId },
+        targetId: String(parsedId),
+        metadata: { classId: parsedId, subjectId },
       });
 
       return NextResponse.json({ ok: true, message: "Subject removed from class successfully" });
     }
+  }
+
+  // Check if this is an arm teacher assignment action
+  const armTeacherParsed = armTeacherSchema.safeParse(payload);
+  if (armTeacherParsed.success) {
+    const { armId, teacherId } = armTeacherParsed.data;
+
+    // Verify class exists
+    const cls = await prisma.class.findFirst({
+      where: { id: parsedId, schoolId },
+    });
+    if (!cls) {
+      return NextResponse.json({ error: "Class not found" }, { status: 404 });
+    }
+
+    // Verify arm belongs to this class
+    const arm = await prisma.classArm.findFirst({
+      where: { id: armId, classId: parsedId, schoolId },
+    });
+    if (!arm) {
+      return NextResponse.json({ error: "Arm not found in this class" }, { status: 404 });
+    }
+
+    // Update the arm's teacher
+    await prisma.classArm.update({
+      where: { id: armId },
+      data: { teacherId: teacherId || null },
+    });
+
+    await createAuditLog({
+      schoolId,
+      actorUserId: session.user.id,
+      action: "ARM_TEACHER_ASSIGNED",
+      targetType: "ClassArm",
+      targetId: String(armId),
+      metadata: { classId: parsedId, armId, teacherId: teacherId || null },
+    });
+
+    return NextResponse.json({ ok: true, message: "Arm teacher assigned successfully" });
   }
 
   // Regular class update
@@ -182,7 +244,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   // Check class exists
   const existing = await prisma.class.findFirst({
-    where: { id, schoolId },
+    where: { id: parsedId, schoolId },
   });
   if (!existing) {
     return NextResponse.json({ error: "Class not found" }, { status: 404 });
@@ -220,7 +282,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   try {
     const updated = await prisma.class.update({
-      where: { id },
+      where: { id: parsedId },
       data: {
         ...(data.name !== undefined ? { name: data.name.trim() } : {}),
         ...(data.classGroupId !== undefined ? { classGroupId: data.classGroupId } : {}),
@@ -228,14 +290,92 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       },
     });
 
+    // Sync arms from preset selections
+    if (data.armIds !== undefined) {
+      const currentArms = await prisma.classArm.findMany({
+        where: { classId: parsedId, schoolId, isActive: true },
+      });
+      const desiredArmIds = new Set(data.armIds);
+
+      // Look up selected preset arms by ID
+      const presetArms = desiredArmIds.size > 0
+        ? await prisma.classArm.findMany({
+            where: {
+              id: { in: Array.from(desiredArmIds) },
+              schoolId,
+              classId: null,
+            },
+          })
+        : [];
+      const desiredNames = new Set(presetArms.map((p: { name: string }) => p.name));
+
+      // Deactivate class arms whose preset is no longer selected (match by name)
+      for (const arm of currentArms) {
+        if (!desiredNames.has(arm.name)) {
+          await prisma.classArm.update({
+            where: { id: arm.id },
+            data: { isActive: false },
+          });
+        }
+      }
+
+      // Create class arms from presets that aren't already active on this class
+      const currentNames = new Set(currentArms.map((a: { name: string }) => a.name));
+      for (const preset of presetArms) {
+        if (!currentNames.has(preset.name)) {
+          await prisma.classArm.create({
+            data: {
+              schoolId,
+              classId: parsedId,
+              name: preset.name,
+              capacity: preset.capacity,
+              isActive: true,
+            },
+          });
+        }
+      }
+    }
+
+    // Sync assessment links
+    if (data.assessmentIds !== undefined) {
+      const currentLinks = await prisma.classAssessment.findMany({
+        where: { classId: parsedId, isActive: true },
+      });
+      const desiredIds = new Set(data.assessmentIds);
+      const currentIds = new Set(currentLinks.map((l) => l.assessmentId));
+
+      // Deactivate links that are no longer selected
+      for (const link of currentLinks) {
+        if (!desiredIds.has(link.assessmentId)) {
+          await prisma.classAssessment.update({
+            where: { id: link.id },
+            data: { isActive: false },
+          });
+        }
+      }
+
+      // Create new links for selected assessments
+      for (const assessmentId of desiredIds) {
+        if (!currentIds.has(assessmentId)) {
+          await prisma.classAssessment.create({
+            data: {
+              classId: parsedId,
+              assessmentId,
+              isActive: true,
+            },
+          });
+        }
+      }
+    }
+
     await createAuditLog({
       schoolId,
       actorUserId: session.user.id,
       action: "CLASS_UPDATED",
       targetType: "Class",
-      targetId: id,
+      targetId: String(parsedId),
       metadata: {
-        classId: id,
+        classId: parsedId,
         updates: Object.keys(data),
       },
     });
@@ -249,16 +389,29 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "DELETE", "classes");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
+
+  let parsedId: number;
+  try {
+    parsedId = parseNumericId(id, "class id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid class id";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
   const schoolId = "default";
 
   // Check class exists
   const existing = await prisma.class.findFirst({
-    where: { id, schoolId },
+    where: { id: parsedId, schoolId },
     include: { students: true, arms: true },
   });
   if (!existing) {
@@ -276,19 +429,19 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   try {
     // Soft delete by deactivating arms
     await prisma.classArm.updateMany({
-      where: { classId: id, schoolId },
+      where: { classId: parsedId, schoolId },
       data: { isActive: false },
     });
 
     // Remove subject associations
     await prisma.subject.updateMany({
-      where: { classId: id, schoolId },
+      where: { classId: parsedId, schoolId },
       data: { classId: null },
     });
 
     // Delete the class
     await prisma.class.delete({
-      where: { id },
+      where: { id: parsedId },
     });
 
     await createAuditLog({
@@ -296,9 +449,9 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       actorUserId: session.user.id,
       action: "CLASS_DELETED",
       targetType: "Class",
-      targetId: id,
+      targetId: String(parsedId),
       metadata: {
-        classId: id,
+        classId: parsedId,
         name: existing.name,
       },
     });

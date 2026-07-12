@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { StudentDetailModal } from "./student-detail-modal";
+import Image from "next/image";
 
 type Student = {
   id: string;
@@ -27,10 +29,24 @@ type ClassOption = { id: string; name: string };
 type ParentOption = { id: string; name: string; email: string };
 type Gender = "MALE" | "FEMALE" | "OTHER";
 
+type GuardianForm = {
+  name: string;
+  email: string;
+  phone: string;
+  relationship: string;
+  occupation: string;
+  employerName: string;
+  workAddress: string;
+  workPhone: string;
+  homeAddress: string;
+  idDocumentType: string;
+  idDocumentNumber: string;
+  isPrimary: boolean;
+};
+
 type StudentForm = {
   name: string;
   email: string;
-  password: string;
   gender: Gender;
   age: string;
   classId: string;
@@ -38,12 +54,27 @@ type StudentForm = {
   sportHouse: string;
   coCurricular: string;
   responsibilities: string;
+  guardian: GuardianForm;
+};
+
+const emptyGuardian: GuardianForm = {
+  name: "",
+  email: "",
+  phone: "",
+  relationship: "",
+  occupation: "",
+  employerName: "",
+  workAddress: "",
+  workPhone: "",
+  homeAddress: "",
+  idDocumentType: "",
+  idDocumentNumber: "",
+  isPrimary: true,
 };
 
 const emptyStudent: StudentForm = {
   name: "",
   email: "",
-  password: "",
   gender: "MALE",
   age: "",
   classId: "",
@@ -51,9 +82,21 @@ const emptyStudent: StudentForm = {
   sportHouse: "",
   coCurricular: "",
   responsibilities: "",
+  guardian: emptyGuardian,
 };
 
-export function StudentManager() {
+function AvatarCell({ url, name }: { url: string | null; name: string }) {
+  if (url) {
+    return <Image src={url} alt="" width={32} height={32} className="h-8 w-8 rounded-full object-cover" />;
+  }
+  return (
+    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
+      {name?.charAt(0)?.toUpperCase() ?? "S"}
+    </div>
+  );
+}
+
+export function StudentManager({ sessionId, termId }: { sessionId?: string | null; termId?: string | null }) {
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [parents, setParents] = useState<ParentOption[]>([]);
@@ -62,7 +105,10 @@ export function StudentManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [form, setForm] = useState<StudentForm>(emptyStudent);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [viewingId, setViewingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery.trim()) return students;
@@ -76,11 +122,15 @@ export function StudentManager() {
     );
   }, [students, searchQuery]);
 
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setStatus("");
     try {
-      const response = await fetch("/api/admin/students", { cache: "no-store" });
+      const params = new URLSearchParams();
+      if (sessionId) params.set("sessionId", sessionId);
+      if (termId) params.set("termId", termId);
+      const url = `/api/admin/students${params.toString() ? "?" + params.toString() : ""}`;
+      const response = await fetch(url, { cache: "no-store" });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
         setStatus(payload?.error ?? "Unable to load students.");
@@ -94,29 +144,51 @@ export function StudentManager() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [sessionId, termId]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       void loadData();
     }, 0);
     return () => clearTimeout(timer);
-  }, []);
+  }, [loadData, sessionId, termId]);
 
   async function handleSubmit() {
     setStatus("");
     setSubmitting(true);
 
     const body = {
-      ...form,
+      name: form.name,
+      email: form.email,
+      gender: form.gender,
       age: Number(form.age) || 0,
       classId: form.classId || null,
       parentId: form.parentId || null,
+      sportHouse: form.sportHouse || null,
+      coCurricular: form.coCurricular || null,
+      responsibilities: form.responsibilities || null,
+      guardian: creating && !form.parentId && form.guardian.name.trim()
+        ? {
+            name: form.guardian.name.trim(),
+            email: form.guardian.email.trim() || null,
+            phone: form.guardian.phone.trim() || null,
+            relationship: form.guardian.relationship.trim() || null,
+            occupation: form.guardian.occupation.trim() || null,
+            employerName: form.guardian.employerName.trim() || null,
+            workAddress: form.guardian.workAddress.trim() || null,
+            workPhone: form.guardian.workPhone.trim() || null,
+            homeAddress: form.guardian.homeAddress.trim() || null,
+            idDocumentType: form.guardian.idDocumentType.trim() || null,
+            idDocumentNumber: form.guardian.idDocumentNumber.trim() || null,
+            isPrimary: form.guardian.isPrimary,
+          }
+        : undefined,
     };
 
-    const isEditing = editingId !== null;
-    const url = isEditing ? `/api/admin/students/${editingId}` : "/api/admin/students";
-    const method = isEditing ? "PATCH" : "POST";
+    const url = creating
+      ? "/api/admin/students"
+      : `/api/admin/students/${editingId}`;
+    const method = creating ? "POST" : "PATCH";
 
     try {
       const response = await fetch(url, {
@@ -128,18 +200,55 @@ export function StudentManager() {
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setStatus(payload?.error ?? `Failed to ${isEditing ? "update" : "create"} student.`);
+        setStatus(payload?.error ?? `Failed to ${creating ? "create" : "update"} student.`);
         return;
       }
 
       setForm(emptyStudent);
       setEditingId(null);
-      setStatus(`Student ${isEditing ? "updated" : "created"} successfully.`);
+      setCreating(false);
+      setStatus(`Student ${creating ? "created" : "updated"} successfully.`);
       await loadData();
     } catch {
       setStatus("An error occurred.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleCreate() {
+    setCreating(true);
+    setEditingId("new");
+    setForm(emptyStudent);
+    setStatus("");
+  }
+
+  function cancelForm() {
+    setEditingId(null);
+    setCreating(false);
+    setForm(emptyStudent);
+    setStatus("");
+  }
+
+  async function handleHardDelete(id: string) {
+    if (!window.confirm("PERMANENTLY delete this student? This action cannot be undone. All related data (enrollments, fees, results) will be lost.")) {
+      return;
+    }
+    setDeletingId(id);
+    setStatus("");
+    try {
+      const response = await fetch(`/api/admin/students/${id}?hard=true`, { method: "DELETE" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setStatus(payload?.error ?? "Failed to delete student.");
+        return;
+      }
+      setStatus("Student deleted permanently.");
+      await loadData();
+    } catch {
+      setStatus("An error occurred.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -170,7 +279,6 @@ export function StudentManager() {
     setForm({
       name: student.name,
       email: student.email,
-      password: "",
       gender: student.gender as "MALE" | "FEMALE" | "OTHER",
       age: String(student.age),
       classId: student.classId ?? "",
@@ -178,13 +286,8 @@ export function StudentManager() {
       sportHouse: student.sportHouse ?? "",
       coCurricular: student.coCurricular ?? "",
       responsibilities: student.responsibilities ?? "",
+      guardian: emptyGuardian,
     });
-  }
-
-  function cancelEdit() {
-    setEditingId(null);
-    setForm(emptyStudent);
-    setStatus("");
   }
 
   if (loading) {
@@ -207,113 +310,117 @@ export function StudentManager() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-md"
         />
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            setEditingId(null);
-            setForm(emptyStudent);
-            setStatus("");
-          }}
-        >
-          + New Student
+        <Button onClick={handleCreate} disabled={creating || editingId !== null}>
+          + Add Student
         </Button>
       </div>
 
-      {/* Student Form */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <h3 className="mb-3 text-sm font-semibold text-slate-900">
-          {editingId ? "Edit Student" : "Add New Student"}
-        </h3>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <Input
-            value={form.name}
-            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-            placeholder="Full name *"
-          />
-          <Input
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-            placeholder="Email address *"
-            disabled={editingId !== null}
-          />
-          {!editingId && (
+      {/* Create / Edit Student Form */}
+      {editingId !== null && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <h3 className="mb-3 text-sm font-semibold text-slate-900">{creating ? "Add New Student" : "Edit Student"}</h3>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             <Input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-              placeholder="Password (optional, default: email prefix + 123)"
+              value={form.name}
+              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="Full name *"
             />
-          )}
-          <select
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-            value={form.gender}
-            onChange={(e) => setForm((prev) => ({ ...prev, gender: e.target.value as "MALE" | "FEMALE" | "OTHER" }))}
-          >
-            <option value="MALE">Male</option>
-            <option value="FEMALE">Female</option>
-            <option value="OTHER">Other</option>
-          </select>
-          <Input
-            type="number"
-            value={form.age}
-            onChange={(e) => setForm((prev) => ({ ...prev, age: e.target.value }))}
-            placeholder="Age *"
-            min={3}
-            max={30}
-          />
-          <select
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-            value={form.classId}
-            onChange={(e) => setForm((prev) => ({ ...prev, classId: e.target.value }))}
-          >
-            <option value="">Select class</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <select
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-            value={form.parentId}
-            onChange={(e) => setForm((prev) => ({ ...prev, parentId: e.target.value }))}
-          >
-            <option value="">Select parent/guardian</option>
-            {parents.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.email})
-              </option>
-            ))}
-          </select>
-          <Input
-            value={form.sportHouse}
-            onChange={(e) => setForm((prev) => ({ ...prev, sportHouse: e.target.value }))}
-            placeholder="Sport house (optional)"
-          />
-          <Input
-            value={form.coCurricular}
-            onChange={(e) => setForm((prev) => ({ ...prev, coCurricular: e.target.value }))}
-            placeholder="Co-curricular activity (optional)"
-          />
-          <Input
-            value={form.responsibilities}
-            onChange={(e) => setForm((prev) => ({ ...prev, responsibilities: e.target.value }))}
-            placeholder="Responsibilities (optional)"
-          />
-        </div>
-        <div className="mt-3 flex gap-2">
-          <Button onClick={handleSubmit} disabled={submitting}>
-            {submitting ? (editingId ? "Updating..." : "Creating...") : editingId ? "Update Student" : "Create Student"}
-          </Button>
-          {editingId && (
-            <Button variant="outline" onClick={cancelEdit}>
+            <Input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+              placeholder="Email address *"
+              disabled={!creating}
+            />
+            <select
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+              value={form.gender}
+              onChange={(e) => setForm((prev) => ({ ...prev, gender: e.target.value as "MALE" | "FEMALE" | "OTHER" }))}
+            >
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+            </select>
+            <Input
+              type="number"
+              value={form.age}
+              onChange={(e) => setForm((prev) => ({ ...prev, age: e.target.value }))}
+              placeholder="Age *"
+              min={3}
+              max={30}
+            />
+            <select
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+              value={form.classId}
+              onChange={(e) => setForm((prev) => ({ ...prev, classId: e.target.value }))}
+            >
+              <option value="">Select class</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <select
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+              value={form.parentId}
+              onChange={(e) => setForm((prev) => ({ ...prev, parentId: e.target.value }))}
+            >
+              <option value="">Select parent/guardian</option>
+              {parents.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.email})
+                </option>
+              ))}
+            </select>
+            {creating && !form.parentId && (
+              <div className="md:col-span-2 lg:col-span-3 rounded-lg border border-slate-200 bg-slate-50/50 p-3">
+                <h4 className="mb-2 text-xs font-semibold text-slate-700">New Guardian</h4>
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  <Input value={form.guardian.name} onChange={(e) => setForm((prev) => ({ ...prev, guardian: { ...prev.guardian, name: e.target.value } }))} placeholder="Guardian name *" />
+                  <Input type="email" value={form.guardian.email} onChange={(e) => setForm((prev) => ({ ...prev, guardian: { ...prev.guardian, email: e.target.value } }))} placeholder="Guardian email" />
+                  <Input value={form.guardian.phone} onChange={(e) => setForm((prev) => ({ ...prev, guardian: { ...prev.guardian, phone: e.target.value } }))} placeholder="Phone" />
+                  <Input value={form.guardian.relationship} onChange={(e) => setForm((prev) => ({ ...prev, guardian: { ...prev.guardian, relationship: e.target.value } }))} placeholder="Relationship e.g. Father" />
+                  <Input value={form.guardian.occupation} onChange={(e) => setForm((prev) => ({ ...prev, guardian: { ...prev.guardian, occupation: e.target.value } }))} placeholder="Occupation" />
+                  <Input value={form.guardian.employerName} onChange={(e) => setForm((prev) => ({ ...prev, guardian: { ...prev.guardian, employerName: e.target.value } }))} placeholder="Employer / place of work" />
+                  <Input value={form.guardian.workPhone} onChange={(e) => setForm((prev) => ({ ...prev, guardian: { ...prev.guardian, workPhone: e.target.value } }))} placeholder="Work phone" />
+                  <Input value={form.guardian.workAddress} onChange={(e) => setForm((prev) => ({ ...prev, guardian: { ...prev.guardian, workAddress: e.target.value } }))} placeholder="Work address" />
+                  <Input value={form.guardian.homeAddress} onChange={(e) => setForm((prev) => ({ ...prev, guardian: { ...prev.guardian, homeAddress: e.target.value } }))} placeholder="Home address" />
+                  <Input value={form.guardian.idDocumentType} onChange={(e) => setForm((prev) => ({ ...prev, guardian: { ...prev.guardian, idDocumentType: e.target.value } }))} placeholder="ID document type" />
+                  <Input value={form.guardian.idDocumentNumber} onChange={(e) => setForm((prev) => ({ ...prev, guardian: { ...prev.guardian, idDocumentNumber: e.target.value } }))} placeholder="ID document number" />
+                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input type="checkbox" checked={form.guardian.isPrimary} onChange={(e) => setForm((prev) => ({ ...prev, guardian: { ...prev.guardian, isPrimary: e.target.checked } }))} />
+                    Primary guardian
+                  </label>
+                </div>
+              </div>
+            )}
+            <Input
+              value={form.sportHouse}
+              onChange={(e) => setForm((prev) => ({ ...prev, sportHouse: e.target.value }))}
+              placeholder="Sport house (optional)"
+            />
+            <Input
+              value={form.coCurricular}
+              onChange={(e) => setForm((prev) => ({ ...prev, coCurricular: e.target.value }))}
+              placeholder="Co-curricular activity (optional)"
+            />
+            <Input
+              value={form.responsibilities}
+              onChange={(e) => setForm((prev) => ({ ...prev, responsibilities: e.target.value }))}
+              placeholder="Responsibilities (optional)"
+            />
+          </div>
+          <div className="mt-3 flex gap-2">
+            <Button onClick={handleSubmit} disabled={submitting}>
+              {submitting ? (creating ? "Creating..." : "Updating...") : (creating ? "Create Student" : "Update Student")}
+            </Button>
+            <Button variant="outline" onClick={cancelForm}>
               Cancel
             </Button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Students Table */}
       <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -324,6 +431,7 @@ export function StudentManager() {
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                <th className="px-2 py-2"></th>
                 <th className="px-2 py-2">Name</th>
                 <th className="px-2 py-2">Email</th>
                 <th className="px-2 py-2">Gender</th>
@@ -337,13 +445,16 @@ export function StudentManager() {
             <tbody>
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-2 py-4 text-center text-slate-500">
+                  <td colSpan={9} className="px-2 py-4 text-center text-slate-500">
                     No students found.
                   </td>
                 </tr>
               ) : (
                 filteredStudents.map((student) => (
                   <tr key={student.id} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="px-2 py-2">
+                      <AvatarCell url={student.passportUrl} name={student.name} />
+                    </td>
                     <td className="px-2 py-2 font-medium text-slate-900">{student.name}</td>
                     <td className="px-2 py-2 text-slate-600">{student.email}</td>
                     <td className="px-2 py-2">{student.gender}</td>
@@ -362,7 +473,10 @@ export function StudentManager() {
                       </span>
                     </td>
                     <td className="px-2 py-2">
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 flex-wrap">
+                        <Button size="sm" variant="outline" onClick={() => setViewingId(student.id)}>
+                          View
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => startEdit(student)}>
                           Edit
                         </Button>
@@ -371,6 +485,9 @@ export function StudentManager() {
                             Deactivate
                           </Button>
                         )}
+                        <Button size="sm" variant="outline" className="text-rose-600 hover:bg-rose-50" onClick={() => handleHardDelete(student.id)} disabled={deletingId === student.id}>
+                          {deletingId === student.id ? "Deleting..." : "Delete"}
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -380,6 +497,13 @@ export function StudentManager() {
           </table>
         </div>
       </div>
+
+      {viewingId && (
+        <StudentDetailModal
+          studentId={viewingId}
+          onClose={() => setViewingId(null)}
+        />
+      )}
     </div>
   );
 }

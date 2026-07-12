@@ -16,7 +16,8 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const context = await service.getUserContext("default", session.user.id);
+  const schoolId = session.user.schoolId || "default";
+  const context = await service.getUserContext(schoolId, session.user.id);
   return NextResponse.json(context);
 }
 
@@ -26,13 +27,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const schoolId = session.user.schoolId || "default";
   const payload = await request.json();
   const parsed = setContextSchema.safeParse(payload);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  await service.setUserContext("default", session.user.id, parsed.data.sessionId, parsed.data.termId);
-  const context = await service.getUserContext("default", session.user.id);
+  await service.setUserContext(schoolId, session.user.id, parsed.data.sessionId, parsed.data.termId);
+  const context = await service.getUserContext(schoolId, session.user.id);
   return NextResponse.json(context);
 }

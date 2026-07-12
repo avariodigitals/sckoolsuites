@@ -53,14 +53,14 @@ export class AcademicCalendarService {
   async activateSession(schoolId: string, sessionId: string) {
     await this.repository.clearCurrentSession(schoolId);
     const session = await this.repository.setSessionActive(sessionId);
-    await this.repository.updateSchoolSetting(schoolId, "active_session_id", session.id);
+    await this.repository.updateSchoolSetting(schoolId, "active_session_id", String(session.id));
     return session;
   }
 
   async activateTerm(schoolId: string, termId: string) {
     await this.repository.clearCurrentTerm(schoolId);
     const term = await this.repository.setTermActive(termId);
-    await this.repository.updateSchoolSetting(schoolId, "active_term_id", term.id);
+    await this.repository.updateSchoolSetting(schoolId, "active_term_id", String(term.id));
     return term;
   }
 
@@ -88,12 +88,12 @@ export class AcademicCalendarService {
     return updated;
   }
 
-  async setUserContext(schoolId: string, userId: string, sessionId?: string, termId?: string) {
-    await this.repository.updateSchoolSetting(schoolId, `user_context_session_${userId}`, sessionId ?? "");
-    await this.repository.updateSchoolSetting(schoolId, `user_context_term_${userId}`, termId ?? "");
+  async setUserContext(schoolId: string, userId: string | number, sessionId?: string | number, termId?: string | number) {
+    await this.repository.updateSchoolSetting(schoolId, `user_context_session_${userId}`, String(sessionId ?? ""));
+    await this.repository.updateSchoolSetting(schoolId, `user_context_term_${userId}`, String(termId ?? ""));
   }
 
-  async getUserContext(schoolId: string, userId: string) {
+  async getUserContext(schoolId: string, userId: string | number) {
     const [sessionSetting, termSetting, current] = await Promise.all([
       this.repository.getSchoolSetting(schoolId, `user_context_session_${userId}`),
       this.repository.getSchoolSetting(schoolId, `user_context_term_${userId}`),

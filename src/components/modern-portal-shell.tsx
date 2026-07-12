@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useMemo, useState, useRef, createContext, useContext } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -18,6 +18,8 @@ import {
   Megaphone,
   MessageSquare,
   AlertTriangle,
+  TrendingUp,
+  TrendingDown,
   ChevronRight,
   ChevronDown,
   School,
@@ -27,6 +29,7 @@ import {
   FileText,
   ClipboardList,
   Palette,
+  LayoutTemplate,
   Database,
   Award,
   CreditCard,
@@ -36,11 +39,16 @@ import {
   Phone,
   Mail,
   HelpCircle,
-  Activity
+  Activity,
+  BarChart3,
+  Shield,
+  User,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ActiveSessionProvider, useActiveSession } from "@/components/active-session-provider";
 import { signOut } from "next-auth/react";
 
 type Notification = {
@@ -58,6 +66,8 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
   children?: { label: string; href: string; icon: React.ComponentType<{ className?: string }> }[];
 };
+
+const IsInsideShell = createContext(false);
 
 const navItems: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -84,6 +94,7 @@ const navItems: NavItem[] = [
       { label: "Classes", href: "/admin/classes", icon: School },
       { label: "Arms", href: "/admin/arms", icon: UsersRound },
       { label: "Subjects", href: "/admin/subjects", icon: BookMarked },
+      { label: "Assessments", href: "/admin/assessments", icon: ClipboardList },
       { label: "Attendance", href: "/admin/attendance", icon: ClipboardList },
       { label: "Results", href: "/admin/results", icon: FileText },
     ],
@@ -104,8 +115,14 @@ const navItems: NavItem[] = [
     href: "/admin/fees",
     icon: CreditCard,
     children: [
-      { label: "Fee Groups", href: "/admin/fees", icon: FileText },
+      { label: "Fee Setup", href: "/admin/fees", icon: FileText },
       { label: "Bills", href: "/admin/bills", icon: Receipt },
+      { label: "Payments", href: "/admin/payments", icon: CreditCard },
+      { label: "Income", href: "/admin/income", icon: TrendingUp },
+      { label: "Expenses", href: "/admin/expenses", icon: TrendingDown },
+      { label: "Debtors", href: "/admin/debtors", icon: Receipt },
+      { label: "Ledger", href: "/admin/ledger", icon: BookOpen },
+      { label: "Revenue", href: "/admin/revenue", icon: BarChart3 },
     ],
   },
   { label: "Employees", href: "/admin/teachers", icon: Users },
@@ -114,20 +131,32 @@ const navItems: NavItem[] = [
   { label: "Announcements", href: "/admin/announcements", icon: Bell },
   { label: "Transport", href: "/admin/transport", icon: Calendar },
   {
+    label: "User Management",
+    href: "/admin/users",
+    icon: UserCog,
+    children: [
+      { label: "Users", href: "/admin/users", icon: User },
+      { label: "Roles", href: "/admin/roles", icon: Award },
+      { label: "Privileges", href: "/admin/privileges", icon: Shield },
+    ],
+  },
+  {
     label: "Settings",
     href: "/admin/settings",
     icon: Settings,
     children: [
       { label: "Branding", href: "/admin/settings", icon: Palette },
+      { label: "Templates", href: "/admin/settings/templates", icon: LayoutTemplate },
+      { label: "Payment Methods", href: "/admin/settings/payment-methods", icon: CreditCard },
       { label: "Master Data", href: "/admin/settings/master-data", icon: Database },
       { label: "Student Settings", href: "/admin/settings/students", icon: GraduationCap },
       { label: "Reception Settings", href: "/admin/settings/reception", icon: Headset },
       { label: "Grading & Assessment", href: "/admin/settings/grading", icon: Award },
       { label: "Configuration Engine", href: "/admin/settings/config-engine", icon: Settings },
       { label: "Academic Calendar", href: "/admin/settings/academic-calendar", icon: Calendar },
-      { label: "Users & Roles", href: "/admin/settings/users", icon: UserCog },
     ],
   },
+  { label: "My Profile", href: "/admin/profile", icon: User },
 ];
 
 export function ModernPortalShell({
@@ -135,32 +164,40 @@ export function ModernPortalShell({
   schoolName,
   schoolLogoUrl,
   userName,
-  pathname,
+  avatarUrl,
+  primaryColor,
+  secondaryColor,
+  pathname: pathnameProp,
   children,
 }: {
   role: string;
   schoolName?: string;
   schoolLogoUrl?: string;
   userName: string;
-  pathname: string;
+  avatarUrl?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  pathname?: string;
   children: React.ReactNode;
 }) {
+  const isNested = useContext(IsInsideShell);
+  const currentPathname = usePathname() ?? "";
+  const pathname = pathnameProp ?? currentPathname;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["/admin/classes"]);
   const displaySchoolName = schoolName?.trim() || "School";
-  
-  const schoolInitials = displaySchoolName
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
 
-  const handleSignOut = async () => {
-    await signOut({ callbackUrl: "/login" });
-  };
+  const schoolInitials = useMemo(() =>
+    displaySchoolName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join(""),
+    [displaySchoolName]
+  );
 
   // Fetch notifications
   useEffect(() => {
@@ -175,13 +212,22 @@ export function ModernPortalShell({
         // Silently fail
       }
     };
-    
+
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
   }, []);
 
   const hasUnread = notifications.length > 0;
+
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: "/login" });
+  };
+
+  // If already inside a shell, just render children (prevents double shells from nested pages)
+  if (isNested) {
+    return <>{children}</>;
+  }
 
   const toggleMenu = (href: string) => {
     setExpandedMenus((prev) =>
@@ -192,7 +238,17 @@ export function ModernPortalShell({
   const isExpanded = (href: string) => expandedMenus.includes(href);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <ActiveSessionProvider>
+    <IsInsideShell.Provider value={true}>
+    <div
+      className="min-h-screen bg-slate-50"
+      style={
+        {
+          "--brand-primary": primaryColor ?? "#0B1F4D",
+          "--brand-secondary": secondaryColor ?? "#0E9F6E",
+        } as React.CSSProperties
+      }
+    >
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
@@ -217,15 +273,17 @@ export function ModernPortalShell({
         {/* Logo Section */}
         <div className="flex h-16 flex-shrink-0 items-center gap-3 border-b border-slate-200 px-4">
           {schoolLogoUrl ? (
-            <Image
+            <img
               src={schoolLogoUrl}
               alt={`${displaySchoolName} logo`}
-              width={40}
-              height={40}
               className="h-10 w-10 rounded-lg object-contain"
+              onError={(e) => { console.error("[ModernPortalShell] logo failed to load:", schoolLogoUrl, e); }}
             />
           ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-600 text-white font-semibold">
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-lg text-white font-semibold"
+              style={{ backgroundColor: primaryColor ?? "#0B1F4D" }}
+            >
               {schoolInitials || "SS"}
             </div>
           )}
@@ -252,19 +310,20 @@ export function ModernPortalShell({
                       className={cn(
                         "flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                         isActive
-                          ? "bg-indigo-50 text-indigo-700"
+                          ? "text-[var(--brand-primary)]"
                           : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                       )}
+                      style={isActive ? { backgroundColor: `${primaryColor ?? "#0B1F4D"}15` } : undefined}
                     >
                       <div className="flex items-center gap-3">
-                        <Icon className={cn("h-5 w-5", isActive ? "text-indigo-600" : "text-slate-400")} />
+                        <Icon className={cn("h-5 w-5", isActive ? "text-[var(--brand-primary)]" : "text-slate-400")} />
                         {item.label}
                       </div>
                       <ChevronDown
                         className={cn(
                           "h-4 w-4 transition-transform duration-200",
                           expanded ? "rotate-180" : "",
-                          isActive ? "text-indigo-600" : "text-slate-400"
+                          isActive ? "text-[var(--brand-primary)]" : "text-slate-400"
                         )}
                       />
                     </button>
@@ -275,17 +334,18 @@ export function ModernPortalShell({
                           const isChildActive = pathname === child.href;
                           return (
                             <Link
-                              key={child.href}
+                              key={`${child.href}-${child.label}`}
                               href={child.href}
                               onClick={() => setSidebarOpen(false)}
                               className={cn(
                                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                                 isChildActive
-                                  ? "bg-indigo-50 text-indigo-700 font-medium"
+                                  ? "text-[var(--brand-primary)] font-medium"
                                   : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
                               )}
+                              style={isChildActive ? { backgroundColor: `${primaryColor ?? "#0B1F4D"}15` } : undefined}
                             >
-                              <ChildIcon className={cn("h-4 w-4", isChildActive ? "text-indigo-600" : "text-slate-400")} />
+                              <ChildIcon className={cn("h-4 w-4", isChildActive ? "text-[var(--brand-primary)]" : "text-slate-400")} />
                               {child.label}
                             </Link>
                           );
@@ -300,11 +360,12 @@ export function ModernPortalShell({
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                       isActive
-                        ? "bg-indigo-50 text-indigo-700"
+                        ? "text-[var(--brand-primary)]"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     )}
+                    style={isActive ? { backgroundColor: `${primaryColor ?? "#0B1F4D"}15` } : undefined}
                   >
-                    <Icon className={cn("h-5 w-5", isActive ? "text-indigo-600" : "text-slate-400")} />
+                    <Icon className={cn("h-5 w-5", isActive ? "text-[var(--brand-primary)]" : "text-slate-400")} />
                     {item.label}
                   </Link>
                 )}
@@ -435,14 +496,21 @@ export function ModernPortalShell({
                   </div>
                 )}
               </div>
-              
+
+              {/* Active Session Selector */}
+              <SessionSelector />
+
               <div className="flex items-center gap-3 pl-3 border-l border-slate-200">
                 <div className="hidden sm:block text-right">
                   <p className="text-sm font-medium text-slate-900">{userName}</p>
-                  <p className="text-xs text-slate-500 capitalize">{role.toLowerCase().replace(/_/g, ' ')}</p>
+                  <p className="text-xs text-slate-500">{role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</p>
                 </div>
-                <div className="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold">
-                  {userName.charAt(0).toUpperCase()}
+                <div className="h-9 w-9 rounded-full flex items-center justify-center font-semibold overflow-hidden" style={{ backgroundColor: `${primaryColor ?? "#0B1F4D"}20`, color: primaryColor ?? "#0B1F4D" }}>
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt={userName} className="h-9 w-9 object-cover" />
+                  ) : (
+                    userName.charAt(0).toUpperCase()
+                  )}
                 </div>
               </div>
             </div>
@@ -454,6 +522,135 @@ export function ModernPortalShell({
           {children}
         </main>
       </div>
+    </div>
+    </IsInsideShell.Provider>
+    </ActiveSessionProvider>
+  );
+}
+
+function SessionSelector() {
+  const { activeSession, activeTerm, sessions, terms, loading, setActiveSession, setActiveTerm } = useActiveSession();
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  if (loading) {
+    return (
+      <div className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
+        <CalendarDays className="h-4 w-4 text-slate-400" />
+        <span>Loading…</span>
+      </div>
+    );
+  }
+
+  if (sessions.length === 0) {
+    return null;
+  }
+
+  const displayLabel = activeSession
+    ? `${activeSession.name}${activeTerm ? ` — ${activeTerm.name}` : ""}`
+    : "Select Session";
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-300"
+        title="Select active academic session and term"
+      >
+        <CalendarDays className="h-4 w-4 text-slate-500" />
+        <span className="max-w-[160px] truncate">{displayLabel}</span>
+        <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 transition-transform", open && "rotate-180")} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 z-50 mt-2 w-72 rounded-xl border border-slate-200 bg-white shadow-lg">
+          <div className="px-4 py-3 border-b border-slate-100">
+            <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">Academic Session & Term</h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">Session controls most data. Term narrows it further.</p>
+          </div>
+          <div className="max-h-80 overflow-y-auto py-1">
+            {sessions.map((session) => {
+              const sessionTerms = terms.filter((t) => t.sessionId === session.id);
+              const isActive = activeSession?.id === session.id;
+              return (
+                <div key={session.id} className="px-2 py-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!isActive) {
+                        void setActiveSession(session.id);
+                      }
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition",
+                      isActive
+                        ? "bg-indigo-50 text-indigo-700 font-semibold"
+                        : "text-slate-700 hover:bg-slate-50"
+                    )}
+                  >
+                    <span className="truncate">{session.name}</span>
+                    {isActive && <span className="ml-2 shrink-0 text-[10px] font-bold">ACTIVE</span>}
+                    {session.isCurrent && !isActive && (
+                      <span className="ml-2 shrink-0 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+                        Current
+                      </span>
+                    )}
+                  </button>
+                  {sessionTerms.length > 0 && (
+                    <div className="ml-4 mt-0.5 space-y-0.5 border-l-2 border-slate-100 pl-2">
+                      {sessionTerms.map((term) => {
+                        const termActive = activeTerm?.id === term.id && isActive;
+                        return (
+                          <button
+                            key={term.id}
+                            type="button"
+                            onClick={() => {
+                              if (!isActive) {
+                                void setActiveSession(session.id);
+                              } else if (!termActive) {
+                                void setActiveTerm(term.id);
+                              }
+                              setOpen(false);
+                            }}
+                            className={cn(
+                              "w-full flex items-center gap-2 rounded-md px-2 py-1 text-left text-[11px] transition",
+                              termActive
+                                ? "bg-indigo-50 text-indigo-700 font-medium"
+                                : "text-slate-500 hover:bg-slate-50"
+                            )}
+                          >
+                            <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", termActive ? "bg-indigo-500" : "bg-slate-300")} />
+                            <span className="truncate">{term.name}</span>
+                            {term.isCurrent && (
+                              <span className="ml-auto shrink-0 rounded bg-emerald-50 px-1 py-0 text-[10px] text-emerald-600">
+                                current
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,7 +6,6 @@ import {
   TrendingDown, 
   Users, 
   GraduationCap, 
-  DollarSign,
   BookOpen,
   Calendar,
   Settings,
@@ -16,10 +15,18 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+function NairaIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M4 4h16M4 20h16M4 8l8 8M20 8l-8 8" />
+    </svg>
+  );
+}
+
 const iconMap: Record<string, LucideIcon> = {
   users: Users,
   graduationCap: GraduationCap,
-  dollarSign: DollarSign,
+  dollarSign: NairaIcon as unknown as LucideIcon,
   bookOpen: BookOpen,
   calendar: Calendar,
   settings: Settings,
@@ -71,7 +78,7 @@ export function StatCard({ title, value, change, trend = "neutral", iconName, hr
 const actionIconMap: Record<string, LucideIcon> = {
   users: Users,
   graduationCap: GraduationCap,
-  dollarSign: DollarSign,
+  dollarSign: NairaIcon as unknown as LucideIcon,
   bookOpen: BookOpen,
   calendar: Calendar,
   settings: Settings,

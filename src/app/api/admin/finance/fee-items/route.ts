@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
-import { buildFeeItemDedupeKey } from "@/lib/finance";
 
 const createSchema = z.object({
-  feeGroupId: z.string().min(5),
+  feeGroupId: z.coerce.number().min(1),
   name: z.string().min(2).max(150),
   category: z.string().min(2).max(120),
-  classId: z.string().min(5).optional().nullable(),
-  armId: z.string().min(5).optional().nullable(),
-  sessionId: z.string().min(5),
-  termId: z.string().min(5),
+  classId: z.coerce.number().optional().nullable(),
+  armId: z.coerce.number().optional().nullable(),
+  sessionId: z.coerce.number().min(1),
+  termId: z.coerce.number().min(1),
   description: z.string().max(500).optional().nullable(),
   amount: z.number().min(0),
   isOptional: z.boolean().optional(),
@@ -21,11 +21,15 @@ const createSchema = z.object({
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(role) : false;
 }
 
 export async function GET() {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "fees");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -52,7 +56,7 @@ export async function GET() {
   ]);
 
   return NextResponse.json({
-    items: items.map((item) => ({
+    items: items.map((item: any) => ({
       id: item.id,
       feeGroupId: item.feeGroupId,
       feeGroupName: item.feeGroup.name,
@@ -73,16 +77,20 @@ export async function GET() {
       sortOrder: item.sortOrder,
       isActive: item.isActive,
     })),
-    groups: groups.map((group) => ({ id: group.id, name: group.name, code: group.code, isActive: group.isActive })),
-    classes: classes.map((item) => ({ id: item.id, name: item.name })),
-    sessions: sessions.map((item) => ({ id: item.id, name: item.name, isCurrent: item.isCurrent })),
-    terms: terms.map((item) => ({ id: item.id, name: item.name, sessionId: item.sessionId, isCurrent: item.isCurrent })),
-    arms: arms.map((item) => ({ id: item.id, name: item.name, classId: item.classId })),
+    groups: groups.map((group: any) => ({ id: group.id, name: group.name, code: group.code, isActive: group.isActive })),
+    classes: classes.map((item: any) => ({ id: item.id, name: item.name })),
+    sessions: sessions.map((item: any) => ({ id: item.id, name: item.name, isCurrent: item.isCurrent })),
+    terms: terms.map((item: any) => ({ id: item.id, name: item.name, sessionId: item.sessionId, isCurrent: item.isCurrent })),
+    arms: arms.map((item: any) => ({ id: item.id, name: item.name, classId: item.classId })),
   });
 }
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "fees");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -96,14 +104,6 @@ export async function POST(request: Request) {
   const schoolId = "default";
   const classId = parsed.data.classId ?? null;
   const armId = parsed.data.armId ?? null;
-  const dedupeKey = buildFeeItemDedupeKey({
-    feeGroupId: parsed.data.feeGroupId,
-    name: parsed.data.name,
-    classId,
-    armId,
-    sessionId: parsed.data.sessionId,
-    termId: parsed.data.termId,
-  });
 
   const [group, sessionRow, termRow] = await Promise.all([
     prisma.feeGroup.findFirst({ where: { id: parsed.data.feeGroupId, schoolId } }),
@@ -142,11 +142,10 @@ export async function POST(request: Request) {
         dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null,
         sortOrder: parsed.data.sortOrder ?? 0,
         isActive: parsed.data.isActive !== false,
-        dedupeKey,
       },
     });
 
-    return NextResponse.json({ id: created.id });
+    return NextResponse.json({ id: created.id }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create fee item";
     return NextResponse.json({ error: message }, { status: 400 });

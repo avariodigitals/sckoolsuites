@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { saveSetupWizardStatus } from "@/lib/setup-wizard";
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL"].includes(role) : false;
+  return role ? ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"].includes(role) : false;
 }
 
 export async function POST() {

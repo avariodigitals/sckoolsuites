@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN", "RECEPTIONIST"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN", "RECEPTIONIST"].includes(role) : false;
 }
 
 export async function GET(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "reception");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -56,23 +61,23 @@ export async function GET(request: Request) {
     const thisYearStart = new Date(now.getFullYear(), 0, 1);
 
     // Conversion metrics
-    const thisMonthStudents = students.filter(s => new Date(s.createdAt) >= thisMonthStart).length;
-    const lastMonthStudents = students.filter(s => {
+    const thisMonthStudents = students.filter((s: any) => new Date(s.createdAt) >= thisMonthStart).length;
+    const lastMonthStudents = students.filter((s: any) => {
       const d = new Date(s.createdAt);
       return d >= lastMonthStart && d < thisMonthStart;
     }).length;
-    const thisYearStudents = students.filter(s => new Date(s.createdAt) >= thisYearStart).length;
+    const thisYearStudents = students.filter((s: any) => new Date(s.createdAt) >= thisYearStart).length;
 
     // Enquiry conversion rate (students created after enquiries in same period)
-    const resolvedEnquiries = enquiries.filter(e => e.stage === "Resolved" || e.stage === "Closed").length;
+    const resolvedEnquiries = enquiries.filter((e: any) => e.stage === "Resolved" || e.stage === "Closed").length;
     const conversionRate = enquiries.length > 0 ? Math.round((resolvedEnquiries / enquiries.length) * 100) : 0;
 
     // Admissions pipeline
-    const newEnquiriesThisMonth = enquiries.filter(e => {
+    const newEnquiriesThisMonth = enquiries.filter((e: any) => {
       const d = new Date(e.createdAt);
       return d >= thisMonthStart && e.stage === "New";
     }).length;
-    const inProgressThisMonth = enquiries.filter(e => {
+    const inProgressThisMonth = enquiries.filter((e: any) => {
       const d = new Date(e.createdAt);
       return d >= thisMonthStart && e.stage === "In Progress";
     }).length;
@@ -85,8 +90,8 @@ export async function GET(request: Request) {
     const lastWeekEnd = new Date(today);
 
     // Process enquiry data
-    const enquiriesThisWeek = enquiries.filter(e => new Date(e.createdAt) >= weekAgo);
-    const enquiriesLastWeek = enquiries.filter(e => {
+    const enquiriesThisWeek = enquiries.filter((e: any) => new Date(e.createdAt) >= weekAgo);
+    const enquiriesLastWeek = enquiries.filter((e: any) => {
       const d = new Date(e.createdAt);
       return d >= lastWeekStart && d < lastWeekEnd;
     });
@@ -95,22 +100,22 @@ export async function GET(request: Request) {
     const byType: Record<string, number> = {};
     const bySource: Record<string, number> = {};
 
-    enquiries.forEach(e => {
+    enquiries.forEach((e: any) => {
       byStage[e.stage] = (byStage[e.stage] || 0) + 1;
       byType[e.type] = (byType[e.type] || 0) + 1;
       bySource[e.source] = (bySource[e.source] || 0) + 1;
     });
 
     // Process visitor data
-    const visitorsToday = visitors.filter(v => new Date(v.checkInTime) >= today);
-    const visitorsThisMonth = visitors.filter(v => {
+    const visitorsToday = visitors.filter((v: any) => new Date(v.checkInTime) >= today);
+    const visitorsThisMonth = visitors.filter((v: any) => {
       const monthAgo = new Date(today);
       monthAgo.setDate(monthAgo.getDate() - 30);
       return new Date(v.checkInTime) >= monthAgo;
     });
 
     const byPurpose: Record<string, number> = {};
-    visitors.forEach(v => {
+    visitors.forEach((v: any) => {
       byPurpose[v.purpose] = (byPurpose[v.purpose] || 0) + 1;
     });
 
@@ -121,7 +126,7 @@ export async function GET(request: Request) {
 
     // Calculate avg call duration
     const avgDuration = callLogs.length > 0
-      ? Math.round(callLogs.reduce((sum, c) => sum + (c.duration || 0), 0) / callLogs.length)
+      ? Math.round(callLogs.reduce((sum: number, c: any) => sum + (c.duration || 0), 0) / callLogs.length)
       : 0;
 
     const data = {
@@ -147,24 +152,24 @@ export async function GET(request: Request) {
       },
       gatePasses: {
         total: gatePasses.length,
-        active: gatePasses.filter(g => g.status === "ACTIVE").length,
-        returned: gatePasses.filter(g => g.status === "RETURNED").length,
-        overdue: gatePasses.filter(g => g.status === "OVERDUE").length,
+        active: gatePasses.filter((g: any) => g.status === "ACTIVE").length,
+        returned: gatePasses.filter((g: any) => g.status === "RETURNED").length,
+        overdue: gatePasses.filter((g: any) => g.status === "OVERDUE").length,
       },
       complaints: {
         total: complaints.length,
-        open: complaints.filter(c => c.status === "OPEN").length,
-        resolved: complaints.filter(c => c.status === "RESOLVED").length,
-        inProgress: complaints.filter(c => c.status === "IN_PROGRESS").length,
+        open: complaints.filter((c: any) => c.status === "OPEN").length,
+        resolved: complaints.filter((c: any) => c.status === "RESOLVED").length,
+        inProgress: complaints.filter((c: any) => c.status === "IN_PROGRESS").length,
       },
       callLogs: {
         total: callLogs.length,
-        today: callLogs.filter(c => new Date(c.createdAt) >= today).length,
+        today: callLogs.filter((c: any) => new Date(c.createdAt) >= today).length,
         avgDuration,
       },
       visitors: {
         today: visitorsToday.length,
-        checkedIn: visitors.filter(v => v.status === "CHECKED_IN").length,
+        checkedIn: visitors.filter((v: any) => v.status === "CHECKED_IN").length,
         thisMonth: visitorsThisMonth.length,
         byPurpose,
       },

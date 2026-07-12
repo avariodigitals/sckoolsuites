@@ -13,6 +13,7 @@ export function PortalShell({
   schoolName,
   schoolLogoUrl,
   userName,
+  avatarUrl,
   pathname,
   currentSessionName,
   currentTermName,
@@ -28,6 +29,7 @@ export function PortalShell({
   schoolName?: string;
   schoolLogoUrl?: string;
   userName: string;
+  avatarUrl?: string;
   pathname: string;
   currentSessionName?: string | null;
   currentTermName?: string | null;
@@ -54,6 +56,10 @@ export function PortalShell({
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
 
+  console.log("[PortalShell] schoolLogoUrl prop:", schoolLogoUrl);
+  console.log("[PortalShell] normalizedSchoolLogoUrl:", normalizedSchoolLogoUrl);
+  console.log("[PortalShell] avatarUrl prop:", avatarUrl);
+
   return (
     <div
       className="glass-bg min-h-screen"
@@ -70,13 +76,11 @@ export function PortalShell({
           <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
             <div className="flex flex-col items-center text-center">
               {normalizedSchoolLogoUrl ? (
-                <Image
+                <img
                   src={normalizedSchoolLogoUrl}
                   alt={`${displaySchoolName} logo`}
-                  width={56}
-                  height={56}
-                  unoptimized
                   className="h-14 w-14 rounded-xl border border-slate-200 bg-white object-contain p-2 dark:border-slate-700 dark:bg-slate-900"
+                  onError={(e) => { console.error("[PortalShell] logo failed to load:", normalizedSchoolLogoUrl, e); }}
                 />
               ) : (
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
@@ -133,7 +137,7 @@ export function PortalShell({
         <main className="space-y-4">
           <header className="no-print glass-panel rounded-2xl px-4 py-3">
             <div className="mb-3">
-              <PortalTopbar pathname={pathname} userName={userName} />
+              <PortalTopbar pathname={pathname} userName={userName} avatarUrl={avatarUrl} />
             </div>
 
             <div className="flex flex-wrap items-end justify-between gap-3 border-t border-slate-200 pt-3 dark:border-slate-700">

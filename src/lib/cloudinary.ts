@@ -21,7 +21,10 @@ export async function uploadToCloudinary(
   mimeType: string,
   options: UploadOptions
 ) {
-  const folderPath = `school_${options.schoolId}/${options.folder}`;
+  const baseFolder = process.env.CLOUDINARY_BASE_FOLDER ?? "";
+  const folderPath = baseFolder
+    ? `${baseFolder}/school_${options.schoolId}/${options.folder}`
+    : `school_${options.schoolId}/${options.folder}`;
 
   return new Promise<{ url: string; publicId: string }>((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(

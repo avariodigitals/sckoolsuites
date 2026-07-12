@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { queryOne } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { roleDefaultRoute } from "@/lib/constants";
 
 export async function hashPassword(password: string): Promise<string> {
@@ -14,16 +14,6 @@ const loginSchema = z.object({
   password: z.string().min(6),
 });
 
-// User type for auth
-interface AuthUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  is_active: boolean;
-  password: string;
-}
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: "jwt" },
   pages: {
@@ -33,26 +23,33 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user, trigger }: { token: any; user: any; trigger?: string }) {
       if (user) {
         token.role = user.role;
+        token.schoolId = user.schoolId ?? null;
       }
-      // Re-fetch user data on session update
-      if (trigger === "update" || token.sub) {
-        const dbUser = await queryOne<{ name: string }>(
-          `SELECT r.name 
-           FROM "user" u 
-           JOIN role r ON u.role_id = r.id 
-           WHERE u.id = $1`,
-          [token.sub]
-        );
+      // Refresh token data on sign-in or explicit session update only.
+      // Avoiding a DB query here on every request removes a major latency
+      // cost when running the dev server against a remote database.
+      if (trigger === "update" || user) {
+        const userId = user ? Number(user.id) : Number(token.sub);
+        const dbUser = await prisma.user.findUnique({
+          where: { id: userId },
+          include: { role: true },
+        });
         if (dbUser) {
-          token.role = dbUser.name;
+          token.role = dbUser.role.name;
+          token.name = dbUser.name;
+          token.avatarUrl = dbUser.avatarUrl ?? "";
+          token.schoolId = (dbUser as any).schoolId ?? null;
         }
       }
       return token;
     },
     async session({ session, token }: { session: any; token: any }) {
       if (session.user) {
-        session.user.id = token.sub ?? "";
+        session.user.id = token.sub ? Number(token.sub) : 0;
+        session.user.name = (token.name as string) ?? session.user.name ?? "";
         session.user.role = (token.role as string) ?? "";
+        session.user.avatarUrl = (token.avatarUrl as string) ?? "";
+        session.user.schoolId = (token.schoolId as string | null) ?? null;
       }
       return session;
     },
@@ -78,15 +75,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
-        const user = await queryOne<AuthUser>(
-          `SELECT u.id, u.name, u.email, u.password, u.is_active, r.name as role
-           FROM "user" u
-           JOIN role r ON u.role_id = r.id
-           WHERE LOWER(u.email) = LOWER($1)`,
-          [parsed.data.email]
-        );
+        const user = await prisma.user.findFirst({
+          where: { email: { equals: parsed.data.email, mode: "insensitive" } },
+          include: { role: true },
+        });
 
-        if (!user || !user.is_active) return null;
+        if (!user || !user.isActive) return null;
 
         const valid = await bcrypt.compare(parsed.data.password, user.password);
         if (!valid) return null;
@@ -95,8 +89,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role,
-          defaultRoute: roleDefaultRoute[user.role as keyof typeof roleDefaultRoute],
+          role: user.role.name,
+          defaultRoute: roleDefaultRoute[user.role.name as keyof typeof roleDefaultRoute],
+          schoolId: (user as any).schoolId ?? null,
         };
       },
     }),

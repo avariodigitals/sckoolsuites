@@ -47,14 +47,23 @@ export function AcademicCalendarClient({
   async function loadSetup() {
     const response = await fetch("/api/admin/academic/sessions");
     const data = await response.json();
-    setSessions(data.sessions ?? []);
-    setTerms(data.terms ?? []);
+    const newSessions: SessionDto[] = data.sessions ?? [];
+    const newTerms: TermDto[] = data.terms ?? [];
+    setSessions(newSessions);
+    setTerms(newTerms);
 
-    const activeSession = (data.sessions ?? []).find((item: SessionDto) => item.isCurrent);
-    const activeTerm = (data.terms ?? []).find((item: TermDto) => item.isCurrent);
+    // Preserve current selections if they still exist; otherwise fall back to isCurrent
+    const sessionStillValid = newSessions.some((s: SessionDto) => s.id === selectedSessionId);
+    const termStillValid = newTerms.some((t: TermDto) => t.id === selectedTermId);
 
-    if (activeSession) setSelectedSessionId(activeSession.id);
-    if (activeTerm) setSelectedTermId(activeTerm.id);
+    if (!sessionStillValid) {
+      const activeSession = newSessions.find((item: SessionDto) => item.isCurrent);
+      if (activeSession) setSelectedSessionId(activeSession.id);
+    }
+    if (!termStillValid) {
+      const activeTerm = newTerms.find((item: TermDto) => item.isCurrent);
+      if (activeTerm) setSelectedTermId(activeTerm.id);
+    }
   }
 
   const visibleTerms = useMemo(
@@ -145,7 +154,12 @@ export function AcademicCalendarClient({
       body: JSON.stringify({ sessionId: selectedSessionId || undefined, termId: selectedTermId || undefined }),
     });
 
-    setMessage(response.ok ? "Viewing context updated for your account." : "Could not update viewing context.");
+    if (response.ok) {
+      setMessage("Viewing context updated. Reloading…");
+      window.location.reload();
+    } else {
+      setMessage("Could not update viewing context.");
+    }
   }
 
   return (
@@ -280,32 +294,36 @@ export function AcademicCalendarClient({
             <CardTitle>Terms</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {visibleTerms.map((term) => (
-              <div key={term.id} className="flex items-center justify-between rounded-md border border-slate-200 p-3 text-sm">
-                <div>
-                  <p className="font-medium">{term.name}</p>
-                  <div className="mt-1 flex gap-2">
-                    <Badge>{humanizeEnum(term.status)}</Badge>
-                    {term.isCurrent ? <Badge className="bg-green-50 text-green-700">Active Context</Badge> : null}
+            {terms.map((term) => {
+              const parentSession = sessions.find((s) => s.id === term.sessionId);
+              return (
+                <div key={term.id} className="flex items-center justify-between rounded-md border border-slate-200 p-3 text-sm">
+                  <div>
+                    <p className="font-medium">{term.name}</p>
+                    <p className="text-[11px] text-slate-500">{parentSession?.name ?? "Unknown session"}</p>
+                    <div className="mt-1 flex gap-2">
+                      <Badge>{humanizeEnum(term.status)}</Badge>
+                      {term.isCurrent ? <Badge className="bg-green-50 text-green-700">Active Context</Badge> : null}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      className="rounded-md border border-slate-300 px-2 py-1 text-xs"
+                      defaultValue={term.status}
+                      onChange={(event) => updateTermStatus(term.id, event.target.value)}
+                    >
+                      <option value="DRAFT">Draft</option>
+                      <option value="ACTIVE">Active</option>
+                      <option value="CLOSED">Closed</option>
+                      <option value="ARCHIVED">Archived</option>
+                    </select>
+                    <Button variant="outline" size="sm" onClick={() => activateTerm(term.id)}>
+                      Set Active
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <select
-                    className="rounded-md border border-slate-300 px-2 py-1 text-xs"
-                    defaultValue={term.status}
-                    onChange={(event) => updateTermStatus(term.id, event.target.value)}
-                  >
-                    <option value="DRAFT">Draft</option>
-                    <option value="ACTIVE">Active</option>
-                    <option value="CLOSED">Closed</option>
-                    <option value="ARCHIVED">Archived</option>
-                  </select>
-                  <Button variant="outline" size="sm" onClick={() => activateTerm(term.id)}>
-                    Set Active
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       </div>

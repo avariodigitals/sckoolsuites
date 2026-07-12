@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
+import { parseNumericId } from "@/lib/id-helpers";
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
 }
 
 export async function DELETE(
@@ -12,11 +14,24 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "DELETE", "lms");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
+
+  let parsedId: number;
+  try {
+    parsedId = parseNumericId(id, "lms content id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid lms content id";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
   const schoolId = "default";
 
   // Get type from query param
@@ -34,49 +49,49 @@ export async function DELETE(
     switch (type) {
       case "lesson":
         const lesson = await prisma.lesson.findFirst({
-          where: { id, schoolId },
+          where: { id: parsedId, schoolId },
         });
         if (!lesson) {
           return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
         }
         title = lesson.title;
-        await prisma.lesson.delete({ where: { id } });
+        await prisma.lesson.delete({ where: { id: parsedId } });
         action = "LESSON_DELETED";
         break;
 
       case "assignment":
         const assignment = await prisma.assignment.findFirst({
-          where: { id, schoolId },
+          where: { id: parsedId, schoolId },
         });
         if (!assignment) {
           return NextResponse.json({ error: "Assignment not found" }, { status: 404 });
         }
         title = assignment.title;
-        await prisma.assignment.delete({ where: { id } });
+        await prisma.assignment.delete({ where: { id: parsedId } });
         action = "ASSIGNMENT_DELETED";
         break;
 
       case "quiz":
         const quiz = await prisma.quiz.findFirst({
-          where: { id, schoolId },
+          where: { id: parsedId, schoolId },
         });
         if (!quiz) {
           return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
         }
         title = quiz.title;
-        await prisma.quiz.delete({ where: { id } });
+        await prisma.quiz.delete({ where: { id: parsedId } });
         action = "QUIZ_DELETED";
         break;
 
       case "online-class":
         const onlineClass = await prisma.onlineClass.findFirst({
-          where: { id, schoolId },
+          where: { id: parsedId, schoolId },
         });
         if (!onlineClass) {
           return NextResponse.json({ error: "Online class not found" }, { status: 404 });
         }
         title = onlineClass.title;
-        await prisma.onlineClass.delete({ where: { id } });
+        await prisma.onlineClass.delete({ where: { id: parsedId } });
         action = "ONLINE_CLASS_DELETED";
         break;
     }
@@ -86,9 +101,9 @@ export async function DELETE(
       actorUserId: session.user.id,
       action,
       targetType: "LMS",
-      targetId: id,
+      targetId: String(parsedId),
       metadata: {
-        id,
+        id: parsedId,
         type,
         title,
       },

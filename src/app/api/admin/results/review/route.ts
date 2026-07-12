@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { ResultStatus } from "@/lib/db-types";
 import { z } from "zod";
 import { auth } from "@/auth";
@@ -6,24 +7,25 @@ import { createAuditLog } from "@/lib/audit-log";
 import { getClassGroupGradingProfiles, resolveClassGroupProfile } from "@/lib/class-group-grading";
 import { calculateGradeFromBands } from "@/lib/grades";
 import { prisma } from "@/lib/db";
+import { sendTemplatedEmail } from "@/lib/email";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 import { getSetupWizardState } from "@/lib/setup-wizard";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
 
 const schema = z.object({
-  studentId: z.string().min(5),
+  studentId: z.coerce.number().int().min(1),
   action: z.enum(["APPROVE", "PUBLISH", "REJECT"]),
   reviewNote: z.string().max(1000).optional(),
   classTeacherComment: z.string().max(1000).optional(),
   principalComment: z.string().max(1000).optional(),
-  sessionId: z.string().min(5).optional(),
-  termId: z.string().min(5).optional(),
+  sessionId: z.coerce.number().int().min(1).optional(),
+  termId: z.coerce.number().int().min(1).optional(),
 });
 
 const querySchema = z.object({
   status: z.enum(["DRAFT", "APPROVED", "PUBLISHED", "REJECTED"]).optional(),
-  sessionId: z.string().min(5).optional(),
-  termId: z.string().min(5).optional(),
+  sessionId: z.coerce.number().int().min(1).optional(),
+  termId: z.coerce.number().int().min(1).optional(),
   take: z.coerce.number().int().min(1).max(200).optional(),
 });
 
@@ -37,11 +39,15 @@ function readableAction(action: "APPROVE" | "PUBLISH" | "REJECT") {
 
 export async function GET(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "results");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user?.id ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN"].includes(session.user.role)) {
+  if (!["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -59,9 +65,11 @@ export async function GET(request: Request) {
 
   const status = parsedQuery.data.status;
 
+  const schoolId = session.user.schoolId || "default";
+
   const results = await prisma.result.findMany({
     where: {
-      schoolId: "default",
+      schoolId,
       ...(status ? { status } : { status: { in: [ResultStatus.DRAFT, ResultStatus.APPROVED, ResultStatus.REJECTED] } }),
       ...(parsedQuery.data.sessionId ? { sessionId: parsedQuery.data.sessionId } : {}),
       ...(parsedQuery.data.termId ? { termId: parsedQuery.data.termId } : {}),
@@ -82,6 +90,8 @@ export async function GET(request: Request) {
       id: result.id,
       status: result.status,
       reviewNote: result.reviewNote,
+      fileUrl: result.fileUrl,
+      fileName: result.fileName,
       student: {
         id: result.student.id,
         name: result.student.user.name,
@@ -111,11 +121,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "results");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user?.id ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN"].includes(session.user.role)) {
+  if (!["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -124,7 +138,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const setup = await getSetupWizardState("default");
+  const schoolId = session.user.schoolId || "default";
+  const setup = await getSetupWizardState(schoolId);
   if (!setup.status.setupCompleted) {
     return NextResponse.json({ error: "Setup wizard must be completed before result approval/publishing.", setup }, { status: 409 });
   }
@@ -134,16 +149,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Review note is required when rejecting a result." }, { status: 400 });
   }
 
-  const context = await calendarService.getUserContext("default", session.user.id);
-  const sessionId = parsed.data.sessionId ?? context.sessionId;
-  const termId = parsed.data.termId ?? context.termId;
+  const context = await calendarService.getUserContext(schoolId, session.user.id);
+  const sessionId = parsed.data.sessionId ?? context.sessionId ?? NaN;
+  const termId = parsed.data.termId ?? context.termId ?? NaN;
+  const studentId = parsed.data.studentId;
+
+  if (Number.isNaN(studentId) || Number.isNaN(sessionId) || Number.isNaN(termId)) {
+    return NextResponse.json({ error: "Invalid academic context or student ID" }, { status: 400 });
+  }
 
   if (!sessionId || !termId) {
     return NextResponse.json({ error: "Academic context is not selected" }, { status: 400 });
   }
 
   const student = await prisma.student.findFirst({
-    where: { id: parsed.data.studentId, schoolId: "default" },
+    where: { id: studentId, schoolId },
     include: {
       class: {
         include: {
@@ -160,58 +180,84 @@ export async function POST(request: Request) {
   const now = new Date();
 
   if (parsed.data.action === "APPROVE") {
+    const existingForApprove = await prisma.result.findFirst({
+      where: {
+        schoolId,
+        studentId,
+        sessionId,
+        termId,
+      },
+    });
+
+    const hasUploadedFile = Boolean(existingForApprove?.fileUrl);
+
     const [scores, attendance, activeConfig, classGroupProfiles] = await Promise.all([
       prisma.score.findMany({
         where: {
-          schoolId: "default",
-          studentId: parsed.data.studentId,
+          schoolId,
+          studentId: studentId,
           sessionId,
           termId,
         },
       }),
       prisma.attendance.findMany({
         where: {
-          schoolId: "default",
-          studentId: parsed.data.studentId,
+          schoolId,
+          studentId: studentId,
           sessionId,
           termId,
         },
       }),
-      getActiveSchoolConfig("default"),
-      getClassGroupGradingProfiles("default"),
+      getActiveSchoolConfig(schoolId),
+      getClassGroupGradingProfiles(schoolId),
     ]);
 
-    if (!scores.length) {
-      return NextResponse.json({ error: "No score rows found for this student in selected term/session" }, { status: 400 });
+    if (!scores.length && !hasUploadedFile) {
+      return NextResponse.json({ error: "No score rows or uploaded report found for this student in selected term/session" }, { status: 400 });
     }
 
-    const total = scores.reduce((sum, item) => sum + item.total, 0);
-    const average = total / scores.length;
-    const classGroupProfile = resolveClassGroupProfile(classGroupProfiles, student.class?.classGroup?.name);
-    const gradingSource = classGroupProfile?.gradeBands?.length
-      ? classGroupProfile.gradeBands
-      : activeConfig.config.academic.gradingSystem;
-    const bands = gradingSource.map((band) => ({
-      min: Number(band.min),
-      grade: band.grade,
-      gpa: Number(band.gpa),
-    }));
-    const gradeMeta = calculateGradeFromBands(average, bands);
+    let computed: { total: number; average: number; termPercentage: number; termGrade: string; termGpa: number } | null = null;
+
+    if (scores.length) {
+      const total = scores.reduce((sum, item) => sum + (item.total ?? 0), 0);
+      const average = total / scores.length;
+      const classGroupProfile = resolveClassGroupProfile(classGroupProfiles, student.class?.classGroup?.name);
+      const gradingSource = classGroupProfile?.gradeBands?.length
+        ? classGroupProfile.gradeBands
+        : activeConfig.config.academic.gradingSystem;
+      const bands = gradingSource.map((band) => ({
+        min: Number(band.min),
+        grade: band.grade,
+        gpa: Number(band.gpa),
+      }));
+      const gradeMeta = calculateGradeFromBands(average, bands);
+      computed = {
+        total,
+        average,
+        termPercentage: average,
+        termGrade: gradeMeta.grade,
+        termGpa: gradeMeta.gpa,
+      };
+    }
 
     const result = await prisma.result.upsert({
       where: {
         studentId_termId_sessionId: {
-          studentId: parsed.data.studentId,
+          studentId: studentId,
           termId,
           sessionId,
         },
       },
       update: {
-        cumulativeTotal: total,
-        average,
-        termPercentage: average,
-        termGrade: gradeMeta.grade,
-        termGpa: gradeMeta.gpa,
+        ...(computed
+          ? {
+              cumulativeTotal: computed.total,
+              average: computed.average,
+              termPercentage: computed.termPercentage,
+              termGrade: computed.termGrade,
+              termGpa: computed.termGpa,
+            }
+          : {}),
         attendancePresent: attendance.filter((item) => item.status === "PRESENT").length,
         attendanceTotal: attendance.length,
         classTeacherComment: parsed.data.classTeacherComment?.trim() || undefined,
@@ -222,15 +268,19 @@ export async function POST(request: Request) {
         approvedAt: now,
       },
       create: {
-        schoolId: "default",
-        studentId: parsed.data.studentId,
+        schoolId,
+        studentId: studentId,
         termId,
         sessionId,
-        cumulativeTotal: total,
-        average,
-        termPercentage: average,
-        termGrade: gradeMeta.grade,
-        termGpa: gradeMeta.gpa,
+        ...(computed
+          ? {
+              cumulativeTotal: computed.total,
+              average: computed.average,
+              termPercentage: computed.termPercentage,
+              termGrade: computed.termGrade,
+              termGpa: computed.termGpa,
+            }
+          : {}),
         attendancePresent: attendance.filter((item) => item.status === "PRESENT").length,
         attendanceTotal: attendance.length,
         classTeacherComment: parsed.data.classTeacherComment?.trim() || null,
@@ -243,13 +293,13 @@ export async function POST(request: Request) {
     });
 
     await createAuditLog({
-      schoolId: "default",
+      schoolId,
       actorUserId: session.user.id,
       action: readableAction(parsed.data.action),
       targetType: "Result",
-      targetId: result.id,
+      targetId: String(result.id),
       metadata: {
-        studentId: parsed.data.studentId,
+        studentId: studentId,
         sessionId,
         termId,
         status: result.status,
@@ -273,8 +323,8 @@ export async function POST(request: Request) {
 
   const existing = await prisma.result.findFirst({
     where: {
-      schoolId: "default",
-      studentId: parsed.data.studentId,
+      schoolId,
+      studentId: studentId,
       sessionId,
       termId,
     },
@@ -300,18 +350,69 @@ export async function POST(request: Request) {
     });
 
     await createAuditLog({
-      schoolId: "default",
+      schoolId,
       actorUserId: session.user.id,
       action: readableAction(parsed.data.action),
       targetType: "Result",
-      targetId: published.id,
+      targetId: String(published.id),
       metadata: {
-        studentId: parsed.data.studentId,
+        studentId: studentId,
         sessionId,
         termId,
         status: published.status,
       },
     });
+
+    // Notify parent when results are published
+    try {
+      const [studentForNotify, termForNotify, sessionForNotify, school] = await Promise.all([
+        prisma.student.findFirst({
+          where: { id: studentId, schoolId },
+          include: {
+            user: true,
+            parent: { include: { user: true } },
+            class: true,
+          },
+        }),
+        prisma.term.findUnique({ where: { id: termId } }),
+        prisma.session.findUnique({ where: { id: sessionId } }),
+        prisma.school.findUnique({ where: { id: schoolId } }),
+      ]);
+      let emailStatus = { sent: false, error: "" };
+      if (studentForNotify?.parent?.user?.email) {
+        try {
+          const emailResult = await sendTemplatedEmail({
+            schoolId,
+            to: studentForNotify.parent.user.email,
+            templateKey: "results_published",
+            vars: {
+              schoolName: school?.name ?? "Sckool Suite",
+              parentName: studentForNotify.parent.user.name ?? "Parent",
+              studentName: studentForNotify.user.name,
+              sessionName: sessionForNotify?.name ?? "",
+              termName: termForNotify?.name ?? "",
+              className: studentForNotify.class?.name ?? "",
+              overallGrade: published.termGrade ?? "",
+              portalUrl: process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "",
+            },
+          });
+          emailStatus = { sent: emailResult.ok, error: emailResult.ok ? "" : "Email delivery failed" };
+        } catch (error) {
+          emailStatus = { sent: false, error: error instanceof Error ? error.message : "Email delivery failed" };
+        }
+      }
+
+      if (!emailStatus.sent && studentForNotify?.parent?.user?.email) {
+        return NextResponse.json({
+          ok: true,
+          result: { id: published.id, status: published.status },
+          warning: "Result published, but publication email could not be delivered to the parent.",
+          emailStatus,
+        });
+      }
+    } catch {
+      // suppress non-critical notification errors; result is already published
+    }
 
     return NextResponse.json({ ok: true, result: { id: published.id, status: published.status } });
   }
@@ -329,13 +430,13 @@ export async function POST(request: Request) {
   });
 
   await createAuditLog({
-    schoolId: "default",
+    schoolId,
     actorUserId: session.user.id,
     action: readableAction(parsed.data.action),
     targetType: "Result",
-    targetId: rejected.id,
+    targetId: String(rejected.id),
     metadata: {
-      studentId: parsed.data.studentId,
+      studentId: studentId,
       sessionId,
       termId,
       status: rejected.status,

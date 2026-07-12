@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
+import { parseNumericId } from "@/lib/id-helpers";
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN", "BURSAR"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN", "BURSAR"].includes(role) : false;
 }
 
 export async function DELETE(
@@ -12,6 +14,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "DELETE", "bills");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -19,9 +25,17 @@ export async function DELETE(
   const { id } = await params;
   const schoolId = "default";
 
+  let parsedId: number;
+  try {
+    parsedId = parseNumericId(id, "bill id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid bill id";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
   // Check invoice exists
   const existing = await prisma.invoice.findFirst({
-    where: { id, schoolId },
+    where: { id: parsedId, schoolId },
     include: { payments: true },
   });
   if (!existing) {
@@ -39,20 +53,20 @@ export async function DELETE(
   try {
     // Delete invoice items first
     await prisma.invoiceItem.deleteMany({
-      where: { invoiceId: id },
+      where: { invoiceId: parsedId },
     });
 
     // Delete invoice
-    await prisma.invoice.delete({ where: { id } });
+    await prisma.invoice.delete({ where: { id: parsedId } });
 
     await createAuditLog({
       schoolId,
       actorUserId: session.user.id,
       action: "BILL_DELETED",
       targetType: "Invoice",
-      targetId: id,
+      targetId: String(parsedId),
       metadata: {
-        invoiceId: id,
+        invoiceId: parsedId,
         invoiceNumber: existing.invoiceNumber,
         totalAmount: existing.totalAmount,
       },

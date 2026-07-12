@@ -1,20 +1,22 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
+import { parseNumericId } from "@/lib/id-helpers";
 
 const profileSchema = z.object({
-  feeGroupId: z.string().min(1),
+  feeGroupId: z.coerce.number().int().min(1),
   name: z.string().min(1).max(200),
-  sessionId: z.string().min(1),
-  termId: z.string().min(1),
+  sessionId: z.coerce.number().int().min(1),
+  termId: z.coerce.number().int().min(1),
   dueDate: z.string().optional(),
-  classIds: z.array(z.string()).min(1, "Select at least one class"),
-  armIds: z.array(z.string()).optional(),
+  classIds: z.array(z.coerce.number().int().min(1)).min(1, "Select at least one class"),
+  armIds: z.array(z.coerce.number().int().min(1)).optional(),
   items: z.array(
     z.object({
-      feeComponentId: z.string().min(1),
+      feeComponentId: z.coerce.number().int().min(1),
       amount: z.number().min(0),
       isOptional: z.boolean().default(false),
     })
@@ -22,11 +24,15 @@ const profileSchema = z.object({
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN", "BURSAR", "ACCOUNTANT"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN", "BURSAR", "ACCOUNTANT"].includes(role) : false;
 }
 
 export async function GET() {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "fees");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -65,15 +71,15 @@ export async function GET() {
       dueDate: p.dueDate?.toISOString() ?? null,
       isActive: p.isActive,
       createdAt: p.createdAt.toISOString(),
-      items: p.items?.map((i: any) => ({
+      items: p.items?.map((i) => ({
         id: i.id,
         feeComponentId: i.feeComponentId,
         feeComponentName: i.feeComponent?.name,
         amount: i.amount,
         isOptional: i.isOptional,
       })) ?? [],
-      classes: p.classes?.map((c: any) => ({ id: c.classId, name: c.class?.name })) ?? [],
-      arms: p.arms?.map((a: any) => ({ id: a.armId, name: a.arm?.name })) ?? [],
+      classes: p.classes?.map((c) => ({ id: c.classId, name: c.class?.name })) ?? [],
+      arms: p.arms?.map((a) => ({ id: a.armId, name: a.arm?.name })) ?? [],
     })),
     stats: {
       totalProfiles: profileCount,
@@ -84,6 +90,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "fees");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -101,7 +111,7 @@ export async function POST(request: Request) {
     // Validate all fee component IDs exist
     const componentIds = data.items.map((i) => i.feeComponentId);
     const existingComponents = await prisma.feeComponent.count({
-      where: { id: { in: componentIds }, schoolId },
+      where: { id: { in: componentIds } },
     });
     if (existingComponents !== componentIds.length) {
       return NextResponse.json({ error: "One or more fee components not found" }, { status: 400 });
@@ -144,7 +154,7 @@ export async function POST(request: Request) {
       actorUserId: session.user.id,
       action: "FEE_PROFILE_CREATED",
       targetType: "FeeProfile",
-      targetId: profile.id,
+      targetId: String(profile.id),
       metadata: {
         name: data.name,
         classes: data.classIds.length,
@@ -172,6 +182,10 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "DELETE", "fees");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -179,8 +193,12 @@ export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
 
-  if (!id) {
-    return NextResponse.json({ error: "ID required" }, { status: 400 });
+  let parsedId: number;
+  try {
+    parsedId = parseNumericId(id ?? undefined, "fee profile id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid fee profile id";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   const schoolId = "default";
@@ -189,7 +207,7 @@ export async function DELETE(request: Request) {
     // Check if any students have been billed with this profile
     // For now, just soft delete
     await prisma.feeProfile.update({
-      where: { id, schoolId },
+      where: { id: parsedId, schoolId },
       data: { isActive: false },
     });
 
@@ -198,7 +216,7 @@ export async function DELETE(request: Request) {
       actorUserId: session.user.id,
       action: "FEE_PROFILE_DELETED",
       targetType: "FeeProfile",
-      targetId: id,
+      targetId: String(parsedId),
       metadata: {},
     });
 

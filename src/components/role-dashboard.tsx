@@ -12,7 +12,7 @@ import {
   EmptyState 
 } from "@/components/modern-dashboard";
 import { requireRole } from "@/lib/auth-guards";
-import { getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
+import { getDashboardData, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
 import { buildSchoolRoleModel, buildSuperAdminModel, type RoleScope } from "@/lib/dashboard/role-dashboard-model";
 import { prisma } from "@/lib/db";
 import { getSetupWizardState } from "@/lib/setup-wizard";
@@ -20,7 +20,7 @@ import { assignSchoolToUser } from "@/app/admin/actions";
 
 const roleAliases: Record<RoleScope, string[]> = {
   superadmin: ["SUPER_ADMIN"],
-  admin: ["SCHOOL_ADMIN", "PRINCIPAL"],
+  admin: ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"],
   teacher: ["TEACHER"],
   accountant: ["ACCOUNTANT"],
   parent: ["PARENT"],
@@ -43,20 +43,23 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
   }
 
   if (roleScope === "superadmin" && !superAdminWithSchool) {
-    const schools = await prisma.school.findMany({
-      include: {
-        users: true,
-        students: true,
-        teachers: true,
-        payments: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const [schools, dbUser] = await Promise.all([
+      prisma.school.findMany({
+        include: {
+          users: true,
+          students: true,
+          teachers: true,
+          payments: true,
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } }),
+    ]);
 
     const totalRevenue = schools.reduce((sum: number, school: any) => sum + (school.payments?.reduce((acc: number, payment: any) => acc + payment.amount, 0) || 0), 0);
-    const totalTeachers = schools.reduce((sum, school) => sum + school.teachers.length, 0);
-    const totalStudents = schools.reduce((sum, school) => sum + school.students.length, 0);
-    const activeSchools = schools.filter((s) => s.isActive).length;
+    const totalTeachers = schools.reduce((sum: any, school: any) => sum + school.teachers.length, 0);
+    const totalStudents = schools.reduce((sum: any, school: any) => sum + school.students.length, 0);
+    const activeSchools = schools.filter((s: any) => s.isActive).length;
 
     const model = buildSuperAdminModel({
       schools,
@@ -66,7 +69,7 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
     });
 
     return (
-      <ModernPortalShell role={user.role} userName={user.name ?? "Super Admin"} pathname={pathname}>
+      <ModernPortalShell role={user.role} userName={user.name ?? "Super Admin"} avatarUrl={dbUser?.avatarUrl ?? undefined} pathname={pathname}>
         <DashboardHeader title={model.title} subtitle={model.subtitle} />
         
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
@@ -118,7 +121,7 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
               </Link>
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {schools.map((school) => (
+              {schools.map((school: any) => (
                 <div key={school.id} className="p-4 rounded-lg border border-slate-200 hover:border-indigo-300 transition-colors">
                   <div className="flex items-start justify-between">
                     <div>
@@ -205,15 +208,10 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
   }
 
   const context = await getUserAcademicContext(profile.schoolId, user.id);
-  
-  // If no session or term, redirect to setup wizard
-  if (!context.session || !context.term) {
-    redirect("/setup");
-  }
-  
-  const core = await getCoreSchoolDataByContext(profile.schoolId, {
-    sessionId: context.session?.id,
-    termId: context.term?.id,
+
+  const core = await getDashboardData(profile.schoolId, {
+    sessionId: context.session?.id ?? undefined,
+    termId: context.term?.id ?? undefined,
   });
 
   // Fetch reception data for admin dashboard
@@ -223,6 +221,50 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
     prisma.gatePass.count({ where: { schoolId: profile.schoolId, status: "ACTIVE" } }),
     prisma.receptionComplaint.count({ where: { schoolId: profile.schoolId, status: "OPEN" } }),
   ]);
+
+  // Fetch real income/expense data for current month
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  const [incomeRecords, expenseRecords, feeItems] = await Promise.all([
+    prisma.income.findMany({
+      where: { schoolId: profile.schoolId, date: { gte: startOfMonth, lte: endOfMonth } },
+      orderBy: { date: "asc" },
+    }),
+    prisma.expense.findMany({
+      where: { schoolId: profile.schoolId, date: { gte: startOfMonth, lte: endOfMonth } },
+      orderBy: { date: "asc" },
+    }),
+    prisma.feeItem.findMany({ where: { schoolId: profile.schoolId } }),
+  ]);
+
+  // Group income/expense by date for chart
+  const dateKey = (d: Date) => `${d.getDate()}`;
+  const incomeByDate = new Map<string, number>();
+  const expensesByDate = new Map<string, number>();
+
+  for (let i = 1; i <= endOfMonth.getDate(); i++) {
+    incomeByDate.set(String(i), 0);
+    expensesByDate.set(String(i), 0);
+  }
+
+  incomeRecords.forEach((r: any) => {
+    const k = dateKey(new Date(r.date));
+    incomeByDate.set(k, (incomeByDate.get(k) || 0) + Number(r.amount));
+  });
+  expenseRecords.forEach((r: any) => {
+    const k = dateKey(new Date(r.date));
+    expensesByDate.set(k, (expensesByDate.get(k) || 0) + Number(r.amount));
+  });
+
+  const incomeData = Array.from(incomeByDate.entries())
+    .map(([date, income]) => ({ date, income, expenses: expensesByDate.get(date) || 0 }))
+    .filter((d) => d.income > 0 || d.expenses > 0);
+
+  const feeComponents = feeItems.length > 0
+    ? feeItems.map((item: any) => ({ name: item.name, value: Number(item.amount) })).sort((a: any, b: any) => b.value - a.value)
+    : [];
 
   // If Super Admin has school, treat as admin for dashboard model
   const effectiveRole = superAdminWithSchool ? "admin" : roleScope;
@@ -247,8 +289,19 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
         schoolName={core.school?.name}
         schoolLogoUrl={core.school?.branding?.logoUrl ?? undefined}
         userName={user.name ?? "User"}
+        avatarUrl={profile?.avatarUrl ?? undefined}
         pathname={pathname}
       >
+        {roleScope === "admin" && (!context.session || !context.term) && (
+          <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 p-4">
+            <p className="font-semibold text-rose-900">No Active Academic Session or Term</p>
+            <p className="mt-1 text-sm text-rose-700">You must create and select an academic session and term before the dashboard can display data.</p>
+            <Link href="/admin/setup" className="mt-3 inline-flex rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700">
+              Go to Setup
+            </Link>
+          </div>
+        )}
+
         {roleScope === "admin" && setup && !setup.status.setupCompleted && (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
             <p className="font-semibold text-amber-900">School setup is not complete.</p>
@@ -274,21 +327,9 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
 
         {/* Financial Analytics Charts */}
         {roleScope === "admin" && (
-          <DashboardAnalytics 
-            incomeData={[
-              { date: "Week 1", income: 450000, expenses: 180000 },
-              { date: "Week 2", income: 520000, expenses: 220000 },
-              { date: "Week 3", income: 480000, expenses: 200000 },
-              { date: "Week 4", income: 610000, expenses: 250000 },
-            ]}
-            feeComponents={[
-              { name: "Tuition Fee", value: 1250000 },
-              { name: "Development Levy", value: 320000 },
-              { name: "Textbooks", value: 180000 },
-              { name: "Sports & Extra", value: 150000 },
-              { name: "Technology Fee", value: 110000 },
-              { name: "Others", value: 60000 },
-            ]}
+          <DashboardAnalytics
+            incomeData={incomeData.length > 0 ? incomeData : [{ date: "No data", income: 0, expenses: 0 }]}
+            feeComponents={feeComponents.length > 0 ? feeComponents : [{ name: "No fees configured", value: 0 }]}
           />
         )}
 

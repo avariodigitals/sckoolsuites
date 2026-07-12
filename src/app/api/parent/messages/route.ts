@@ -29,7 +29,7 @@ export async function GET() {
     take: 100,
   });
 
-  const messages = items.map((item) => ({
+  const messages = items.map((item: any) => ({
     id: item.id,
     recipient: item.recipient,
     subject: item.subject,

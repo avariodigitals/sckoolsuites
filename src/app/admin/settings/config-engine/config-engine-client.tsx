@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 type VersionSummary = {
-  id: string;
-  version: string;
+  id: number;
+  version: number;
   isActive: boolean;
   source: string;
   notes: string | null;
@@ -16,7 +16,7 @@ type VersionSummary = {
 };
 
 type ActiveConfigPayload = {
-  id: string;
+  id: number;
   version: number;
   source: string;
   notes: string | null;
@@ -1012,7 +1012,7 @@ export function ConfigEngineClient({
     }
   }
 
-  async function activateVersion(id: string) {
+  async function activateVersion(id: number) {
     setStatus("");
     const response = await fetch(`/api/admin/settings/config/${id}/activate`, { method: "POST" });
     const payload = await response.json();

@@ -1,39 +1,54 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
+import { parseNumericId } from "@/lib/id-helpers";
 
 const updateSchema = z.object({
   status: z.enum(["PENDING", "PROCESSED", "ARCHIVED"]).optional(),
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN", "RECEPTIONIST"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN", "RECEPTIONIST"].includes(role) : false;
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "PATCH", "reception");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const { id } = await params;
+
+    let parsedId: number;
+    try {
+      parsedId = parseNumericId(id, "correspondence id");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid correspondence id";
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+
     const json = await request.json();
     const validated = updateSchema.parse(json);
 
     const item = await prisma.correspondence.update({
-      where: { id, schoolId: "default" },
+      where: { id: parsedId, schoolId: "default" },
       data: validated,
     });
 
     await createAuditLog({
-      actorUserId: session.user.id!,
+      actorUserId: session.user.id,
       schoolId: "default",
       action: "UPDATE",
       targetType: "Correspondence",
-      targetId: id,
+      targetId: String(parsedId),
       details: `Updated correspondence ${item.refNumber}`,
     });
 
@@ -49,23 +64,35 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "DELETE", "reception");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const { id } = await params;
-    
+
+    let parsedId: number;
+    try {
+      parsedId = parseNumericId(id, "correspondence id");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid correspondence id";
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+
     await prisma.correspondence.delete({
-      where: { id, schoolId: "default" },
+      where: { id: parsedId, schoolId: "default" },
     });
 
     await createAuditLog({
-      actorUserId: session.user.id!,
+      actorUserId: session.user.id,
       schoolId: "default",
       action: "DELETE",
       targetType: "Correspondence",
-      targetId: id,
+      targetId: String(parsedId),
       details: "Deleted correspondence",
     });
 

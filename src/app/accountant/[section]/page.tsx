@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BillContestReviewPanel } from "@/components/bill-contest-review-panel";
 import { requireRole } from "@/lib/auth-guards";
 import { getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext, statusLabel } from "@/lib/data";
+import { prisma } from "@/lib/db";
 import { formatDate, naira } from "@/lib/utils";
 
 const allowed = ["fee-setup", "invoices", "payments", "receipts", "debtors", "discounts", "finance-reports", "fees"] as const;
@@ -46,6 +47,7 @@ export default async function AccountantSectionPage({ params }: { params: Promis
   if (!(allowed as readonly string[]).includes(section)) notFound();
 
   const user = await requireRole(["ACCOUNTANT"]);
+  const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
   const profile = await getCurrentSchoolByUser(user.id);
   if (!profile?.schoolId || !profile.school) {
     return (
@@ -113,7 +115,7 @@ export default async function AccountantSectionPage({ params }: { params: Promis
             <CardContent className="space-y-2 text-sm">
                 {core.payments.slice(0, 30).map((item: PaymentRow) => (
                 <div key={item.id} className="glass-soft rounded-xl p-3">
-                  <p className="font-medium">{item.invoice?.invoiceNumber ?? `Payment ${item.id.slice(0, 8)}`}</p>
+                  <p className="font-medium">{item.invoice?.invoiceNumber ?? `Payment ${String(item.id).slice(0, 8)}`}</p>
                   <p>{naira(item.amount)} via {item.method}</p>
                   <p>Status: {statusLabel(item.status)} • Date: {formatDate(item.createdAt)}</p>
                 </div>
@@ -134,7 +136,7 @@ export default async function AccountantSectionPage({ params }: { params: Promis
                   <p>Receipt issued</p>
                 </div>
               ))}
-              {!core.bills.some((item) => item.receipt) ? <p className="text-slate-500">No receipts issued yet.</p> : null}
+              {!core.bills.some((item: BillRow) => item.receipt) ? <p className="text-slate-500">No receipts issued yet.</p> : null}
             </CardContent>
           </Card>
         );
@@ -159,13 +161,13 @@ export default async function AccountantSectionPage({ params }: { params: Promis
             <CardHeader><CardTitle>Discounts & Adjustments</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
               <p>Track bills with partial payments as active discount/adjustment indicators.</p>
-              {core.bills.filter((item) => item.status === "PART_PAYMENT").slice(0, 25).map((item) => (
+              {core.bills.filter((item: BillRow) => item.status === "PART_PAYMENT").slice(0, 25).map((item: BillRow) => (
                 <div key={item.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">{item.invoiceNumber}</p>
                   <p>Paid: {naira(item.amountPaid)} • Balance: {naira(item.balance)}</p>
                 </div>
               ))}
-              {!core.bills.some((item) => item.status === "PART_PAYMENT") ? <p className="text-slate-500">No partial-payment adjustments found.</p> : null}
+              {!core.bills.some((item: BillRow) => item.status === "PART_PAYMENT") ? <p className="text-slate-500">No partial-payment adjustments found.</p> : null}
             </CardContent>
           </Card>
         );
@@ -183,8 +185,8 @@ export default async function AccountantSectionPage({ params }: { params: Promis
             <Card>
               <CardHeader><CardTitle>Payment Channels</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
-                {Array.from(new Set(core.payments.map((item) => item.method))).map((method) => (
-                  <p key={method}>{method}: {core.payments.filter((item) => item.method === method).length} txns</p>
+                {Array.from(new Set<string>(core.payments.map((item: PaymentRow) => item.method).filter((m: string | null | undefined): m is string => !!m))).map((method: string) => (
+                  <p key={method}>{method}: {core.payments.filter((item: PaymentRow) => item.method === method).length} txns</p>
                 ))}
                 {!core.payments.length ? <p className="text-slate-500">No channel records yet.</p> : null}
               </CardContent>
@@ -200,13 +202,14 @@ export default async function AccountantSectionPage({ params }: { params: Promis
       schoolName={core.school?.name}
       schoolLogoUrl={core.school?.branding?.logoUrl ?? undefined}
       userName={user.name ?? "Accountant"}
+      avatarUrl={dbUser?.avatarUrl ?? undefined}
       pathname={`/accountant/${section}`}
       currentSessionName={context.session?.name}
       currentTermName={context.term?.name}
-      sessions={core.sessions.map((item) => ({ id: item.id, name: item.name }))}
-      terms={core.terms.map((item) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
-      selectedSessionId={context.session?.id}
-      selectedTermId={context.term?.id}
+      sessions={core.sessions.map((item: { id: number; name: string }) => ({ id: String(item.id), name: item.name }))}
+      terms={core.terms.map((item: { id: number; name: string; sessionId: number }) => ({ id: String(item.id), name: item.name, sessionId: String(item.sessionId) }))}
+      selectedSessionId={context.session?.id == null ? null : String(context.session.id)}
+      selectedTermId={context.term?.id == null ? null : String(context.term.id)}
       primaryColor={core.school?.branding?.primaryColor}
       secondaryColor={core.school?.branding?.secondaryColor}
     >

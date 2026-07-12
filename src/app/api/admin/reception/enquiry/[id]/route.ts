@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
+import { parseNumericId } from "@/lib/id-helpers";
 
 const updateSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -17,16 +19,29 @@ const updateSchema = z.object({
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN", "RECEPTIONIST"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN", "RECEPTIONIST"].includes(role) : false;
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "PATCH", "reception");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
+
+  let parsedId: number;
+  try {
+    parsedId = parseNumericId(id, "enquiry id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid enquiry id";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
   const body = await request.json();
   const parsed = updateSchema.safeParse(body);
 
@@ -39,7 +54,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   try {
     const existing = await prisma.enquiry.findFirst({
-      where: { id, schoolId },
+      where: { id: parsedId, schoolId },
     });
 
     if (!existing) {
@@ -47,7 +62,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
 
     const enquiry = await prisma.enquiry.update({
-      where: { id },
+      where: { id: parsedId },
       data: {
         ...(data.name && { name: data.name.trim() }),
         ...(data.phone !== undefined && { phone: data.phone?.trim() || null }),
@@ -94,30 +109,43 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "DELETE", "reception");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
+
+  let parsedId: number;
+  try {
+    parsedId = parseNumericId(id, "enquiry id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid enquiry id";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
   const schoolId = "default";
 
   try {
     const existing = await prisma.enquiry.findFirst({
-      where: { id, schoolId },
+      where: { id: parsedId, schoolId },
     });
 
     if (!existing) {
       return NextResponse.json({ error: "Enquiry not found" }, { status: 404 });
     }
 
-    await prisma.enquiry.delete({ where: { id } });
+    await prisma.enquiry.delete({ where: { id: parsedId } });
 
     await createAuditLog({
       schoolId,
       actorUserId: session.user.id,
       action: "ENQUIRY_DELETED",
       targetType: "Enquiry",
-      targetId: id,
+      targetId: String(parsedId),
       metadata: { enquiryNumber: existing.enquiryNumber },
     });
 

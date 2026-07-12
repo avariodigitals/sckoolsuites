@@ -12,7 +12,7 @@ const requestSchema = z.object({
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL"].includes(role) : false;
+  return role ? ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"].includes(role) : false;
 }
 
 function asString(value: unknown) {
@@ -30,7 +30,7 @@ function parseDelimitedRows(input: unknown) {
 function parseDelimitedList(input: unknown) {
   return String(input ?? "")
     .split(/\r?\n|,/)
-    .map((item) => item.trim())
+    .map((item: any) => item.trim())
     .filter(Boolean);
 }
 
@@ -71,7 +71,7 @@ export async function GET() {
     classGroups,
     classes,
     arms,
-    subjects: subjects.map((item) => ({
+    subjects: subjects.map((item: any) => ({
       id: item.id,
       name: item.name,
       class: item.class ? { name: item.class.name } : null,
@@ -82,9 +82,9 @@ export async function GET() {
     feeGroups,
     feeItems,
     appIconLogo: appIconSetting?.value ?? "",
-    teachers: teachers.map((item) => ({ id: item.id, name: item.user.name, email: item.user.email, avatarUrl: item.user.avatarUrl })),
-    parents: parents.map((item) => ({ id: item.id, name: item.user.name, email: item.user.email, avatarUrl: item.user.avatarUrl })),
-    students: students.map((item) => ({ id: item.id, name: item.user.name, email: item.user.email, className: item.class?.name, parentEmail: item.parent?.user.email, passportUrl: item.passportUrl })),
+    teachers: teachers.map((item: any) => ({ id: item.id, name: item.user.name, email: item.user.email, avatarUrl: item.user.avatarUrl })),
+    parents: parents.map((item: any) => ({ id: item.id, name: item.user.name, email: item.user.email, avatarUrl: item.user.avatarUrl })),
+    students: students.map((item: any) => ({ id: item.id, name: item.user.name, email: item.user.email, className: item.class?.name, parentEmail: item.parent?.user.email, passportUrl: item.passportUrl })),
     setup,
   });
 }
@@ -382,7 +382,7 @@ export async function POST(request: Request) {
           create: { schoolId, name: className, classGroupId: groupId },
         });
 
-        const arms = armsRaw.split(",").map((item) => item.trim()).filter(Boolean);
+        const arms = armsRaw.split(",").map((item: any) => item.trim()).filter(Boolean);
         for (const armName of arms) {
           await prisma.classArm.upsert({
             where: { schoolId_classId_name: { schoolId, classId: classRow.id, name: armName } },
@@ -393,7 +393,7 @@ export async function POST(request: Request) {
       }
 
       if (requestedGroups.length > 0) {
-        const requestedSet = new Set(requestedGroups.map((item) => item.toLowerCase()));
+        const requestedSet = new Set(requestedGroups.map((item: any) => item.toLowerCase()));
         const existingGroups = await prisma.classGroup.findMany({ where: { schoolId }, select: { id: true, name: true } });
         for (const group of existingGroups) {
           if (requestedSet.has(group.name.toLowerCase())) continue;
@@ -414,11 +414,11 @@ export async function POST(request: Request) {
         const subjectName = asString(row[0]);
         const classNames = asString(row[1])
           .split(",")
-          .map((item) => item.trim())
+          .map((item: any) => item.trim())
           .filter(Boolean);
         const classGroupNames = asString(row[2])
           .split(",")
-          .map((item) => item.trim())
+          .map((item: any) => item.trim())
           .filter(Boolean);
         if (!subjectName) continue;
 
@@ -428,7 +428,7 @@ export async function POST(request: Request) {
               select: { id: true, name: true },
             })
           : [];
-        const classIdByName = new Map(classesByName.map((item) => [item.name, item.id]));
+        const classIdByName = new Map(classesByName.map((item: any) => [item.name, item.id]));
         const primaryClassId = classNames.length ? classIdByName.get(classNames[0]) ?? null : null;
 
         const groupsByName = classGroupNames.length
@@ -437,7 +437,7 @@ export async function POST(request: Request) {
               select: { id: true, name: true },
             })
           : [];
-        const groupIdByName = new Map(groupsByName.map((item) => [item.name, item.id]));
+        const groupIdByName = new Map(groupsByName.map((item: any) => [item.name, item.id]));
         const primaryClassGroupId = classGroupNames.length ? groupIdByName.get(classGroupNames[0]) ?? null : null;
 
         await prisma.subject.upsert({

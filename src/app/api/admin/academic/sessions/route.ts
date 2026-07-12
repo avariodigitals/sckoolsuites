@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
@@ -15,19 +16,27 @@ const service = new AcademicCalendarService();
 
 export async function GET() {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "sessions");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const setup = await service.getAcademicSetup("default");
+  const schoolId = session.user.schoolId || "default";
+  const setup = await service.getAcademicSetup(schoolId);
   return NextResponse.json(setup);
 }
 
 export async function POST(request: Request) {
   try {
     const session = await auth();
-    console.log("Session API - user:", session?.user);
-    if (!session?.user || !["SUPER_ADMIN", "SCHOOL_ADMIN", "PRINCIPAL"].includes(session.user.role)) {
+    const allowed = await crudPrivilege(session, "POST", "sessions");
+    if (!allowed) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (!session?.user || !["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"].includes(session.user.role)) {
       return NextResponse.json({ error: `Unauthorized. Role: ${session?.user?.role}` }, { status: 401 });
     }
 
@@ -37,8 +46,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
+    const schoolId = session.user.schoolId || "default";
     const created = await service.createSession({
-      schoolId: "default",
+      schoolId,
       ...parsed.data,
     });
 

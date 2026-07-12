@@ -395,21 +395,21 @@ async function buildSchoolConfigFromCurrentData(schoolId: string): Promise<Schoo
 
   return normalizeSchoolConfig({
     academic: {
-      sessions: sessions.map((item) => ({ name: item.name, isCurrent: item.isCurrent, status: item.status })),
-      terms: terms.map((item) => ({
+      sessions: sessions.map((item: any) => ({ name: item.name, isCurrent: item.isCurrent, status: item.status })),
+      terms: terms.map((item: any) => ({
         name: item.name,
         sessionName: item.session.name,
         isCurrent: item.isCurrent,
         status: item.status,
       })),
-      classes: classes.map((item) => ({ name: item.name, groupName: item.classGroup?.name, arms: [] })),
+      classes: classes.map((item: any) => ({ name: item.name, groupName: item.classGroup?.name, arms: [] })),
       arms: [],
-      subjects: subjects.map((item) => ({ name: item.name, className: item.class?.name, classGroupName: item.classGroup?.name })),
+      subjects: subjects.map((item: any) => ({ name: item.name, className: item.class?.name, classGroupName: item.classGroup?.name })),
       assessmentTypes: DEFAULT_ASSESSMENTS,
       gradingSystem: DEFAULT_GRADING,
     },
     finance: {
-      feeStructures: feeItems.map((item) => ({
+      feeStructures: feeItems.map((item: any) => ({
         category: item.category,
         name: item.name,
         amount: item.amount,
@@ -453,13 +453,13 @@ async function buildSchoolConfigFromCurrentData(schoolId: string): Promise<Schoo
 export async function publishSchoolConfigVersion(params: {
   schoolId: string;
   config: unknown;
-  createdById?: string;
+  createdById?: number;
   notes?: string;
   source?: string;
 }) {
   const normalized = normalizeSchoolConfig(params.config);
 
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: any) => {
     const latest = await tx.schoolConfigVersion.aggregate({
       where: { schoolId: params.schoolId },
       _max: { version: true },
@@ -491,7 +491,7 @@ export async function publishSchoolConfigVersion(params: {
 }
 
 export async function activateSchoolConfigVersion(schoolId: string, configVersionId: string) {
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: any) => {
     const version = await tx.schoolConfigVersion.findFirst({ where: { id: configVersionId, schoolId } });
     if (!version) throw new Error("Configuration version not found.");
 

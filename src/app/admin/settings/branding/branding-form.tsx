@@ -6,7 +6,6 @@ import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
 const schema = z.object({
@@ -19,9 +18,9 @@ const schema = z.object({
   logoUrl: z.string().optional(),
   primaryColor: z.string().min(4),
   secondaryColor: z.string().min(4),
-  reportCardTheme: z.string().min(2),
-  invoiceTheme: z.string().min(2),
-  receiptTheme: z.string().min(2),
+  reportCardTheme: z.string().optional(),
+  invoiceTheme: z.string().optional(),
+  receiptTheme: z.string().optional(),
   bankName: z.string().optional(),
   bankAccountName: z.string().optional(),
   bankAccountNumber: z.string().optional(),
@@ -124,35 +123,25 @@ export function BrandingForm({ defaults }: { defaults: FormValues }) {
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium">Primary Color</label>
-        <Input {...register("primaryColor")} />
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            {...register("primaryColor")}
+            className="h-10 w-10 cursor-pointer rounded border border-slate-200 bg-white p-1"
+          />
+          <Input {...register("primaryColor")} className="flex-1 font-mono text-sm" />
+        </div>
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium">Secondary Color</label>
-        <Input {...register("secondaryColor")} />
-      </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium">Report Card Theme</label>
-        <Input {...register("reportCardTheme")} />
-      </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium">Invoice Theme</label>
-        <Input {...register("invoiceTheme")} />
-      </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium">Receipt Theme</label>
-        <Input {...register("receiptTheme")} />
-      </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium">Bank Name</label>
-        <Input {...register("bankName")} />
-      </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium">Bank Account Name</label>
-        <Input {...register("bankAccountName")} />
-      </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium">Bank Account Number</label>
-        <Input {...register("bankAccountNumber")} />
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            {...register("secondaryColor")}
+            className="h-10 w-10 cursor-pointer rounded border border-slate-200 bg-white p-1"
+          />
+          <Input {...register("secondaryColor")} className="flex-1 font-mono text-sm" />
+        </div>
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium">Principal Signature</label>
@@ -173,10 +162,6 @@ export function BrandingForm({ defaults }: { defaults: FormValues }) {
           <Input type="file" accept="image/png,image/jpeg,image/webp" onChange={onFileChange("schoolStamp")} disabled={uploadingField === "schoolStamp"} className="max-w-[280px]" />
         </div>
         {schoolStamp ? <Image src={schoolStamp} alt="School stamp preview" width={64} height={64} unoptimized className="mt-2 h-16 w-16 rounded border border-slate-200 bg-white p-1 object-contain" /> : null}
-      </div>
-      <div className="md:col-span-2">
-        <label className="mb-1 block text-sm font-medium">Bank Instructions</label>
-        <Textarea {...register("bankInstructions")} />
       </div>
       <div className="md:col-span-2">
         <Button type="submit" disabled={formState.isSubmitting}>

@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 
 export async function GET() {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "classes");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const user = session?.user;
 
   if (!user?.id) {
@@ -11,8 +16,9 @@ export async function GET() {
   }
 
   try {
+    const schoolId = user.schoolId || "default";
     const classGroups = await prisma.classGroup.findMany({
-      where: { schoolId: "default" },
+      where: { schoolId },
       orderBy: { createdAt: "asc" },
     });
 
@@ -28,6 +34,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "classes");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const user = session?.user;
 
   if (!user?.id) {
@@ -35,6 +45,8 @@ export async function POST(request: Request) {
   }
 
   try {
+    const schoolId = user.schoolId || "default";
+
     const body = await request.json();
     const { name } = body;
 
@@ -47,7 +59,7 @@ export async function POST(request: Request) {
 
     // Check for duplicate
     const existing = await prisma.classGroup.findUnique({
-      where: { schoolId_name: { schoolId: "default", name: name.trim() } },
+      where: { schoolId_name: { schoolId, name: name.trim() } },
     });
 
     if (existing) {
@@ -59,7 +71,7 @@ export async function POST(request: Request) {
 
     const classGroup = await prisma.classGroup.create({
       data: {
-        schoolId: "default",
+        schoolId,
         name: name.trim(),
       },
     });

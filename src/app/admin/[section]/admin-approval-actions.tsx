@@ -34,6 +34,8 @@ type ResultRow = {
   id: string;
   status: "DRAFT" | "APPROVED" | "PUBLISHED" | "REJECTED";
   reviewNote?: string | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
   student: {
     id: string;
     name: string;
@@ -48,9 +50,9 @@ type ResultRow = {
     name: string;
   };
   summary: {
-    percentage: number;
-    grade: string;
-    gpa: number;
+    percentage: number | null;
+    grade: string | null;
+    gpa: number | null;
   };
 };
 
@@ -93,7 +95,8 @@ export function AdminApprovalActions({
     const payload = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      setError(payload?.error ?? "Could not load payment proofs.");
+      const err = payload?.error;
+      setError(typeof err === "object" ? JSON.stringify(err) : (err ?? "Could not load payment proofs."));
       setLoading(false);
       return;
     }
@@ -116,7 +119,8 @@ export function AdminApprovalActions({
     const payload = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      setError(payload?.error ?? "Could not load result queue.");
+      const err = payload?.error;
+      setError(typeof err === "object" ? JSON.stringify(err) : (err ?? "Could not load result queue."));
       setLoading(false);
       return;
     }
@@ -323,8 +327,16 @@ export function AdminApprovalActions({
                   <p><strong>Class:</strong> {row.student.className}</p>
                   <p><strong>Term/Session:</strong> {row.term.name} / {row.session.name}</p>
                   <p><strong>Status:</strong> {row.status}</p>
-                  <p><strong>Summary:</strong> {row.summary.percentage.toFixed(1)}% • {row.summary.grade} • GPA {row.summary.gpa.toFixed(2)}</p>
+                  <p><strong>Summary:</strong> {row.summary.percentage !== null ? `${row.summary.percentage.toFixed(1)}% • ${row.summary.grade ?? "-"} • GPA ${row.summary.gpa?.toFixed(2) ?? "-"}` : "Uploaded PDF (no computed summary)"}</p>
                   <p><strong>Note:</strong> {row.reviewNote ?? "-"}</p>
+                  {row.fileUrl ? (
+                    <p className="md:col-span-2">
+                      <strong>Uploaded PDF:</strong>{" "}
+                      <a className="text-blue-700 underline" href={row.fileUrl} target="_blank" rel="noreferrer">
+                        {row.fileName || "Open result PDF"}
+                      </a>
+                    </p>
+                  ) : null}
                 </div>
 
                 <textarea

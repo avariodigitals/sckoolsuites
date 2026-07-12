@@ -12,7 +12,7 @@ const schema = z.object({
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.id || !["SCHOOL_ADMIN", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(session.user.role)) {
+  if (!session?.user?.id || !["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -11,9 +11,10 @@ type ClassItem = {
   classGroupName: string | null;
   teacherId: string | null;
   teacherName: string | null;
-  arms: { id: string; name: string; isActive: boolean }[];
+  arms: { id: string; name: string; isActive: boolean; teacherId: string | null; teacherName: string | null }[];
   students: { id: string; name: string }[];
   subjects: { id: string; name: string }[];
+  assessments: { id: string; name: string; fromGroup?: boolean }[];
   studentCount: number;
   createdAt: string;
 };
@@ -23,6 +24,8 @@ type Option = { id: string; name: string };
 const emptyClass = {
   name: "",
   classGroupId: "",
+  armIds: [] as string[],
+  assessmentIds: [] as string[],
 };
 
 export function ClassManager() {
@@ -30,14 +33,14 @@ export function ClassManager() {
   const [classGroups, setClassGroups] = useState<Option[]>([]);
   const [teachers, setTeachers] = useState<Option[]>([]);
   const [subjects, setSubjects] = useState<Option[]>([]);
+  const [presetArms, setPresetArms] = useState<{ id: string; name: string; capacity: number | null }[]>([]);
+  const [presetAssessments, setPresetAssessments] = useState<{ id: string; name: string; headings?: any[] }[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [form, setForm] = useState(emptyClass);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [newArmName, setNewArmName] = useState("");
-  const [addingArmForClass, setAddingArmForClass] = useState<string | null>(null);
 
   const filteredClasses = useMemo(() => {
     if (!searchQuery.trim()) return classes;
@@ -54,16 +57,24 @@ export function ClassManager() {
     setLoading(true);
     setStatus("");
     try {
-      const response = await fetch("/api/admin/classes", { cache: "no-store" });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setStatus(payload?.error ?? "Unable to load classes.");
+      const [classesRes, armsRes, assessmentsRes] = await Promise.all([
+        fetch("/api/admin/classes", { cache: "no-store" }),
+        fetch("/api/admin/class-arms?preset=1", { cache: "no-store" }),
+        fetch("/api/admin/assessments", { cache: "no-store" }),
+      ]);
+      const payload = await classesRes.json().catch(() => ({}));
+      const armsPayload = await armsRes.json().catch(() => ({}));
+      const assessmentsPayload = await assessmentsRes.json().catch(() => ({}));
+      if (!classesRes.ok) {
+        setStatus(typeof payload?.error === "object" ? JSON.stringify(payload.error) : (payload?.error ?? "Unable to load classes."));
         return;
       }
       setClasses(payload.classes ?? []);
       setClassGroups(payload.classGroups ?? []);
       setTeachers(payload.teachers ?? []);
       setSubjects(payload.subjects ?? []);
+      setPresetArms(armsPayload.arms ?? []);
+      setPresetAssessments(assessmentsPayload.assessments ?? []);
     } catch {
       setStatus("Failed to load data.");
     } finally {
@@ -80,14 +91,21 @@ export function ClassManager() {
 
   async function handleSubmit() {
     setStatus("");
+    if (!form.name.trim()) {
+      setStatus("Class name is required.");
+      return;
+    }
+    if (!form.classGroupId) {
+      setStatus("Class group is required.");
+      return;
+    }
     setSubmitting(true);
 
-    const body = {
-      ...form,
-      classGroupId: form.classGroupId || null,
-    };
-
     const isEditing = editingId !== null;
+    const body = isEditing
+      ? { name: form.name.trim(), classGroupId: form.classGroupId, armIds: form.armIds, assessmentIds: form.assessmentIds }
+      : { name: form.name.trim(), classGroupId: form.classGroupId, armIds: form.armIds, assessmentIds: form.assessmentIds };
+
     const url = isEditing ? `/api/admin/classes/${editingId}` : "/api/admin/classes";
     const method = isEditing ? "PATCH" : "POST";
 
@@ -101,11 +119,11 @@ export function ClassManager() {
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setStatus(payload?.error ?? `Failed to ${isEditing ? "update" : "create"} class.`);
+        setStatus(typeof payload?.error === "object" ? JSON.stringify(payload.error) : (payload?.error ?? `Failed to ${isEditing ? "update" : "create"} class.`));
         return;
       }
 
-      setForm(emptyClass);
+      setForm({ name: "", classGroupId: "", armIds: [] as string[], assessmentIds: [] as string[] });
       setEditingId(null);
       setStatus(`Class ${isEditing ? "updated" : "created"} successfully.`);
       await loadData();
@@ -113,60 +131,6 @@ export function ClassManager() {
       setStatus("An error occurred.");
     } finally {
       setSubmitting(false);
-    }
-  }
-
-  async function handleAddArm(classId: string) {
-    if (!newArmName.trim()) return;
-
-    setStatus("");
-    setAddingArmForClass(classId);
-    try {
-      const response = await fetch(`/api/admin/classes/${classId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ armName: newArmName.trim(), action: "ADD_ARM" }),
-      });
-
-      const payload = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        setStatus(payload?.error ?? "Failed to add arm.");
-        return;
-      }
-
-      setNewArmName("");
-      setStatus("Arm added successfully.");
-      await loadData();
-    } catch {
-      setStatus("An error occurred.");
-    } finally {
-      setAddingArmForClass(null);
-    }
-  }
-
-  async function handleRemoveArm(classId: string, armName: string) {
-    if (!window.confirm(`Remove arm "${armName}" from this class?`)) return;
-
-    setStatus("");
-    try {
-      const response = await fetch(`/api/admin/classes/${classId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ armName, action: "REMOVE_ARM" }),
-      });
-
-      const payload = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        setStatus(payload?.error ?? "Failed to remove arm.");
-        return;
-      }
-
-      setStatus("Arm removed successfully.");
-      await loadData();
-    } catch {
-      setStatus("An error occurred.");
     }
   }
 
@@ -182,7 +146,7 @@ export function ClassManager() {
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setStatus(payload?.error ?? "Failed to add subject.");
+        setStatus(typeof payload?.error === "object" ? JSON.stringify(payload.error) : (payload?.error ?? "Failed to add subject."));
         return;
       }
 
@@ -207,7 +171,7 @@ export function ClassManager() {
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setStatus(payload?.error ?? "Failed to remove subject.");
+        setStatus(typeof payload?.error === "object" ? JSON.stringify(payload.error) : (payload?.error ?? "Failed to remove subject."));
         return;
       }
 
@@ -230,11 +194,34 @@ export function ClassManager() {
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setStatus(payload?.error ?? "Failed to assign teacher.");
+        setStatus(typeof payload?.error === "object" ? JSON.stringify(payload.error) : (payload?.error ?? "Failed to assign teacher."));
         return;
       }
 
       setStatus("Teacher assigned successfully.");
+      await loadData();
+    } catch {
+      setStatus("An error occurred.");
+    }
+  }
+
+  async function handleAssignArmTeacher(classId: string, armId: string, teacherId: string) {
+    setStatus("");
+    try {
+      const response = await fetch(`/api/admin/classes/${classId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ armId, teacherId, action: "ASSIGN_ARM_TEACHER" }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setStatus(typeof payload?.error === "object" ? JSON.stringify(payload.error) : (payload?.error ?? "Failed to assign arm teacher."));
+        return;
+      }
+
+      setStatus("Arm teacher assigned successfully.");
       await loadData();
     } catch {
       setStatus("An error occurred.");
@@ -252,7 +239,7 @@ export function ClassManager() {
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setStatus(payload?.error ?? "Failed to delete class.");
+        setStatus(typeof payload?.error === "object" ? JSON.stringify(payload.error) : (payload?.error ?? "Failed to delete class."));
         return;
       }
 
@@ -265,15 +252,22 @@ export function ClassManager() {
 
   function startEdit(cls: ClassItem) {
     setEditingId(cls.id);
+    // Match current class arms to preset arms by name for checkbox state
+    const activeArmNames = new Set(cls.arms.filter((a) => a.isActive).map((a) => a.name));
+    const matchedArmIds = presetArms
+      .filter((p) => activeArmNames.has(p.name))
+      .map((p) => String(p.id));
     setForm({
       name: cls.name,
-      classGroupId: cls.classGroupId ?? "",
+      classGroupId: cls.classGroupId ? String(cls.classGroupId) : "",
+      armIds: matchedArmIds,
+      assessmentIds: cls.assessments?.map((a) => String(a.id)) ?? [],
     });
   }
 
   function cancelEdit() {
     setEditingId(null);
-    setForm(emptyClass);
+    setForm({ name: "", classGroupId: "", armIds: [] as string[], assessmentIds: [] as string[] });
     setStatus("");
   }
 
@@ -290,8 +284,8 @@ export function ClassManager() {
   return (
     <div className="space-y-4">
       {status ? (
-        <div className={`rounded-lg border px-3 py-2 text-sm ${status.includes("success") || status.includes("created") || status.includes("updated") || status.includes("added") ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"}`}>
-          {status}
+        <div className={`rounded-lg border px-3 py-2 text-sm ${String(status).includes("success") || String(status).includes("created") || String(status).includes("updated") || String(status).includes("added") ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"}`}>
+          {String(status)}
         </div>
       ) : null}
 
@@ -308,7 +302,7 @@ export function ClassManager() {
           variant="outline"
           onClick={() => {
             setEditingId(null);
-            setForm(emptyClass);
+            setForm({ name: "", classGroupId: "", armIds: [] as string[], assessmentIds: [] as string[] });
             setStatus("");
           }}
         >
@@ -332,7 +326,7 @@ export function ClassManager() {
             value={form.classGroupId}
             onChange={(e) => setForm((prev) => ({ ...prev, classGroupId: e.target.value }))}
           >
-            <option value="">Select class group (optional)</option>
+            <option value="">Select class group *</option>
             {classGroups.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.name}
@@ -340,6 +334,77 @@ export function ClassManager() {
             ))}
           </select>
         </div>
+        {presetArms.length > 0 && (
+          <div className="mt-3">
+            <label className="block text-xs font-medium text-slate-600 mb-1">Arms (select applicable)</label>
+            <div className="flex flex-wrap gap-2">
+              {presetArms.map((arm) => (
+                <label
+                  key={arm.id}
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                    form.armIds.includes(arm.id)
+                      ? "border-indigo-300 bg-indigo-50 text-indigo-700"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    checked={form.armIds.includes(arm.id)}
+                    onChange={(e) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        armIds: e.target.checked
+                          ? [...prev.armIds, arm.id]
+                          : prev.armIds.filter((id) => id !== arm.id),
+                      }));
+                    }}
+                  />
+                  {arm.name}
+                  {arm.capacity !== null && (
+                    <span className="text-xs text-slate-400">({arm.capacity})</span>
+                  )}
+                </label>
+              ))}
+            </div>
+            {presetArms.length === 0 && (
+              <p className="text-xs text-slate-400">No preset arms available. Create arms in the Arms section first.</p>
+            )}
+          </div>
+        )}
+
+        {presetAssessments.length > 0 && (
+          <div className="mt-3">
+            <label className="block text-xs font-medium text-slate-600 mb-1">Assessments (select applicable)</label>
+            <div className="flex flex-wrap gap-2">
+              {presetAssessments.map((assessment) => (
+                <label
+                  key={assessment.id}
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                    form.assessmentIds.includes(assessment.id)
+                      ? "border-amber-300 bg-amber-50 text-amber-700"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                    checked={form.assessmentIds.includes(assessment.id)}
+                    onChange={(e) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        assessmentIds: e.target.checked
+                          ? [...prev.assessmentIds, assessment.id]
+                          : prev.assessmentIds.filter((id) => id !== assessment.id),
+                      }));
+                    }}
+                  />
+                  {assessment.name}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="mt-3 flex gap-2">
           <Button onClick={handleSubmit} disabled={submitting}>
             {submitting ? (editingId ? "Updating..." : "Creating...") : editingId ? "Update Class" : "Create Class"}
@@ -406,7 +471,7 @@ export function ClassManager() {
 
                 {/* Arms Section */}
                 <div className="mt-3 border-t border-slate-100 pt-2">
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-col gap-2">
                     <span className="text-xs font-medium text-slate-600">Arms:</span>
                     {cls.arms.filter((a) => a.isActive).length === 0 ? (
                       <span className="text-xs text-slate-400">No arms</span>
@@ -414,47 +479,54 @@ export function ClassManager() {
                       cls.arms
                         .filter((a) => a.isActive)
                         .map((arm) => (
-                          <span
-                            key={arm.id}
-                            className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-xs"
-                          >
-                            {arm.name}
-                            <button
-                              onClick={() => handleRemoveArm(cls.id, arm.name)}
-                              className="text-rose-500 hover:text-rose-700"
-                              title="Remove arm"
+                          <div key={arm.id} className="flex items-center gap-2">
+                            <span className="inline-flex items-center rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                              {arm.name}
+                            </span>
+                            <select
+                              className="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600"
+                              value={arm.teacherId ?? ""}
+                              onChange={(e) => handleAssignArmTeacher(cls.id, arm.id, e.target.value)}
                             >
-                              ×
-                            </button>
-                          </span>
+                              <option value="">Select teacher...</option>
+                              {teachers.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                  {t.name}
+                                </option>
+                              ))}
+                            </select>
+                            {arm.teacherName && (
+                              <span className="text-[10px] text-slate-400">{arm.teacherName}</span>
+                            )}
+                          </div>
                         ))
                     )}
-                    <div className="flex items-center gap-1">
-                      <Input
-                        type="text"
-                        placeholder="New arm (e.g., A, B)"
-                        value={addingArmForClass === cls.id ? newArmName : ""}
-                        onChange={(e) => {
-                          setAddingArmForClass(cls.id);
-                          setNewArmName(e.target.value);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            void handleAddArm(cls.id);
-                          }
-                        }}
-                        className="h-7 w-32 text-xs"
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => handleAddArm(cls.id)}
-                        disabled={addingArmForClass === cls.id && !newArmName.trim()}
-                      >
-                        Add
-                      </Button>
-                    </div>
+                  </div>
+                </div>
+
+                {/* Assessments Section */}
+                <div className="mt-2 border-t border-slate-100 pt-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-medium text-slate-600">Assessments:</span>
+                    {cls.assessments?.length === 0 ? (
+                      <span className="text-xs text-slate-400">No assessments</span>
+                    ) : (
+                      cls.assessments.map((assessment, idx) => (
+                        <span
+                          key={assessment.id ?? `assessment-${idx}`}
+                          className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs ${
+                            assessment.fromGroup
+                              ? "bg-amber-50 text-amber-700 border border-amber-200"
+                              : "bg-slate-100 text-slate-700"
+                          }`}
+                        >
+                          {assessment.name}
+                          {assessment.fromGroup && (
+                            <span className="text-[10px] text-amber-500">(group)</span>
+                          )}
+                        </span>
+                      ))
+                    )}
                   </div>
                 </div>
 

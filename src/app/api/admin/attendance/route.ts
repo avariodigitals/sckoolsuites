@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { AttendanceStatus } from "@/lib/db-types";
 import { z } from "zod";
 import { auth } from "@/auth";
@@ -7,45 +8,49 @@ import { createAuditLog } from "@/lib/audit-log";
 
 const querySchema = z.object({
   date: z.string().optional(),
-  classId: z.string().optional(),
-  studentId: z.string().optional(),
-  sessionId: z.string().optional(),
-  termId: z.string().optional(),
+  classId: z.coerce.number().int().positive().optional(),
+  studentId: z.coerce.number().int().positive().optional(),
+  sessionId: z.coerce.number().int().positive().optional(),
+  termId: z.coerce.number().int().positive().optional(),
 });
 
 const createSchema = z.object({
-  studentId: z.string().min(5),
-  classId: z.string().min(5).optional(),
+  studentId: z.coerce.number().int().positive(),
+  classId: z.coerce.number().int().positive().optional(),
   date: z.string(),
   status: z.nativeEnum(AttendanceStatus),
-  sessionId: z.string().min(5).optional(),
-  termId: z.string().min(5).optional(),
+  sessionId: z.coerce.number().int().positive().optional(),
+  termId: z.coerce.number().int().positive().optional(),
 });
 
 const bulkSchema = z.object({
   records: z.array(
     z.object({
-      studentId: z.string().min(5),
+      studentId: z.coerce.number().int().positive(),
       status: z.nativeEnum(AttendanceStatus),
     })
   ),
-  classId: z.string().min(5),
+  classId: z.coerce.number().int().positive(),
   date: z.string(),
-  sessionId: z.string().min(5).optional(),
-  termId: z.string().min(5).optional(),
+  sessionId: z.coerce.number().int().positive().optional(),
+  termId: z.coerce.number().int().positive().optional(),
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
 }
 
 export async function GET(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "attendance");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
   const url = new URL(request.url);
   
   const parsedQuery = querySchema.safeParse({
@@ -119,7 +124,7 @@ export async function GET(request: Request) {
   ]);
 
   return NextResponse.json({
-    attendance: attendanceRecords.map((a) => ({
+    attendance: attendanceRecords.map((a: any) => ({
       id: a.id,
       studentId: a.studentId,
       studentName: a.student.user.name,
@@ -160,24 +165,27 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "attendance");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const schoolId = session.user.schoolId || "default";
   const payload = await request.json();
-  
+
   // Check if this is a bulk request
   const bulkParsed = bulkSchema.safeParse(payload);
   if (bulkParsed.success) {
-    return handleBulkAttendance(bulkParsed.data, "default", session.user.id);
+    return handleBulkAttendance(bulkParsed.data, schoolId, Number(session.user.id));
   }
 
   const parsed = createSchema.safeParse(payload);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-
-  const schoolId = "default";
   const data = parsed.data;
 
   // Validate student
@@ -237,7 +245,7 @@ export async function POST(request: Request) {
         data: {
           status: data.status,
           classId: data.classId ?? student.classId,
-          teacherId: session.user.id,
+          teacherId: Number(session.user.id),
         },
         include: {
           student: { include: { user: true, class: true } },
@@ -257,7 +265,7 @@ export async function POST(request: Request) {
           termId: effectiveTermId,
           date: new Date(data.date),
           status: data.status,
-          teacherId: session.user.id,
+          teacherId: Number(session.user.id),
         },
         include: {
           student: { include: { user: true, class: true } },
@@ -306,14 +314,14 @@ export async function POST(request: Request) {
 
 async function handleBulkAttendance(
   data: {
-    records: { studentId: string; status: AttendanceStatus }[];
-    classId: string;
+    records: { studentId: number; status: AttendanceStatus }[];
+    classId: number;
     date: string;
-    sessionId?: string;
-    termId?: string;
+    sessionId?: number;
+    termId?: number;
   },
   schoolId: string,
-  userId: string
+  userId: number
 ) {
   // Validate class
   const classExists = await prisma.class.findFirst({
@@ -371,7 +379,7 @@ async function handleBulkAttendance(
           data: {
             status: record.status,
             classId: data.classId,
-            teacherId: userId,
+            teacherId: Number(userId),
           },
           include: {
             student: { include: { user: true } },
@@ -388,7 +396,7 @@ async function handleBulkAttendance(
             termId: effectiveTermId,
             date: targetDate,
             status: record.status,
-            teacherId: userId,
+            teacherId: Number(userId),
           },
           include: {
             student: { include: { user: true } },

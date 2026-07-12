@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
@@ -57,11 +58,15 @@ const onlineClassSchema = z.object({
 const createSchema = z.union([lessonSchema, assignmentSchema, quizSchema, onlineClassSchema]);
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
 }
 
 export async function GET(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "lms");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -187,7 +192,7 @@ export async function GET(request: Request) {
       dueDate: q.dueDate?.toISOString() ?? null,
       createdAt: q.createdAt.toISOString(),
     })),
-    onlineClasses: onlineClasses.map((o) => ({
+    onlineClasses: onlineClasses.map((o: any) => ({
       id: o.id,
       type: "online-class",
       subjectId: o.subjectId,
@@ -203,7 +208,7 @@ export async function GET(request: Request) {
       endTime: o.endTime?.toISOString() ?? null,
       createdAt: o.createdAt.toISOString(),
     })),
-    subjects: subjects.map((s) => ({
+    subjects: subjects.map((s: any) => ({
       id: s.id,
       name: s.name,
       classId: s.classId,
@@ -211,13 +216,17 @@ export async function GET(request: Request) {
       teacherId: s.teacherId,
       teacherName: s.teacher?.user.name ?? null,
     })),
-    classes: classes.map((c) => ({ id: c.id, name: c.name })),
-    teachers: teachers.map((t) => ({ id: t.id, name: t.user.name })),
+    classes: classes.map((c: any) => ({ id: c.id, name: c.name })),
+    teachers: teachers.map((t: any) => ({ id: t.id, name: t.user.name })),
   });
 }
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "lms");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

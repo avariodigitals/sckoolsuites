@@ -1,0 +1,182 @@
+model ParentMessage {
+  id        Int           @id @default(autoincrement())
+  schoolId  String        @default("default") @map("school_id")
+  parentId  Int           @map("parent_id")
+  recipient String
+  subject   String
+  message   String
+  status    MessageStatus @default(SENT)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  school School @relation(fields: [schoolId], references: [id])
+  parent Parent @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([parentId])
+  @@map("parent_message")
+}
+
+model ParentComplaint {
+  id             Int             @id @default(autoincrement())
+  schoolId       String          @default("default") @map("school_id")
+  parentId       Int             @map("parent_id")
+  category       String
+  subject        String
+  complaint      String
+  status         ComplaintStatus @default(OPEN)
+  reviewedById   Int?            @map("reviewed_by_id")
+  resolutionNote String?         @map("resolution_note")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @default(now()) @updatedAt @map("updated_at")
+
+  school     School @relation(fields: [schoolId], references: [id])
+  parent     Parent @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  reviewedBy User?  @relation("ReviewedParentComplaints", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([parentId])
+  @@index([reviewedById])
+  @@map("parent_complaint")
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  schoolId    String   @default("default") @map("school_id")
+  actorUserId Int?     @map("actor_user_id")
+  action      String
+  targetType  String   @map("target_type")
+  targetId    String?  @map("target_id")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  school    School? @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  actorUser User?   @relation("ActorAuditLogs", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([actorUserId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+model InvoiceContestAudit {
+  id          Int      @id @default(autoincrement())
+  schoolId    String   @default("default") @map("school_id")
+  invoiceId   Int      @map("invoice_id")
+  actorUserId Int?     @map("actor_user_id")
+  actorRole   String?  @map("actor_role")
+  action      String
+  details     Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  school    School  @relation(fields: [schoolId], references: [id])
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  actorUser User?   @relation("ActorInvoiceContestAudits", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([invoiceId])
+  @@index([actorUserId])
+  @@map("invoice_contest_audit")
+}
+
+model Privilege {
+  id          Int            @id @default(autoincrement())
+  code        String         @unique
+  name        String
+  description String?
+  category    String
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  rolePrivileges RolePrivilege[]
+  userPrivileges UserPrivilege[]
+
+  @@index([code])
+  @@index([category])
+  @@map("privilege")
+}
+
+model RolePrivilege {
+  id          Int      @id @default(autoincrement())
+  roleId      Int      @map("role_id")
+  privilegeId Int      @map("privilege_id")
+  isGranted   Boolean  @default(true) @map("is_granted")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  privilege Privilege @relation(fields: [privilegeId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, privilegeId])
+  @@index([roleId])
+  @@index([privilegeId])
+  @@map("role_privilege")
+}
+
+model UserPrivilege {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  privilegeId Int      @map("privilege_id")
+  isGranted   Boolean  @default(true) @map("is_granted")
+  grantedBy   Int?     @map("granted_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  privilege Privilege @relation(fields: [privilegeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, privilegeId])
+  @@index([userId])
+  @@index([privilegeId])
+  @@map("user_privilege")
+}
+
+model Assessment {
+  id           Int      @id @default(autoincrement())
+  schoolId     String   @default("default") @map("school_id")
+  name         String
+  type         String?
+  description  String?
+  gradingScale String?  @map("grading_scale")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school School @relation(fields: [schoolId], references: [id])
+  classLinks       ClassAssessment[]
+  classGroupLinks  ClassGroupAssessment[]
+
+  @@index([schoolId])
+  @@map("assessment")
+}
+
+model ClassAssessment {
+  id          Int      @id @default(autoincrement())
+  classId     Int      @map("class_id")
+  assessmentId Int    @map("assessment_id")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  class      Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, assessmentId])
+  @@index([classId])
+  @@index([assessmentId])
+  @@map("class_assessment")
+}
+
+model ClassGroupAssessment {
+  id           Int      @id @default(autoincrement())
+  classGroupId Int      @map("class_group_id")
+  assessmentId Int      @map("assessment_id")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  classGroup ClassGroup @relation(fields: [classGroupId], references: [id], onDelete: Cascade)
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([classGroupId, assessmentId])
+  @@index([classGroupId])
+  @@index([assessmentId])
+  @@map("class_group_assessment")
+}

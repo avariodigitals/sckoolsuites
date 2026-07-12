@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
@@ -6,22 +7,26 @@ import { createAuditLog } from "@/lib/audit-log";
 
 const createSchema = z.object({
   name: z.string().min(1).max(100),
-  classId: z.string().min(5).optional().nullable(),
-  classGroupId: z.string().min(5).optional().nullable(),
-  teacherId: z.string().min(5).optional().nullable(),
+  classId: z.coerce.number().optional().nullable(),
+  classGroupId: z.coerce.number().optional().nullable(),
+  teacherId: z.coerce.number().optional().nullable(),
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
 }
 
 export async function GET() {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "subjects");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
 
   const [subjects, classes, classGroups, teachers] = await Promise.all([
     prisma.subject.findMany({
@@ -68,6 +73,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "subjects");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -78,7 +87,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
   const data = parsed.data;
 
   // Check if subject name already exists
@@ -140,7 +149,7 @@ export async function POST(request: Request) {
       actorUserId: session.user.id,
       action: "SUBJECT_CREATED",
       targetType: "Subject",
-      targetId: subject.id,
+      targetId: String(subject.id),
       metadata: {
         subjectId: subject.id,
         name: data.name,

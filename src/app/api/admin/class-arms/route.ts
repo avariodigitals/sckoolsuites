@@ -1,18 +1,47 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { parseNumericId } from "@/lib/id-helpers";
+import { Prisma } from "@prisma/client";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "classes");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const user = session?.user;
 
   if (!user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const preset = searchParams.get("preset");
+
   try {
+    // preset=1 returns standalone arms (class_id IS NULL)
+    // otherwise returns assigned arms for a specific class (via classId param)
+    const classId = searchParams.get("classId");
+
+    const schoolId = user.schoolId || "default";
+    const where: Prisma.ClassArmWhereInput = { schoolId };
+    if (preset === "1") {
+      where.classId = null;
+    } else if (classId) {
+      let parsedClassId: number;
+      try {
+        parsedClassId = parseNumericId(classId, "class id");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Invalid class id";
+        return NextResponse.json({ error: message }, { status: 400 });
+      }
+      where.classId = parsedClassId;
+    }
+
     const arms = await prisma.classArm.findMany({
-      where: { schoolId: "default" },
+      where,
       include: {
         class: {
           select: {
@@ -27,9 +56,9 @@ export async function GET() {
     const formattedArms = arms.map((arm) => ({
       id: arm.id,
       name: arm.name,
+      capacity: arm.capacity ?? null,
       classId: arm.classId,
-      className: arm.class?.name || "Unknown",
-      studentCount: 0, // Students are associated with Class, not directly with ClassArm
+      className: arm.class?.name || null,
       isActive: arm.isActive,
       createdAt: arm.createdAt,
     }));
@@ -46,6 +75,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "classes");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const user = session?.user;
 
   if (!user?.id) {
@@ -54,50 +87,39 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, classId } = body;
+    const { name } = body;
 
-    if (!name?.trim() || !classId) {
+    if (!name?.trim()) {
       return NextResponse.json(
-        { error: "Arm name and class are required" },
+        { error: "Arm name is required" },
         { status: 400 }
       );
     }
 
-    // Check if class exists and belongs to this school
-    const classItem = await prisma.class.findFirst({
-      where: { id: classId, schoolId: "default" },
-    });
+    const schoolId = user.schoolId || "default";
 
-    if (!classItem) {
-      return NextResponse.json(
-        { error: "Class not found" },
-        { status: 404 }
-      );
-    }
-
-    // Check for duplicate arm name in this class
-    const existing = await prisma.classArm.findUnique({
+    // Check for duplicate preset arm name at school level
+    const existing = await prisma.classArm.findFirst({
       where: {
-        schoolId_classId_name: {
-          schoolId: "default",
-          classId,
-          name: name.trim(),
-        },
+        schoolId,
+        classId: null,
+        name: name.trim(),
       },
     });
 
     if (existing) {
       return NextResponse.json(
-        { error: "Arm with this name already exists in this class" },
+        { error: "An arm with this name already exists" },
         { status: 409 }
       );
     }
 
     const arm = await prisma.classArm.create({
       data: {
-        schoolId: "default",
-        classId,
+        schoolId,
+        classId: null,
         name: name.trim(),
+        capacity: body.capacity ? parseInt(body.capacity, 10) : null,
         isActive: true,
       },
     });

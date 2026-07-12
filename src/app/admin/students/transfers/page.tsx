@@ -1,12 +1,14 @@
 import { requireRole } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
+import { prisma } from "@/lib/db";
 import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { DashboardHeader } from "@/components/modern-dashboard";
 import { ArrowRightLeft, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 export default async function TransfersPage() {
-  const user = await requireRole(["SCHOOL_ADMIN", "PRINCIPAL"]);
+  const user = await requireRole(["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"]);
+  const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
   const profile = await getCurrentSchoolByUser(user.id);
 
   return (
@@ -15,6 +17,7 @@ export default async function TransfersPage() {
       schoolName={profile?.school?.name ?? "School"}
       schoolLogoUrl={profile?.school?.branding?.logoUrl ?? undefined}
       userName={user.name ?? "Admin"}
+      avatarUrl={dbUser?.avatarUrl ?? undefined}
       pathname="/admin/students/transfers"
     >
       <div className="space-y-6">

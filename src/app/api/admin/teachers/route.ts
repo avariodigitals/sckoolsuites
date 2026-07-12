@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
+import { sendWelcomeEmail } from "@/lib/email";
 
 const createSchema = z.object({
   name: z.string().min(2).max(120),
@@ -13,16 +15,20 @@ const createSchema = z.object({
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
 }
 
 export async function GET() {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "teachers");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
 
   const [teachers, classes, subjects] = await Promise.all([
     prisma.teacher.findMany({
@@ -48,7 +54,7 @@ export async function GET() {
   ]);
 
   return NextResponse.json({
-    teachers: teachers.map((teacher) => ({
+    teachers: teachers.map((teacher: any) => ({
       id: teacher.id,
       userId: teacher.userId,
       name: teacher.user.name,
@@ -60,18 +66,22 @@ export async function GET() {
       studentCount: teacher.students.length,
     })),
     unassignedClasses: classes
-      .filter((c) => !c.teacherId)
-      .map((c) => ({ id: c.id, name: c.name })),
+      .filter((c: any) => !c.teacherId)
+      .map((c: any) => ({ id: c.id, name: c.name })),
     unassignedSubjects: subjects
-      .filter((s) => !s.teacherId)
-      .map((s) => ({ id: s.id, name: s.name })),
-    allClasses: classes.map((c) => ({ id: c.id, name: c.name })),
-    allSubjects: subjects.map((s) => ({ id: s.id, name: s.name })),
+      .filter((s: any) => !s.teacherId)
+      .map((s: any) => ({ id: s.id, name: s.name })),
+    allClasses: classes.map((c: any) => ({ id: c.id, name: c.name })),
+    allSubjects: subjects.map((s: any) => ({ id: s.id, name: s.name })),
   });
 }
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "teachers");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -82,7 +92,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
   const data = parsed.data;
 
   // Check if email already exists
@@ -103,11 +113,11 @@ export async function POST(request: Request) {
     }
 
     // Hash password
-    const password = data.password || data.email.split("@")[0] + "123";
-    const hashedPassword = await hashPassword(password);
+    const plaintextPassword = data.password || data.email.split("@")[0] + "123";
+    const hashedPassword = await hashPassword(plaintextPassword);
 
     // Create user and teacher in transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       const user = await tx.user.create({
         data: {
           schoolId,
@@ -140,7 +150,7 @@ export async function POST(request: Request) {
       actorUserId: session.user.id,
       action: "TEACHER_CREATED",
       targetType: "Teacher",
-      targetId: result.teacher.id,
+      targetId: String(result.teacher.id),
       metadata: {
         teacherId: result.teacher.id,
         userId: result.user.id,
@@ -148,6 +158,25 @@ export async function POST(request: Request) {
         email: data.email,
       },
     });
+
+    // Send welcome email with login credentials
+    let emailStatus: { sent: boolean; error?: string } = { sent: false };
+    try {
+      const emailResult = await sendWelcomeEmail({
+        schoolId,
+        to: data.email,
+        userName: data.name,
+        email: data.email,
+        password: plaintextPassword,
+        role: "Teacher",
+      });
+      emailStatus = { sent: emailResult.ok };
+    } catch (error) {
+      emailStatus = {
+        sent: false,
+        error: error instanceof Error ? error.message : "Email delivery failed",
+      };
+    }
 
     return NextResponse.json({
       teacher: {
@@ -161,6 +190,10 @@ export async function POST(request: Request) {
         assignedSubjects: [],
         studentCount: 0,
       },
+      emailStatus,
+      message: emailStatus.sent
+        ? "Teacher created and welcome email sent."
+        : "Teacher created, but welcome email could not be delivered. Please resend credentials manually.",
     }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create teacher";

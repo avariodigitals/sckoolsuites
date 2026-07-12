@@ -1,108 +1,209 @@
 import { NextResponse } from "next/server";
-import { queryOne, withTransaction } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 const activateSchema = z.object({
-  sessionId: z.coerce.string(),
-  termId: z.coerce.string(),
+  school: z.object({
+    name: z.string().min(1),
+    email: z.string().email(),
+    phone: z.string().min(1),
+    address: z.string().min(1),
+    website: z.string().nullable(),
+    motto: z.string().nullable(),
+  }),
+  session: z.object({
+    name: z.string().min(1),
+    startDate: z.string(),
+    endDate: z.string(),
+  }),
+  term: z.object({
+    name: z.string().min(1),
+    startDate: z.string(),
+    endDate: z.string(),
+  }),
   adminUser: z.object({
-    name: z.string(),
+    name: z.string().min(1),
     email: z.string().email(),
     password: z.string().min(6),
   }),
 });
 
-// POST - Activate school and create admin user
+const SCHOOL_ID = "default";
+
+function parseDate(value: string): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? null : date;
+}
+
+// POST - Atomic setup: create school, session, term, admin user, and settings in one transaction.
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const parsed = activateSchema.safeParse(body);
-    
+
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Invalid data", details: parsed.error.flatten() },
+        { error: "Invalid setup data", details: parsed.error.flatten() },
         { status: 400 }
       );
     }
 
-    const { sessionId, termId, adminUser } = parsed.data;
+    const { school, session, term, adminUser } = parsed.data;
 
-    // Check if admin already exists
-    const existingAdmin = await queryOne<{ id: string }>(
-      'SELECT id FROM "user" WHERE LOWER(email) = LOWER($1)',
-      [adminUser.email]
-    );
-    if (existingAdmin) {
+    // Pre-flight checks outside the transaction are okay; the transaction itself
+    // also guards against duplicates via unique constraints.
+
+    // 1. Installation must not already be complete.
+    const existingSchool = await prisma.school.findUnique({
+      where: { id: SCHOOL_ID },
+    });
+    if (existingSchool?.isSetup) {
       return NextResponse.json(
-        { error: "Admin user already exists with this email" },
-        { status: 400 }
+        { error: "This installation is already active." },
+        { status: 409 }
       );
     }
 
-    // Get SCHOOL_ADMIN role
-    const adminRole = await queryOne<{ id: number }>(
-      "SELECT id FROM role WHERE name = 'SCHOOL_ADMIN'"
-    );
+    // 2. Required SCHOOL_ADMIN role must exist (seeded before setup).
+    const adminRole = await prisma.role.findUnique({
+      where: { name: "SCHOOL_ADMIN" },
+    });
     if (!adminRole) {
       return NextResponse.json(
-        { error: "SCHOOL_ADMIN role not found" },
-        { status: 500 }
+        { error: "SCHOOL_ADMIN role not found. Run `npx prisma db seed` before activating setup." },
+        { status: 400 }
       );
     }
 
-    // Create admin user and activate school in transaction
-    const result = await withTransaction(async (client) => {
-      // Create admin user
-      const hashedPassword = await bcrypt.hash(adminUser.password, 10);
-      const userResult = await client.query(
-        `INSERT INTO "user" (name, email, password, role_id, is_active)
-         VALUES ($1, LOWER($2), $3, $4, $5)
-         RETURNING id, name, email`,
-        [adminUser.name, adminUser.email, hashedPassword, adminRole.id, true]
+    // 3. No duplicate admin email.
+    const existingUser = await prisma.user.findFirst({
+      where: { email: { equals: adminUser.email, mode: "insensitive" } },
+    });
+    if (existingUser) {
+      return NextResponse.json(
+        { error: "An account with this email already exists." },
+        { status: 409 }
       );
-      const user = userResult.rows[0];
+    }
 
-      // Activate school
-      await client.query(
-        'UPDATE school SET is_active = $1, is_setup = $2 WHERE id = $3',
-        [true, true, 'default']
-      );
+    const hashedPassword = await bcrypt.hash(adminUser.password, 10);
+
+    const result = await prisma.$transaction(async (tx: any) => {
+      // Create school and branding
+      const createdSchool = await tx.school.create({
+        data: {
+          id: SCHOOL_ID,
+          name: school.name,
+          email: school.email,
+          phone: school.phone,
+          address: school.address,
+          website: school.website,
+          motto: school.motto,
+          isActive: true,
+          isSetup: true,
+        },
+      });
+
+      await tx.schoolBranding.create({
+        data: {
+          schoolId: createdSchool.id,
+          primaryColor: "#0B1F4D",
+          secondaryColor: "#0E9F6E",
+          reportCardTheme: "classic",
+          invoiceTheme: "clean",
+          receiptTheme: "simple",
+        },
+      });
+
+      // Create academic session and term
+      const createdSession = await tx.session.create({
+        data: {
+          schoolId: SCHOOL_ID,
+          name: session.name,
+          isCurrent: true,
+          status: "ACTIVE",
+          startDate: parseDate(session.startDate),
+          endDate: parseDate(session.endDate),
+        },
+      });
+
+      const createdTerm = await tx.term.create({
+        data: {
+          schoolId: SCHOOL_ID,
+          sessionId: createdSession.id,
+          name: term.name,
+          isCurrent: true,
+          status: "ACTIVE",
+          startDate: parseDate(term.startDate),
+          endDate: parseDate(term.endDate),
+        },
+      });
+
+      // Create the first administrator
+      const user = await tx.user.create({
+        data: {
+          name: adminUser.name,
+          email: adminUser.email.toLowerCase(),
+          password: hashedPassword,
+          roleId: adminRole.id,
+          schoolId: SCHOOL_ID,
+          isActive: true,
+        },
+      });
 
       // Set active session and term settings
-      await client.query(
-        'INSERT INTO school_setting (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
-        ['active_session_id', sessionId]
-      );
-      await client.query(
-        'INSERT INTO school_setting (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
-        ['active_term_id', termId]
-      );
-      await client.query(
-        'INSERT INTO school_setting (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
-        [`user_context_session_${user.id}`, sessionId]
-      );
-      await client.query(
-        'INSERT INTO school_setting (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
-        [`user_context_term_${user.id}`, termId]
+      const settings = [
+        { key: "active_session_id", value: String(createdSession.id) },
+        { key: "active_term_id", value: String(createdTerm.id) },
+        { key: `user_context_session_${user.id}`, value: String(createdSession.id) },
+        { key: `user_context_term_${user.id}`, value: String(createdTerm.id) },
+        {
+          key: "setup_wizard_status",
+          value: JSON.stringify({
+            setupCompleted: true,
+            lastCompletedStep: 7,
+            completedSteps: [
+              "school-profile",
+              "academic-setup",
+              "classes-arms",
+              "subjects",
+              "grading-assessment",
+              "finance-setup",
+              "users-roles",
+            ],
+            updatedAt: new Date().toISOString(),
+          }),
+        },
+      ];
+
+      await Promise.all(
+        settings.map((s) =>
+          tx.schoolSetting.upsert({
+            where: { schoolId_key: { schoolId: SCHOOL_ID, key: s.key } },
+            create: { schoolId: SCHOOL_ID, key: s.key, value: s.value },
+            update: { value: s.value },
+          })
+        )
       );
 
-      return user;
+      return { user, session: createdSession, term: createdTerm };
     });
 
     return NextResponse.json({
       success: true,
       message: "School activated successfully",
       user: {
-        id: result.id,
-        name: result.name,
-        email: result.email,
+        id: result.user.id,
+        name: result.user.name,
+        email: result.user.email,
       },
     });
   } catch (error) {
     console.error("Activation error:", error);
     return NextResponse.json(
-      { error: "Failed to activate school" },
+      { error: "Failed to activate school. Please check the application logs." },
       { status: 500 }
     );
   }

@@ -1,11 +1,13 @@
 import { requireRole } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
+import { prisma } from "@/lib/db";
 import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { DashboardHeader } from "@/components/modern-dashboard";
 import { SimpleSetupClient } from "./simple-setup-client";
 
 export default async function AdminSetupWizardPage() {
-  const user = await requireRole(["SCHOOL_ADMIN", "PRINCIPAL"]);
+  const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
+  const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
   const profile = await getCurrentSchoolByUser(user.id);
   if (!profile?.schoolId || !profile.school) {
     return null;
@@ -17,6 +19,7 @@ export default async function AdminSetupWizardPage() {
       schoolName={profile.school.name}
       schoolLogoUrl={profile.school.branding?.logoUrl ?? undefined}
       userName={user.name ?? "Admin"}
+      avatarUrl={dbUser?.avatarUrl ?? undefined}
       pathname="/admin/setup"
     >
       <div className="space-y-6">

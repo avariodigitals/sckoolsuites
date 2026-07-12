@@ -1,12 +1,16 @@
+export const dynamic = "force-dynamic";
+
 import { PortalShell } from "@/components/portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireRole } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
+import { prisma } from "@/lib/db";
 import { BrandingForm } from "@/app/admin/settings/branding/branding-form";
 
 export default async function BrandingSettingsPage() {
-  const user = await requireRole(["SCHOOL_ADMIN", "PRINCIPAL"]);
+  const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
+  const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
   const profile = await getCurrentSchoolByUser(user.id);
 
   if (!profile?.school) {
@@ -20,15 +24,21 @@ export default async function BrandingSettingsPage() {
     );
   }
 
+  const branding = await prisma.schoolBranding.findUnique({ where: { schoolId: "default" } });
+  console.log("[branding page] branding row:", branding);
+  console.log("[branding page] profile.school.branding:", (profile.school as any).branding);
+  console.log("[branding page] logoUrl:", branding?.logoUrl);
+
   return (
     <PortalShell
       role={user.role}
       schoolName={profile.school.name}
-      schoolLogoUrl={profile.school.branding?.logoUrl ?? undefined}
+      schoolLogoUrl={branding?.logoUrl ?? undefined}
       userName={user.name ?? "Admin"}
+      avatarUrl={dbUser?.avatarUrl ?? undefined}
       pathname="/admin/settings/branding"
-      primaryColor={profile.school.branding?.primaryColor}
-      secondaryColor={profile.school.branding?.secondaryColor}
+      primaryColor={branding?.primaryColor}
+      secondaryColor={branding?.secondaryColor}
     >
       <Card>
         <CardHeader>
@@ -43,19 +53,12 @@ export default async function BrandingSettingsPage() {
               phone: profile.school.phone,
               website: profile.school.website ?? "",
               motto: profile.school.motto ?? "",
-              logoUrl: profile.school.branding?.logoUrl ?? "",
-              primaryColor: profile.school.branding?.primaryColor ?? "#0B1F4D",
-              secondaryColor: profile.school.branding?.secondaryColor ?? "#0E9F6E",
-              reportCardTheme: profile.school.branding?.reportCardTheme ?? "classic",
-              invoiceTheme: profile.school.branding?.invoiceTheme ?? "clean",
-              receiptTheme: profile.school.branding?.receiptTheme ?? "simple",
-              bankName: profile.school.branding?.bankName ?? "",
-              bankAccountName: profile.school.branding?.bankAccountName ?? "",
-              bankAccountNumber: profile.school.branding?.bankAccountNumber ?? "",
-              bankInstructions: profile.school.branding?.bankInstructions ?? "",
-              principalSignature: profile.school.branding?.principalSignature ?? "",
-              teacherSignature: profile.school.branding?.teacherSignature ?? "",
-              schoolStamp: profile.school.branding?.schoolStamp ?? "",
+              logoUrl: branding?.logoUrl ?? "",
+              primaryColor: branding?.primaryColor ?? "#0B1F4D",
+              secondaryColor: branding?.secondaryColor ?? "#0E9F6E",
+              principalSignature: branding?.principalSignature ?? "",
+              teacherSignature: branding?.teacherSignature ?? "",
+              schoolStamp: branding?.schoolStamp ?? "",
             }}
           />
         </CardContent>

@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 // PUT - Update existing school
 export async function PUT(request: Request) {
   try {
-    const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "PRINCIPAL"]);
+    const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
     void user;
     
     const formData = await request.formData();
@@ -77,7 +77,7 @@ export async function PUT(request: Request) {
     const motto = String(formData.get("motto") ?? "").trim() || null;
 
     // Get user's school
-    const schoolId = "default";
+    const schoolId = user.schoolId || "default";
     if (!schoolId) {
       return NextResponse.json(
         { error: "No school assigned to user" },

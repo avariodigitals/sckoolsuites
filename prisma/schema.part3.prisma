@@ -1,0 +1,339 @@
+model Score {
+  id        Int      @id @default(autoincrement())
+  schoolId  String   @default("default") @map("school_id")
+  studentId Int      @map("student_id")
+  subjectId Int      @map("subject_id")
+  teacherId Int?     @map("teacher_id")
+  termId    Int      @map("term_id")
+  sessionId Int      @map("session_id")
+  caScore   Float?   @map("ca_score")
+  examScore Float?   @map("exam_score")
+  total     Float?
+  grade     String?
+  gpa       Float?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school   School   @relation(fields: [schoolId], references: [id])
+  student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject  Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher  Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  term     Term     @relation(fields: [termId], references: [id], onDelete: Cascade)
+  session  Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, subjectId, termId, sessionId])
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([subjectId])
+  @@index([termId])
+  @@index([sessionId])
+  @@map("score")
+}
+
+model Result {
+  id                    Int          @id @default(autoincrement())
+  schoolId              String       @default("default") @map("school_id")
+  studentId             Int          @map("student_id")
+  termId                Int          @map("term_id")
+  sessionId             Int          @map("session_id")
+  cumulativeTotal       Float?       @map("cumulative_total")
+  average               Float?
+  termPercentage        Float?       @map("term_percentage")
+  termGrade             String?      @map("term_grade")
+  termGpa               Float?       @map("term_gpa")
+  classTeacherComment   String?      @map("class_teacher_comment")
+  principalComment      String?      @map("principal_comment")
+  attendancePresent     Int          @default(0) @map("attendance_present")
+  attendanceTotal       Int          @default(0) @map("attendance_total")
+  cognitiveAssessment   String?      @map("cognitive_assessment")
+  affectiveAssessment   String?      @map("affective_assessment")
+  psychomotorAssessment String?      @map("psychomotor_assessment")
+  nextTermResumption    DateTime?    @map("next_term_resumption")
+  status                ResultStatus @default(DRAFT)
+  reviewNote            String?      @map("review_note")
+  fileUrl               String?      @map("file_url")
+  fileName              String?      @map("file_name")
+  uploadedById          Int?         @map("uploaded_by_id")
+  approvedById          Int?         @map("approved_by_id")
+  approvedAt            DateTime?    @map("approved_at")
+  publishedById         Int?         @map("published_by_id")
+  publishedAt           DateTime?    @map("published_at")
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @default(now()) @updatedAt @map("updated_at")
+
+  school      School   @relation(fields: [schoolId], references: [id])
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  term        Term     @relation(fields: [termId], references: [id], onDelete: Cascade)
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  uploadedBy  User?    @relation("UploadedResults", fields: [uploadedById], references: [id], onDelete: SetNull)
+  approvedBy  User?    @relation("ApprovedResults", fields: [approvedById], references: [id], onDelete: SetNull)
+  publishedBy User?    @relation("PublishedResults", fields: [publishedById], references: [id], onDelete: SetNull)
+
+  @@unique([studentId, termId, sessionId])
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([termId])
+  @@index([sessionId])
+  @@index([uploadedById])
+  @@index([approvedById])
+  @@index([publishedById])
+  @@map("result")
+}
+
+model Attendance {
+  id        Int              @id @default(autoincrement())
+  schoolId  String           @default("default") @map("school_id")
+  sessionId Int              @map("session_id")
+  termId    Int              @map("term_id")
+  studentId Int              @map("student_id")
+  classId   Int?             @map("class_id")
+  teacherId Int?             @map("teacher_id")
+  date      DateTime
+  status    AttendanceStatus
+  remark    String?
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @default(now()) @updatedAt @map("updated_at")
+
+  school   School   @relation(fields: [schoolId], references: [id])
+  session  Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  term     Term     @relation(fields: [termId], references: [id], onDelete: Cascade)
+  student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class    Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  teacher  Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([sessionId])
+  @@index([termId])
+  @@index([studentId])
+  @@index([classId])
+  @@index([teacherId])
+  @@index([date])
+  @@map("attendance")
+}
+
+model Lesson {
+  id        Int      @id @default(autoincrement())
+  schoolId  String   @default("default") @map("school_id")
+  classId   Int?     @map("class_id")
+  subjectId Int      @map("subject_id")
+  teacherId Int      @map("teacher_id")
+  title     String
+  note      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  school   School   @relation(fields: [schoolId], references: [id])
+  class    Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  subject  Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher  Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  assignments Assignment[]
+
+  @@index([schoolId])
+  @@index([subjectId])
+  @@index([teacherId])
+  @@map("lesson")
+}
+
+model Assignment {
+  id             Int       @id @default(autoincrement())
+  schoolId       String    @default("default") @map("school_id")
+  lessonId       Int?      @map("lesson_id")
+  classId        Int?      @map("class_id")
+  subjectId      Int?      @map("subject_id")
+  teacherId      Int       @map("teacher_id")
+  studentId      Int?      @map("student_id")
+  title          String
+  instruction    String
+  dueDate        DateTime  @map("due_date")
+  submissionNote String?   @map("submission_note")
+  submittedAt    DateTime? @map("submitted_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  school   School   @relation(fields: [schoolId], references: [id])
+  lesson   Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  class    Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  subject  Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  teacher  Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  student  Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([teacherId])
+  @@index([studentId])
+  @@map("assignment")
+}
+
+model Quiz {
+  id          Int       @id @default(autoincrement())
+  schoolId    String    @default("default") @map("school_id")
+  classId     Int?      @map("class_id")
+  subjectId   Int?      @map("subject_id")
+  teacherId   Int       @map("teacher_id")
+  title       String
+  instruction String?
+  totalMarks  Float     @default(100) @map("total_marks")
+  dueDate     DateTime? @map("due_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  school   School   @relation(fields: [schoolId], references: [id])
+  class    Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  subject  Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  teacher  Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([teacherId])
+  @@map("quiz")
+}
+
+model OnlineClass {
+  id          Int       @id @default(autoincrement())
+  schoolId    String    @default("default") @map("school_id")
+  classId     Int?      @map("class_id")
+  subjectId   Int?      @map("subject_id")
+  teacherId   Int       @map("teacher_id")
+  title       String
+  platform    String?
+  meetingLink String?   @map("meeting_link")
+  startTime   DateTime  @map("start_time")
+  endTime     DateTime? @map("end_time")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  school   School   @relation(fields: [schoolId], references: [id])
+  class    Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  subject  Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  teacher  Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([teacherId])
+  @@map("online_class")
+}
+
+model Announcement {
+  id          Int      @id @default(autoincrement())
+  schoolId    String   @default("default") @map("school_id")
+  sessionId   Int?     @map("session_id")
+  termId      Int?     @map("term_id")
+  title       String
+  body        String
+  audience    String
+  targetRoles String?  @map("target_roles")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school   School   @relation(fields: [schoolId], references: [id])
+  session  Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  term     Term?    @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([sessionId])
+  @@index([termId])
+  @@map("announcement")
+}
+
+model SchoolSetting {
+  id        Int      @id @default(autoincrement())
+  schoolId  String   @map("school_id")
+  key       String
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, key])
+  @@index([schoolId])
+  @@index([key])
+  @@map("school_setting")
+}
+
+model SchoolConfigVersion {
+  id          Int      @id @default(autoincrement())
+  schoolId    String   @map("school_id")
+  version     Int
+  isActive    Boolean  @default(true) @map("is_active")
+  config      Json     @default("{}")
+  source      String   @default("manual")
+  notes       String?
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([isActive])
+  @@map("school_config_version")
+}
+
+model IncomeCategory {
+  id          Int      @id @default(autoincrement())
+  schoolId    String   @map("school_id")
+  name        String
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school  School   @relation(fields: [schoolId], references: [id])
+  incomes Income[]
+
+  @@index([schoolId])
+  @@map("income_category")
+}
+
+model ExpenseCategory {
+  id          Int      @id @default(autoincrement())
+  schoolId    String   @map("school_id")
+  name        String
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school   School    @relation(fields: [schoolId], references: [id])
+  expenses Expense[]
+
+  @@index([schoolId])
+  @@map("expense_category")
+}
+
+model Income {
+  id            Int      @id @default(autoincrement())
+  schoolId      String   @map("school_id")
+  categoryId    Int?     @map("category_id")
+  amount        Float
+  description   String?
+  source        String?
+  date          DateTime
+  isFromPayment Boolean  @default(false) @map("is_from_payment")
+  paymentId     Int?     @unique @map("payment_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  school   School          @relation(fields: [schoolId], references: [id])
+  category IncomeCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  payment  Payment?        @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([categoryId])
+  @@index([paymentId])
+  @@index([date])
+  @@map("income")
+}
+
+model Expense {
+  id          Int      @id @default(autoincrement())
+  schoolId    String   @map("school_id")
+  categoryId  Int?     @map("category_id")
+  amount      Float
+  description String?
+  date        DateTime
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  school   School           @relation(fields: [schoolId], references: [id])
+  category ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([categoryId])
+  @@index([date])
+  @@map("expense")
+}

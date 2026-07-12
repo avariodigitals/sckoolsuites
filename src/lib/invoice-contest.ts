@@ -1,6 +1,6 @@
 import { MessageStatus, PaymentStatus, RoleType } from "@/lib/db-types";
 import { prisma } from "@/lib/db";
-import { sendWorkflowEmail } from "@/lib/email";
+import { sendTemplatedEmail } from "@/lib/email";
 import { createAuditLog } from "@/lib/audit-log";
 
 export type InvoiceContestStatus = "SUBMITTED" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
@@ -17,15 +17,15 @@ export type InvoiceContestRecord = {
   invoiceId: string;
   invoiceNumber: string;
   studentName: string;
-  parentId: string;
-  parentUserId: string;
+  parentId: number;
+  parentUserId: number;
   status: InvoiceContestStatus;
   parentComment: string;
   staffComment: string;
   submittedAt: string;
   updatedAt: string;
   decidedAt?: string;
-  decidedByUserId?: string;
+  decidedByUserId?: number;
   items: InvoiceContestItem[];
 };
 
@@ -67,13 +67,13 @@ export async function listInvoiceContestsBySchool(schoolId: string, take = 50) {
   });
 
   return rows
-    .map((row) => toContestRecord(row.value))
-    .filter((row): row is InvoiceContestRecord => Boolean(row));
+    .map((row: any) => toContestRecord(row.value))
+    .filter((row: any): row is InvoiceContestRecord => Boolean(row));
 }
 
-export async function listInvoiceContestsByParent(schoolId: string, parentId: string, take = 50) {
+export async function listInvoiceContestsByParent(schoolId: string, parentId: number, take = 50) {
   const rows = await listInvoiceContestsBySchool(schoolId, take);
-  return rows.filter((row) => row.parentId === parentId);
+  return rows.filter((row: InvoiceContestRecord) => row.parentId === parentId);
 }
 
 export async function submitInvoiceContest({
@@ -84,7 +84,7 @@ export async function submitInvoiceContest({
   adjustments,
 }: {
   schoolId: string;
-  parentUserId: string;
+  parentUserId: number;
   invoiceId: string;
   parentComment: string;
   adjustments: Array<{ invoiceItemId: string; proposedAmount: number }>;
@@ -189,20 +189,23 @@ export async function submitInvoiceContest({
     where: {
       schoolId,
       isActive: true,
-      role: { name: { in: ["SUPER_ADMIN", "SCHOOL_ADMIN", "PRINCIPAL", "ACCOUNTANT"] } },
+      role: { name: { in: ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "ACCOUNTANT"] } },
     },
     select: { email: true },
   });
 
   await Promise.all(
     adminUsers
-      .filter((user) => Boolean(user.email))
-      .map((user) =>
-        sendWorkflowEmail({
+      .filter((user: any) => Boolean(user.email))
+      .map((user: any) =>
+        sendTemplatedEmail({
           schoolId,
-          to: user.email,
-          subject: `New Bill Contest Submitted: ${invoice.invoiceNumber}`,
-          text: `A parent submitted a bill contest for ${invoice.invoiceNumber}. Student: ${invoice.student.user.name}. Review required.`,
+          to: user.email!,
+          templateKey: "bill_contest_submitted",
+          vars: {
+            invoiceNumber: invoice.invoiceNumber,
+            studentName: invoice.student.user.name,
+          },
         })
       )
   );
@@ -219,7 +222,7 @@ function mapPaymentStatus(amountPaid: number, totalAmount: number): PaymentStatu
 async function writeContestAuditEntry(params: {
   schoolId: string;
   invoiceId: string;
-  actorUserId?: string;
+  actorUserId?: number;
   actorRole?: string;
   action: string;
   details?: Record<string, unknown>;
@@ -296,11 +299,15 @@ async function notifyContestStatusChange({
   });
 
   if (targetParent.user?.email) {
-    await sendWorkflowEmail({
+    await sendTemplatedEmail({
       schoolId,
       to: targetParent.user.email,
-      subject,
-      text: message,
+      templateKey: "bill_contest_status",
+      vars: {
+        invoiceNumber,
+        statusLabel,
+        staffComment: staffComment || "",
+      },
     });
   }
 }
@@ -336,7 +343,7 @@ export async function reviewInvoiceContest({
   finalAdjustments: _finalAdjustments,
 }: {
   schoolId: string;
-  actorUserId: string;
+  actorUserId: number;
   actorRole: RoleType;
   invoiceId: string;
   action: "UNDER_REVIEW" | "APPROVED" | "REJECTED";
@@ -552,7 +559,7 @@ export async function reviewInvoiceContest({
     return updated;
   }
 
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: any) => {
     for (const item of toUpdate) {
       await tx.invoiceItem.update({ where: { id: item.id }, data: { amount: item.amount } });
     }

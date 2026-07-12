@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
+import { sendWelcomeEmail } from "@/lib/email";
 
 const createSchema = z.object({
   name: z.string().min(2).max(120),
@@ -13,16 +15,20 @@ const createSchema = z.object({
 });
 
 function isAuthorized(role?: string) {
-  return role ? ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
+  return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
 }
 
 export async function GET() {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "GET", "parents");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
 
   const [parents, students] = await Promise.all([
     prisma.parent.findMany({
@@ -41,7 +47,7 @@ export async function GET() {
   ]);
 
   return NextResponse.json({
-    parents: parents.map((parent) => ({
+    parents: parents.map((parent: any) => ({
       id: parent.id,
       userId: parent.userId,
       name: parent.user.name,
@@ -54,13 +60,17 @@ export async function GET() {
       })) ?? [],
     })),
     unlinkedStudents: students
-      .filter((s) => !s.parentId)
-      .map((s) => ({ id: s.id, name: s.user.name })),
+      .filter((s: any) => !s.parentId)
+      .map((s: any) => ({ id: s.id, name: s.user.name })),
   });
 }
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "parents");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!session?.user || !isAuthorized(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -71,7 +81,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
   const data = parsed.data;
 
   // Check if email already exists
@@ -92,11 +102,11 @@ export async function POST(request: Request) {
     }
 
     // Hash password
-    const password = data.password || data.email.split("@")[0] + "123";
-    const hashedPassword = await hashPassword(password);
+    const plaintextPassword = data.password || data.email.split("@")[0] + "123";
+    const hashedPassword = await hashPassword(plaintextPassword);
 
     // Create user and parent in transaction
-    const result = (await prisma.$transaction(async (tx) => {
+    const result = (await prisma.$transaction(async (tx: any) => {
       const user = await tx.user.create({
         data: {
           schoolId,
@@ -127,7 +137,7 @@ export async function POST(request: Request) {
       actorUserId: session.user.id,
       action: "PARENT_CREATED",
       targetType: "Parent",
-      targetId: result.parent.id,
+      targetId: String(result.parent.id),
       metadata: {
         parentId: result.parent.id,
         userId: result.user.id,
@@ -135,6 +145,25 @@ export async function POST(request: Request) {
         email: data.email,
       },
     });
+
+    // Send welcome email with login credentials
+    let emailStatus: { sent: boolean; error?: string } = { sent: false };
+    try {
+      const emailResult = await sendWelcomeEmail({
+        schoolId,
+        to: data.email,
+        userName: data.name,
+        email: data.email,
+        password: plaintextPassword,
+        role: "Parent",
+      });
+      emailStatus = { sent: emailResult.ok };
+    } catch (error) {
+      emailStatus = {
+        sent: false,
+        error: error instanceof Error ? error.message : "Email delivery failed",
+      };
+    }
 
     return NextResponse.json({
       parent: {
@@ -146,6 +175,10 @@ export async function POST(request: Request) {
         createdAt: result.parent.createdAt.toISOString(),
         children: [],
       },
+      emailStatus,
+      message: emailStatus.sent
+        ? "Parent created and welcome email sent."
+        : "Parent created, but welcome email could not be delivered. Please resend credentials manually.",
     }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create parent";

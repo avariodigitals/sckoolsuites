@@ -1,0 +1,294 @@
+model Subject {
+  id              Int      @id @default(autoincrement())
+  schoolId        String   @default("default") @map("school_id")
+  name            String
+  classId         Int?     @map("class_id")
+  classNames      String?  @map("class_names")
+  classGroupId    Int?     @map("class_group_id")
+  classGroupNames String?  @map("class_group_names")
+  teacherId       Int?     @map("teacher_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school     School   @relation(fields: [schoolId], references: [id])
+  class      Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  classGroup ClassGroup? @relation(fields: [classGroupId], references: [id], onDelete: SetNull)
+  teacher    Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  lessons    Lesson[]
+  assignments Assignment[]
+  quizzes    Quiz[]
+  onlineClasses OnlineClass[]
+  scores     Score[]
+
+  @@index([schoolId])
+  @@index([classId])
+  @@index([teacherId])
+  @@map("subject")
+}
+
+model FeeGroup {
+  id          Int        @id @default(autoincrement())
+  schoolId    String     @default("default") @map("school_id")
+  name        String
+  code        String     @unique
+  description String?
+  isActive    Boolean    @default(true) @map("is_active")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at")
+
+  school      School       @relation(fields: [schoolId], references: [id])
+  feeItems    FeeItem[]
+  feeProfiles FeeProfile[]
+
+  @@unique([schoolId, name])
+  @@index([schoolId])
+  @@map("fee_group")
+}
+
+model FeeComponent {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  feeProfileItems FeeProfileItem[]
+
+  @@map("fee_component")
+}
+
+model FeeItem {
+  id          Int       @id @default(autoincrement())
+  schoolId    String    @default("default") @map("school_id")
+  feeGroupId  Int       @map("fee_group_id")
+  classId     Int?      @map("class_id")
+  armId       Int?      @map("arm_id")
+  sessionId   Int       @map("session_id")
+  termId      Int       @map("term_id")
+  category    String
+  name        String
+  description String?
+  amount      Float
+  isOptional  Boolean   @default(false) @map("is_optional")
+  dueDate     DateTime? @map("due_date")
+  sortOrder   Int       @default(0) @map("sort_order")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  school   School    @relation(fields: [schoolId], references: [id])
+  feeGroup FeeGroup  @relation(fields: [feeGroupId], references: [id], onDelete: Cascade)
+  class    Class?    @relation(fields: [classId], references: [id], onDelete: SetNull)
+  arm      ClassArm? @relation(fields: [armId], references: [id], onDelete: SetNull)
+  session  Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  term     Term      @relation(fields: [termId], references: [id], onDelete: Cascade)
+  invoiceItems InvoiceItem[]
+
+  @@index([schoolId])
+  @@index([feeGroupId])
+  @@index([classId])
+  @@index([armId])
+  @@index([sessionId])
+  @@index([termId])
+  @@map("fee_item")
+}
+
+model FeeProfile {
+  id         Int       @id @default(autoincrement())
+  schoolId   String    @default("default") @map("school_id")
+  feeGroupId Int       @map("fee_group_id")
+  name       String
+  sessionId  Int       @map("session_id")
+  termId     Int       @map("term_id")
+  dueDate    DateTime? @map("due_date")
+  isActive   Boolean   @default(true) @map("is_active")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  school   School   @relation(fields: [schoolId], references: [id])
+  feeGroup FeeGroup @relation(fields: [feeGroupId], references: [id], onDelete: Cascade)
+  session  Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  term     Term     @relation(fields: [termId], references: [id], onDelete: Cascade)
+  items    FeeProfileItem[]
+  classes  FeeProfileClass[]
+  arms     FeeProfileArm[]
+
+  @@index([schoolId])
+  @@index([feeGroupId])
+  @@map("fee_profile")
+}
+
+model FeeProfileItem {
+  id             Int      @id @default(autoincrement())
+  feeProfileId   Int      @map("fee_profile_id")
+  feeComponentId Int      @map("fee_component_id")
+  amount         Float
+  isOptional     Boolean  @default(false) @map("is_optional")
+  sortOrder      Int      @default(0) @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  feeProfile   FeeProfile   @relation(fields: [feeProfileId], references: [id], onDelete: Cascade)
+  feeComponent FeeComponent @relation(fields: [feeComponentId], references: [id], onDelete: Restrict)
+
+  @@unique([feeProfileId, feeComponentId])
+  @@map("fee_profile_item")
+}
+
+model FeeProfileClass {
+  id           Int      @id @default(autoincrement())
+  feeProfileId Int      @map("fee_profile_id")
+  classId      Int      @map("class_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  feeProfile FeeProfile @relation(fields: [feeProfileId], references: [id], onDelete: Cascade)
+  class      Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([feeProfileId, classId])
+  @@map("fee_profile_class")
+}
+
+model FeeProfileArm {
+  id           Int      @id @default(autoincrement())
+  feeProfileId Int      @map("fee_profile_id")
+  armId        Int      @map("arm_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  feeProfile FeeProfile @relation(fields: [feeProfileId], references: [id], onDelete: Cascade)
+  arm        ClassArm   @relation(fields: [armId], references: [id], onDelete: Cascade)
+
+  @@unique([feeProfileId, armId])
+  @@map("fee_profile_arm")
+}
+
+model Invoice {
+  id                  Int           @id @default(autoincrement())
+  schoolId            String        @default("default") @map("school_id")
+  studentId           Int           @map("student_id")
+  parentId            Int?          @map("parent_id")
+  classId             Int?          @map("class_id")
+  termId              Int           @map("term_id")
+  sessionId           Int           @map("session_id")
+  invoiceNumber       String        @unique @map("invoice_number")
+  totalAmount         Float         @map("total_amount")
+  amountPaid          Float         @default(0) @map("amount_paid")
+  balance             Float
+  status              PaymentStatus @default(UNPAID)
+  paymentInstructions String?       @map("payment_instructions")
+  createdById         Int?          @map("created_by_id")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  dueDate             DateTime?     @map("due_date")
+  updatedAt           DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  school     School        @relation(fields: [schoolId], references: [id])
+  student    Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  parent     Parent?       @relation(fields: [parentId], references: [id], onDelete: SetNull)
+  class      Class?        @relation(fields: [classId], references: [id], onDelete: SetNull)
+  term       Term          @relation(fields: [termId], references: [id], onDelete: Restrict)
+  session    Session       @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  createdBy  User?         @relation("CreatedInvoices", fields: [createdById], references: [id], onDelete: SetNull)
+  items      InvoiceItem[]
+  payments   Payment[]
+  receipts   Receipt[]
+  invoiceContestAudits InvoiceContestAudit[]
+
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([termId])
+  @@index([sessionId])
+  @@index([parentId])
+  @@index([classId])
+  @@map("invoice")
+}
+
+model InvoiceItem {
+  id        Int      @id @default(autoincrement())
+  invoiceId Int      @map("invoice_id")
+  feeItemId Int      @map("fee_item_id")
+  amount    Float
+  createdAt DateTime @default(now()) @map("created_at")
+
+  invoice  Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  feeItem  FeeItem  @relation(fields: [feeItemId], references: [id], onDelete: Restrict)
+
+  @@index([invoiceId])
+  @@index([feeItemId])
+  @@map("invoice_item")
+}
+
+model Payment {
+  id           Int           @id @default(autoincrement())
+  schoolId     String        @default("default") @map("school_id")
+  invoiceId    Int           @map("invoice_id")
+  studentId    Int           @map("student_id")
+  method       String
+  amount       Float
+  status       PaymentStatus @default(PENDING)
+  confirmedAt  DateTime?     @map("confirmed_at")
+  receivedById Int?          @map("received_by_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  school     School        @relation(fields: [schoolId], references: [id])
+  invoice    Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  student    Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  receivedBy User?         @relation("ReceivedPayments", fields: [receivedById], references: [id], onDelete: SetNull)
+  proof      PaymentProof?
+  income     Income?
+
+  @@index([schoolId])
+  @@index([invoiceId])
+  @@index([studentId])
+  @@map("payment")
+}
+
+model PaymentProof {
+  id                   Int               @id @default(autoincrement())
+  schoolId             String            @default("default") @map("school_id")
+  paymentId            Int               @unique @map("payment_id")
+  bankName             String?           @map("bank_name")
+  transactionReference String            @map("transaction_reference")
+  paymentDate          DateTime          @map("payment_date")
+  proofUrl             String?           @map("proof_url")
+  status               PaymentProofStatus @default(PENDING)
+  reviewNote           String?           @map("review_note")
+  reviewedById         Int?              @map("reviewed_by_id")
+  reviewedAt           DateTime?         @map("reviewed_at")
+  createdAt            DateTime          @default(now()) @map("created_at")
+  updatedAt            DateTime          @default(now()) @updatedAt @map("updated_at")
+
+  school     School  @relation(fields: [schoolId], references: [id])
+  payment    Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  reviewedBy User?   @relation("ReviewedPaymentProofs", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([paymentId])
+  @@index([reviewedById])
+  @@map("payment_proof")
+}
+
+model Receipt {
+  id            Int      @id @default(autoincrement())
+  schoolId      String   @default("default") @map("school_id")
+  invoiceId     Int      @unique @map("invoice_id")
+  studentId     Int      @map("student_id")
+  parentId      Int?     @map("parent_id")
+  receiptNumber String   @unique @map("receipt_number")
+  amount        Float
+  balance       Float
+  paymentMethod String   @map("payment_method")
+  paymentDate   DateTime @map("payment_date")
+  receivedBy    String   @map("received_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  school   School  @relation(fields: [schoolId], references: [id])
+  invoice  Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  student  Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  parent   Parent? @relation(fields: [parentId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([invoiceId])
+  @@index([studentId])
+  @@map("receipt")
+}

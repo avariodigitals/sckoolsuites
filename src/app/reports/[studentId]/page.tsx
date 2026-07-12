@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { requireUser } from "@/lib/auth-guards";
+import { auth } from "@/auth";
 import { getClassGroupGradingProfiles, parseNumericAssessmentScore, resolveClassGroupProfile } from "@/lib/class-group-grading";
 import { calculateGradeFromBands } from "@/lib/grades";
 import { prisma } from "@/lib/db";
@@ -11,8 +11,15 @@ import { formatDate, naira } from "@/lib/utils";
 import { PrintButton } from "@/components/print-button";
 
 export default async function ReportCardPage({ params }: { params: Promise<{ studentId: string }> }) {
-  await requireUser();
-  const { studentId } = await params;
+  const session = await auth();
+  if (!session?.user?.id) {
+    notFound();
+  }
+  const { studentId: rawStudentId } = await params;
+  const studentId = Number(rawStudentId);
+  if (Number.isNaN(studentId)) {
+    notFound();
+  }
 
   const student = await prisma.student.findUnique({
     where: { id: studentId },
@@ -23,11 +30,30 @@ export default async function ReportCardPage({ params }: { params: Promise<{ stu
       parent: { include: { user: true } },
       teacher: { include: { user: true } },
       scores: { include: { subject: true }, orderBy: { subject: { name: "asc" } } },
-      attendance: true,
+      attendances: true,
     },
   });
 
   if (!student) notFound();
+
+  // Enforce parent/student ownership. Admins/teachers/principals can view any report.
+  const allowedAdminRoles = ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "TEACHER", "REGISTRAR"];
+  if (!allowedAdminRoles.includes(session.user.role)) {
+    if (session.user.role === "PARENT") {
+      const parent = await prisma.parent.findFirst({
+        where: { userId: session.user.id, schoolId: student.schoolId },
+      });
+      if (!parent || student.parentId !== parent.id) {
+        notFound();
+      }
+    } else if (session.user.role === "STUDENT") {
+      if (student.userId !== session.user.id) {
+        notFound();
+      }
+    } else {
+      notFound();
+    }
+  }
 
   const result = await (async () => {
     try {
@@ -54,8 +80,8 @@ export default async function ReportCardPage({ params }: { params: Promise<{ stu
     : [];
   const cumulativeTotal = result?.cumulativeTotal ?? (reportScores.length ? reportScores.reduce((sum: number, score: any) => sum + score.total, 0) : 0);
   const average = result?.average ?? (reportScores.length ? cumulativeTotal / reportScores.length : 0);
-  const attendancePresent = result?.attendancePresent ?? (result ? student.attendance.filter((item: any) => item.status === "PRESENT").length : 0);
-  const attendanceTotal = result?.attendanceTotal ?? (result ? student.attendance.length : 0);
+  const attendancePresent = result?.attendancePresent ?? (result ? student.attendances.filter((item: any) => item.status === "PRESENT").length : 0);
+  const attendanceTotal = result?.attendanceTotal ?? (result ? student.attendances.length : 0);
   const termPercentage = result?.termPercentage ?? average;
   const termGpa = result?.termGpa ?? (reportScores.length ? reportScores.reduce((sum: number, score: any) => sum + score.gpa, 0) / reportScores.length : 0);
   const [activeConfig, classGroupProfiles, feeAggregate] = await Promise.all([
@@ -142,6 +168,30 @@ export default async function ReportCardPage({ params }: { params: Promise<{ stu
     "--report-primary": isPrenurseryTemplate ? "#8B5E34" : themePrimary,
     "--report-secondary": isPrenurseryTemplate ? "#D97706" : themeSecondary,
   } as React.CSSProperties;
+
+  if (result?.fileUrl) {
+    return (
+      <div className="p-4" style={reportStyle}>
+        <div className="no-print mx-auto mb-3 flex max-w-[210mm] items-center justify-between">
+          <p className="text-sm text-slate-600">Uploaded report: {result.fileName || "Result PDF"}</p>
+          <div className="flex gap-2">
+            <a
+              href={result.fileUrl}
+              download
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-md bg-[var(--report-primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+            >
+              Download PDF
+            </a>
+          </div>
+        </div>
+        <div className="mx-auto max-w-[210mm] overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
+          <iframe title="Uploaded result report" src={result.fileUrl} className="h-[90vh] w-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4" style={reportStyle}>

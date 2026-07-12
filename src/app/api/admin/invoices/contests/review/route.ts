@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { crudPrivilege } from "@/lib/route-auth";
 import { RoleType } from "@/lib/db-types";
 import { z } from "zod";
 import { auth } from "@/auth";
@@ -21,13 +22,17 @@ const reviewSchema = z.object({
 
 export async function POST(request: Request) {
   const session = await auth();
+  const allowed = await crudPrivilege(session, "POST", "bills");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const user = session?.user;
   if (!user?.id || !user.role) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const allowed = ["SUPER_ADMIN", "SCHOOL_ADMIN", "PRINCIPAL", "ACCOUNTANT"];
-  if (!allowed.includes(user.role)) {
+  const allowedRoles = ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "ACCOUNTANT"];
+  if (!allowedRoles.includes(user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
