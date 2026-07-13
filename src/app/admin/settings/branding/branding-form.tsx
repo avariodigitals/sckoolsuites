@@ -52,6 +52,7 @@ export function BrandingForm({ defaults }: { defaults: FormValues }) {
 
     const formData = new FormData();
     formData.set("file", file);
+    formData.set("folder", field === "logoUrl" ? "logos" : "signatures");
 
     const response = await fetch("/api/admin/uploads", {
       method: "POST",
