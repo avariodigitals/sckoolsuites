@@ -128,7 +128,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Update application fields
       const appData: Prisma.AdmissionApplicationUpdateInput = {};
       if (data.firstName !== undefined) appData.firstName = data.firstName.trim();

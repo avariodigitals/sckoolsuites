@@ -102,20 +102,12 @@ export function RoleManager() {
   }, [loadData]);
 
   useEffect(() => {
-    let cancelled = false;
     if (!selectedRoleId) {
       const timer = setTimeout(() => setPrivileges([]), 0);
       return () => clearTimeout(timer);
     }
-    const timer = setTimeout(() => {
-      loadRolePrivileges(selectedRoleId).then(() => {
-        if (cancelled) setPrivileges([]);
-      });
-    }, 0);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
+    const timer = setTimeout(() => void loadRolePrivileges(selectedRoleId), 0);
+    return () => clearTimeout(timer);
   }, [selectedRoleId, loadRolePrivileges]);
 
   async function seedDefaults() {

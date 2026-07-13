@@ -6,6 +6,7 @@ import { hashPassword } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
 import { sendTemplatedEmail } from "@/lib/email";
 import { parseNumericId } from "@/lib/id-helpers";
+import { Prisma } from "@prisma/client";
 
 function isAuthorized(role?: string) {
   return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
@@ -65,7 +66,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       where: { applicationId: parsedId },
     });
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Check if user already exists
       let user = await tx.user.findUnique({ where: { email: application.email } });
       if (!user) {

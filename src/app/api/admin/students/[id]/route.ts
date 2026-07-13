@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 import { parseNumericId } from "@/lib/id-helpers";
+import { Prisma } from "@prisma/client";
 
 const updateSchema = z.object({
   name: z.string().min(2).max(120).optional(),
@@ -90,7 +91,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Update user if name, email, or isActive changed
       if (data.name !== undefined || data.isActive !== undefined || data.email !== undefined) {
         await tx.user.update({
