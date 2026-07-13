@@ -2,18 +2,25 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { roleDefaultRoute } from "@/lib/constants";
 import { prisma } from "@/lib/db";
+import { bootstrapDatabase } from "@/lib/bootstrap";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // Check if setup is complete first
-  const school = await prisma.school.findUnique({
-    where: { id: "default" },
-  });
+  await bootstrapDatabase();
 
-  const admin = await prisma.user.findFirst({
-    where: { role: { name: "SCHOOL_ADMIN" } },
-  });
+  let school;
+  let admin;
+  try {
+    school = await prisma.school.findUnique({
+      where: { id: "default" },
+    });
+    admin = await prisma.user.findFirst({
+      where: { role: { name: "SCHOOL_ADMIN" } },
+    });
+  } catch {
+    redirect("/setup");
+  }
 
   // If setup not complete, redirect to setup
   if (!school?.isSetup || !admin) {

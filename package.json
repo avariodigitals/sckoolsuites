@@ -16,7 +16,7 @@
     "db:seed": "prisma db seed",
     "db:setup": "prisma generate && prisma migrate deploy && prisma db seed",
     "db:init": "echo 'DEPRECATED: db:init has been replaced by db:setup. Run npm run db:setup instead.' && exit 1",
-    "vercel-build": "prisma generate && prisma migrate deploy && next build",
+    "vercel-build": "prisma generate && prisma migrate deploy && prisma db seed && next build",
     "deploy:vercel": "vercel --prod"
   },
   "dependencies": {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { seedRoles, seedPrivileges, seedRolePrivileges } from "@/lib/privileges";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
@@ -66,14 +67,22 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Required SCHOOL_ADMIN role must exist (seeded before setup).
-    const adminRole = await prisma.role.findUnique({
+    // 2. Required SCHOOL_ADMIN role must exist. If missing, auto-seed system data.
+    let adminRole = await prisma.role.findUnique({
       where: { name: "SCHOOL_ADMIN" },
     });
     if (!adminRole) {
+      await seedRoles();
+      await seedPrivileges();
+      await seedRolePrivileges();
+      adminRole = await prisma.role.findUnique({
+        where: { name: "SCHOOL_ADMIN" },
+      });
+    }
+    if (!adminRole) {
       return NextResponse.json(
-        { error: "SCHOOL_ADMIN role not found. Run `npx prisma db seed` before activating setup." },
-        { status: 400 }
+        { error: "Failed to initialize system roles. Please check database connectivity." },
+        { status: 500 }
       );
     }
 

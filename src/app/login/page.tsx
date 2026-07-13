@@ -4,16 +4,23 @@ import { auth } from "@/auth";
 import { LoginForm } from "@/app/login/login-form";
 import { roleDefaultRoute } from "@/lib/constants";
 import { prisma } from "@/lib/db";
+import { bootstrapDatabase } from "@/lib/bootstrap";
 
 export default async function LoginPage() {
-  // Check if setup is complete
-  const school = await prisma.school.findUnique({
-    where: { id: "default" },
-  });
+  await bootstrapDatabase();
 
-  const admin = await prisma.user.findFirst({
-    where: { role: { name: { in: ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL"] } } },
-  });
+  let school;
+  let admin;
+  try {
+    school = await prisma.school.findUnique({
+      where: { id: "default" },
+    });
+    admin = await prisma.user.findFirst({
+      where: { role: { name: { in: ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL"] } } },
+    });
+  } catch {
+    redirect("/setup");
+  }
 
   // If setup not complete (no school or no admin), redirect to setup
   if (!school || !admin) {
