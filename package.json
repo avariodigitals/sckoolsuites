@@ -10,12 +10,13 @@
     "test:env": "npx playwright test -c playwright.workflow.config.ts tests/e2e/workflows/env-verification.spec.ts",
     "test:workflow": "npx playwright test -c playwright.workflow.config.ts",
     "lint": "eslint",
+    "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:setup": "prisma generate && prisma migrate deploy && prisma db seed",
     "db:init": "echo 'DEPRECATED: db:init has been replaced by db:setup. Run npm run db:setup instead.' && exit 1",
-    "vercel-build": "next build",
+    "vercel-build": "prisma generate && prisma migrate deploy && next build",
     "deploy:vercel": "vercel --prod"
   },
   "dependencies": {
