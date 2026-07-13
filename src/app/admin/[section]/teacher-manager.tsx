@@ -219,6 +219,22 @@ export function TeacherManager() {
     }
   }
 
+  async function handleResend(id: string, name: string) {
+    if (!window.confirm(`Resend welcome email with a new temporary password to ${name}?`)) return;
+    setStatus("");
+    try {
+      const response = await fetch(`/api/admin/teachers/${id}/resend`, { method: "POST" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setStatus(payload?.error ?? "Failed to resend credentials.");
+        return;
+      }
+      setStatus("Welcome email resent successfully.");
+    } catch {
+      setStatus("An error occurred.");
+    }
+  }
+
   async function handleDeactivate(id: string, name: string) {
     if (!window.confirm(`Deactivate ${name}? They will no longer be able to log in.`)) {
       return;
@@ -419,6 +435,13 @@ export function TeacherManager() {
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => startEdit(teacher)}>
                           Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleResend(teacher.id, teacher.name)}
+                        >
+                          Resend
                         </Button>
                         {teacher.isActive && teacher.assignedClasses.length === 0 && teacher.assignedSubjects.length === 0 && (
                           <Button

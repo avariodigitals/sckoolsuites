@@ -237,7 +237,7 @@ export function StudentDetailModal({ studentId, onClose }: { studentId: string; 
                   <Image src={s.passportUrl} alt="" width={40} height={40} className="h-10 w-10 rounded-full object-cover" />
                 ) : (
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700">
-                    {s?.user?.name?.charAt(0)?.toUpperCase() ?? "S"}
+                    {s?.user?.name?.charAt(0)?.toUpperCase() ?? s?.firstName?.charAt(0)?.toUpperCase() ?? "S"}
                   </div>
                 )}
                 <label className="absolute -bottom-1 -right-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-slate-800 text-white hover:bg-slate-700">
@@ -247,7 +247,7 @@ export function StudentDetailModal({ studentId, onClose }: { studentId: string; 
                 {uploadingAvatar && <Loader2 className="absolute inset-0 m-auto h-4 w-4 animate-spin text-indigo-600" />}
               </div>
               <div>
-                <h2 className="text-base font-semibold text-slate-900">{s?.user?.name ?? "Student Details"}</h2>
+                <h2 className="text-base font-semibold text-slate-900">{s ? [s.firstName, s.middleName, s.lastName].filter(Boolean).join(" ") || s.user?.name : "Student Details"}</h2>
                 <p className="text-xs text-slate-500">
                   {s?.class?.name ?? "No class"} · {s?.gender ?? "-"} · Age {s?.age ?? "-"}
                 </p>

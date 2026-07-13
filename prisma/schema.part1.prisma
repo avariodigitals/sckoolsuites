@@ -269,6 +269,9 @@ model Student {
   classId          Int?     @map("class_id")
   armId            Int?     @map("arm_id")
   admissionNo      String?  @map("admission_no")
+  firstName        String   @map("first_name")
+  middleName       String?  @map("middle_name")
+  lastName         String   @map("last_name")
   gender           String
   age              Int
   sportHouse       String?  @map("sport_house")

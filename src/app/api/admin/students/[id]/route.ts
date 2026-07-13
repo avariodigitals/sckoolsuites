@@ -9,6 +9,9 @@ import { Prisma } from "@prisma/client";
 
 const updateSchema = z.object({
   name: z.string().min(2).max(120).optional(),
+  firstName: z.string().min(1).max(80).optional(),
+  middleName: z.string().max(80).optional().nullable(),
+  lastName: z.string().min(1).max(80).optional(),
   email: z.string().email().optional(),
   gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
   age: z.number().int().min(3).max(30).optional(),
@@ -91,13 +94,33 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   try {
+    // Compute split name fields if any name-related field is provided
+    let firstName: string | undefined;
+    let middleName: string | null | undefined;
+    let lastName: string | undefined;
+    let fullName: string | undefined;
+
+    if (data.firstName !== undefined || data.middleName !== undefined || data.lastName !== undefined) {
+      firstName = data.firstName?.trim() || existing.firstName;
+      middleName = data.middleName !== undefined ? (data.middleName?.trim() || null) : existing.middleName;
+      lastName = data.lastName?.trim() || existing.lastName;
+      fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
+    } else if (data.name !== undefined) {
+      // Legacy: split the full name into parts
+      const parts = data.name.trim().split(/\s+/);
+      firstName = parts[0] || existing.firstName;
+      lastName = parts.length >= 2 ? parts[parts.length - 1] : existing.lastName;
+      middleName = parts.length >= 3 ? parts.slice(1, -1).join(" ") : null;
+      fullName = data.name.trim();
+    }
+
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Update user if name, email, or isActive changed
-      if (data.name !== undefined || data.isActive !== undefined || data.email !== undefined) {
+      // Update user if name or email or isActive changed
+      if (fullName !== undefined || data.email !== undefined || data.isActive !== undefined) {
         await tx.user.update({
           where: { id: existing.userId },
           data: {
-            ...(data.name !== undefined ? { name: data.name.trim() } : {}),
+            ...(fullName !== undefined ? { name: fullName } : {}),
             ...(data.email !== undefined ? { email: data.email.trim() } : {}),
             ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
           },
@@ -108,6 +131,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       const student = await tx.student.update({
         where: { id: parsedId },
         data: {
+          ...(firstName !== undefined ? { firstName } : {}),
+          ...(middleName !== undefined ? { middleName } : {}),
+          ...(lastName !== undefined ? { lastName } : {}),
           ...(data.gender !== undefined ? { gender: data.gender } : {}),
           ...(data.age !== undefined ? { age: data.age } : {}),
           ...(data.classId !== undefined ? { classId: data.classId } : {}),
@@ -144,6 +170,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         id: result.id,
         userId: result.userId,
         name: result.user.name,
+        firstName: result.firstName,
+        middleName: result.middleName,
+        lastName: result.lastName,
         email: result.user.email,
         gender: result.gender,
         age: result.age,

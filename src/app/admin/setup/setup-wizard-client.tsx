@@ -42,7 +42,9 @@ type FeeItemRow = {
 type PersonRow = { _id: string; name: string; email: string; avatarUrl: string };
 type StudentRow = {
   _id: string;
-  name: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
   email: string;
   className: string;
   parentEmail: string;
@@ -263,7 +265,8 @@ function validateUsers(teachers: PersonRow[], students: StudentRow[], parents: P
     if (!p.email.trim()) errors[`parent_${i}_email`] = "Email required";
   });
   students.forEach((s, i) => {
-    if (!s.name.trim()) errors[`student_${i}_name`] = "Name required";
+    if (!s.firstName.trim()) errors[`student_${i}_firstName`] = "First name required";
+    if (!s.lastName.trim()) errors[`student_${i}_lastName`] = "Last name required";
     if (!s.email.trim()) errors[`student_${i}_email`] = "Email required";
     if (!s.className.trim()) errors[`student_${i}_className`] = "Class required";
   });
@@ -414,8 +417,11 @@ function parentRowsToText(rows: PersonRow[]) {
 }
 function studentRowsToText(rows: StudentRow[]) {
   return rows
-    .filter((r) => r.name.trim() && r.email.trim())
-    .map((r) => `${r.name}|${r.email}|${r.className}|${r.parentEmail}|${r.gender || "UNSPECIFIED"}|${r.age || "10"}|${r.passportUrl}`)
+    .filter((r) => (r.firstName.trim() || r.lastName.trim()) && r.email.trim())
+    .map((r) => {
+      const fullName = [r.firstName, r.middleName, r.lastName].filter(Boolean).join(" ");
+      return `${fullName}|${r.email}|${r.className}|${r.parentEmail}|${r.gender || "UNSPECIFIED"}|${r.age || "10"}|${r.passportUrl}`;
+    })
     .join("\n");
 }
 function assignRowsToText(rows: AssignRow[]) {
@@ -761,16 +767,24 @@ export function SetupWizardClient() {
     }
     if (payload.students && payload.students.length > 0) {
       setStudentRows(
-        payload.students.map((s) => ({
-          _id: s.id,
-          name: s.name ?? "",
-          email: s.email ?? "",
-          className: s.className ?? "",
-          parentEmail: s.parentEmail ?? "",
-          gender: "UNSPECIFIED",
-          age: "10",
-          passportUrl: s.passportUrl ?? "",
-        })),
+        payload.students.map((s) => {
+          const parts = (s.name ?? "").trim().split(/\s+/);
+          const firstName = parts[0] ?? "";
+          const lastName = parts.length >= 2 ? parts[parts.length - 1] : "";
+          const middleName = parts.length >= 3 ? parts.slice(1, -1).join(" ") : "";
+          return {
+            _id: s.id,
+            firstName,
+            middleName,
+            lastName,
+            email: s.email ?? "",
+            className: s.className ?? "",
+            parentEmail: s.parentEmail ?? "",
+            gender: "UNSPECIFIED",
+            age: "10",
+            passportUrl: s.passportUrl ?? "",
+          };
+        }),
       );
     }
 
@@ -1560,20 +1574,29 @@ export function SetupWizardClient() {
       <div>
         <div className="mb-2 flex items-center justify-between">
           <h4 className="text-sm font-semibold text-slate-800">Students</h4>
-          <Button type="button" variant="outline" onClick={() => addRow(setStudentRows, { _id: uid(), name: "", email: "", className: "", parentEmail: "", gender: "UNSPECIFIED", age: "10", passportUrl: "" })}>+ Add Student</Button>
+          <Button type="button" variant="outline" onClick={() => addRow(setStudentRows, { _id: uid(), firstName: "", middleName: "", lastName: "", email: "", className: "", parentEmail: "", gender: "UNSPECIFIED", age: "10", passportUrl: "" })}>+ Add Student</Button>
         </div>
         <SectionError msg={err("_students")} />
         {studentRows.length === 0 ? (
-          <EmptyState label="student" onAdd={() => addRow(setStudentRows, { _id: uid(), name: "", email: "", className: "", parentEmail: "", gender: "UNSPECIFIED", age: "10", passportUrl: "" })} />
+          <EmptyState label="student" onAdd={() => addRow(setStudentRows, { _id: uid(), firstName: "", middleName: "", lastName: "", email: "", className: "", parentEmail: "", gender: "UNSPECIFIED", age: "10", passportUrl: "" })} />
         ) : (
           <div className="space-y-2">
             {studentRows.map((row, i) => (
               <div key={row._id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                   <div>
-                    <label className="mb-1 block text-xs text-slate-500">Full Name *</label>
-                    <Input placeholder="e.g. Eric Osamudiamen" value={row.name} onChange={(e) => updateRow(setStudentRows, row._id, { name: e.target.value })} className={inputCls(`student_${i}_name`)} />
-                    <FieldError msg={err(`student_${i}_name`)} />
+                    <label className="mb-1 block text-xs text-slate-500">First Name *</label>
+                    <Input placeholder="e.g. Eric" value={row.firstName} onChange={(e) => updateRow(setStudentRows, row._id, { firstName: e.target.value })} className={inputCls(`student_${i}_firstName`)} />
+                    <FieldError msg={err(`student_${i}_firstName`)} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-500">Middle Name</label>
+                    <Input placeholder="e.g. Osamudiamen" value={row.middleName} onChange={(e) => updateRow(setStudentRows, row._id, { middleName: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-slate-500">Last Name *</label>
+                    <Input placeholder="e.g. Okonkwo" value={row.lastName} onChange={(e) => updateRow(setStudentRows, row._id, { lastName: e.target.value })} className={inputCls(`student_${i}_lastName`)} />
+                    <FieldError msg={err(`student_${i}_lastName`)} />
                   </div>
                   <div>
                     <label className="mb-1 block text-xs text-slate-500">Email *</label>

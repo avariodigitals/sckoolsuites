@@ -672,6 +672,11 @@ export async function POST(request: Request) {
         const age = Number.isFinite(ageRaw) && ageRaw > 0 ? Math.floor(ageRaw) : 10;
         if (!name || !email) continue;
 
+        const parts = name.trim().split(/\s+/);
+        const firstName = parts[0] || "Unknown";
+        const lastName = parts.length >= 2 ? parts[parts.length - 1] : "Unknown";
+        const middleName = parts.length >= 3 ? parts.slice(1, -1).join(" ") : null;
+
         const [classRow, parentUser] = await Promise.all([
           className ? prisma.class.findFirst({ where: { schoolId, name: className }, select: { id: true } }) : Promise.resolve(null),
           parentEmail ? prisma.user.findUnique({ where: { email: parentEmail }, select: { id: true } }) : Promise.resolve(null),
@@ -687,8 +692,8 @@ export async function POST(request: Request) {
 
         await prisma.student.upsert({
           where: { userId: user.id },
-          update: { schoolId, classId: classRow?.id ?? null, parentId: parent?.id ?? null, gender, age, passportUrl: passportUrl || null },
-          create: { schoolId, userId: user.id, classId: classRow?.id ?? null, parentId: parent?.id ?? null, gender, age, passportUrl: passportUrl || null },
+          update: { schoolId, classId: classRow?.id ?? null, parentId: parent?.id ?? null, firstName, middleName, lastName, gender, age, passportUrl: passportUrl || null },
+          create: { schoolId, userId: user.id, classId: classRow?.id ?? null, parentId: parent?.id ?? null, firstName, middleName, lastName, gender, age, passportUrl: passportUrl || null },
         });
       }
 

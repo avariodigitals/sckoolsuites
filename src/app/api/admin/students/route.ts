@@ -24,7 +24,10 @@ const guardianSchema = z.object({
 });
 
 const createSchema = z.object({
-  name: z.string().min(2).max(120),
+  name: z.string().min(2).max(120).optional(),
+  firstName: z.string().min(1).max(80).optional(),
+  middleName: z.string().max(80).optional().nullable(),
+  lastName: z.string().min(1).max(80).optional(),
   email: z.string().email(),
   password: z.string().min(6).optional(),
   gender: z.enum(["MALE", "FEMALE", "OTHER"]),
@@ -37,7 +40,10 @@ const createSchema = z.object({
   coCurricular: z.string().max(200).optional().nullable(),
   responsibilities: z.string().max(200).optional().nullable(),
   guardian: guardianSchema.optional().nullable(),
-});
+}).refine(
+  (data) => data.firstName || data.name,
+  { message: "Either firstName or name is required" }
+);
 
 function isAuthorized(role?: string) {
   return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
@@ -99,6 +105,9 @@ export async function GET(request: Request) {
       id: student.id,
       userId: student.userId,
       name: student.user.name,
+      firstName: student.firstName,
+      middleName: student.middleName,
+      lastName: student.lastName,
       email: student.user.email,
       gender: student.gender,
       age: student.age,
@@ -139,6 +148,30 @@ export async function POST(request: Request) {
 
   const schoolId = session.user.schoolId || "default";
   const data = parsed.data;
+
+  // Compute split name fields and full name
+  let firstName: string;
+  let middleName: string | null;
+  let lastName: string;
+  let fullName: string;
+
+  if (data.firstName) {
+    firstName = data.firstName.trim();
+    middleName = data.middleName?.trim() || null;
+    lastName = data.lastName?.trim() || "";
+    if (!lastName && data.name) {
+      const parts = data.name.trim().split(/\s+/);
+      lastName = parts[parts.length - 1] || "Unknown";
+    }
+    if (!lastName) lastName = "Unknown";
+    fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
+  } else {
+    const parts = (data.name ?? "").trim().split(/\s+/);
+    firstName = parts[0] || "Unknown";
+    lastName = parts.length >= 2 ? parts[parts.length - 1] : "Unknown";
+    middleName = parts.length >= 3 ? parts.slice(1, -1).join(" ") : null;
+    fullName = data.name ?? `${firstName} ${lastName}`.trim();
+  }
 
   // Check if email already exists
   const existingUser = await prisma.user.findUnique({
@@ -206,7 +239,7 @@ export async function POST(request: Request) {
         data: {
           schoolId,
           roleId: studentRole.id,
-          name: data.name,
+          name: fullName,
           email: data.email,
           password: hashedPassword,
           isActive: true,
@@ -268,6 +301,9 @@ export async function POST(request: Request) {
           classId: data.classId ?? null,
           armId: data.armId ?? null,
           admissionNo,
+          firstName,
+          middleName,
+          lastName,
           gender: data.gender,
           age: data.age,
           sportHouse: data.sportHouse?.trim() || null,
@@ -316,7 +352,7 @@ export async function POST(request: Request) {
       metadata: {
         studentId: result.student.id,
         userId: result.user.id,
-        name: data.name,
+        name: fullName,
         email: data.email,
         classId: data.classId,
         parentId: data.parentId,
@@ -329,7 +365,7 @@ export async function POST(request: Request) {
       const emailResult = await sendWelcomeEmail({
         schoolId,
         to: data.email,
-        userName: data.name,
+        userName: fullName,
         email: data.email,
         password: plaintextPassword,
         role: "Student",
@@ -347,6 +383,9 @@ export async function POST(request: Request) {
         id: result.student.id,
         userId: result.user.id,
         name: result.user.name,
+        firstName: result.student.firstName,
+        middleName: result.student.middleName,
+        lastName: result.student.lastName,
         email: result.user.email,
         gender: result.student.gender,
         age: result.student.age,

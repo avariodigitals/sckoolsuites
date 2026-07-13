@@ -158,6 +158,22 @@ export function ParentManager() {
     }
   }
 
+  async function handleResend(id: string, name: string) {
+    if (!window.confirm(`Resend welcome email with a new temporary password to ${name}?`)) return;
+    setStatus("");
+    try {
+      const response = await fetch(`/api/admin/parents/${id}/resend`, { method: "POST" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setStatus(payload?.error ?? "Failed to resend credentials.");
+        return;
+      }
+      setStatus("Welcome email resent successfully.");
+    } catch {
+      setStatus("An error occurred.");
+    }
+  }
+
   async function handleDeactivate(id: string, name: string) {
     if (!window.confirm(`Deactivate ${name}? They will no longer be able to log in.`)) {
       return;
@@ -334,6 +350,13 @@ export function ParentManager() {
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => startEdit(parent)}>
                           Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleResend(parent.id, parent.name)}
+                        >
+                          Resend
                         </Button>
                         {parent.isActive && parent.children.length === 0 && (
                           <Button

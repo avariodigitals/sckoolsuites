@@ -90,6 +90,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           userId: user.id,
           parentId: null,
           classId: application.applyingForClassId ?? null,
+          firstName: (application.name || "Unknown").split(" ")[0],
+          lastName: (application.name || "Unknown").split(" ").slice(1).join(" ") || "Unknown",
           gender: application.gender || "OTHER",
           age: application.age ?? 10,
           sportHouse: null,

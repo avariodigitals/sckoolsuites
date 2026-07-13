@@ -96,6 +96,39 @@ export function UserManager() {
     }
   }
 
+  async function handleResend(id: string, name: string) {
+    if (!window.confirm(`Resend welcome email with a new temporary password to ${name}?`)) return;
+    setStatus("");
+    try {
+      const response = await fetch(`/api/admin/users/${id}`, { method: "POST" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setStatus(payload?.error ?? "Failed to resend credentials.");
+        return;
+      }
+      setStatus("Welcome email resent successfully.");
+    } catch {
+      setStatus("An error occurred.");
+    }
+  }
+
+  async function handleDelete(id: string, name: string) {
+    if (!window.confirm(`Deactivate ${name}? They will no longer be able to log in.`)) return;
+    setStatus("");
+    try {
+      const response = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setStatus(payload?.error ?? "Failed to deactivate user.");
+        return;
+      }
+      setStatus("User deactivated.");
+      await loadData();
+    } catch {
+      setStatus("An error occurred.");
+    }
+  }
+
   async function handleUpdate() {
     if (!editingId) return;
     setStatus("");
@@ -242,7 +275,13 @@ export function UserManager() {
                     </span>
                   </td>
                   <td className="px-4 py-2 text-right">
-                    <Button size="sm" variant="ghost" onClick={() => startEdit(u)}>Edit</Button>
+                    <div className="flex justify-end gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => startEdit(u)}>Edit</Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleResend(u.id, u.name)}>Resend</Button>
+                      {u.isActive && (
+                        <Button size="sm" variant="ghost" className="text-rose-600 hover:bg-rose-50" onClick={() => handleDelete(u.id, u.name)}>Deactivate</Button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))

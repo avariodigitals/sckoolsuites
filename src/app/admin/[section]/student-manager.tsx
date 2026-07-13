@@ -10,6 +10,9 @@ type Student = {
   id: string;
   userId: string;
   name: string;
+  firstName: string | null;
+  middleName: string | null;
+  lastName: string | null;
   email: string;
   gender: string;
   age: number;
@@ -45,7 +48,9 @@ type GuardianForm = {
 };
 
 type StudentForm = {
-  name: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
   email: string;
   gender: Gender;
   age: string;
@@ -73,7 +78,9 @@ const emptyGuardian: GuardianForm = {
 };
 
 const emptyStudent: StudentForm = {
-  name: "",
+  firstName: "",
+  middleName: "",
+  lastName: "",
   email: "",
   gender: "MALE",
   age: "",
@@ -158,7 +165,9 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
     setSubmitting(true);
 
     const body = {
-      name: form.name,
+      firstName: form.firstName,
+      middleName: form.middleName || null,
+      lastName: form.lastName,
       email: form.email,
       gender: form.gender,
       age: Number(form.age) || 0,
@@ -230,6 +239,22 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
     setStatus("");
   }
 
+  async function handleResend(id: string, name: string) {
+    if (!window.confirm(`Resend welcome email with a new temporary password to ${name}?`)) return;
+    setStatus("");
+    try {
+      const response = await fetch(`/api/admin/students/${id}/resend`, { method: "POST" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setStatus(payload?.error ?? "Failed to resend credentials.");
+        return;
+      }
+      setStatus("Welcome email resent successfully.");
+    } catch {
+      setStatus("An error occurred.");
+    }
+  }
+
   async function handleHardDelete(id: string) {
     if (!window.confirm("PERMANENTLY delete this student? This action cannot be undone. All related data (enrollments, fees, results) will be lost.")) {
       return;
@@ -277,7 +302,9 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
   function startEdit(student: Student) {
     setEditingId(student.id);
     setForm({
-      name: student.name,
+      firstName: student.firstName ?? "",
+      middleName: student.middleName ?? "",
+      lastName: student.lastName ?? "",
       email: student.email,
       gender: student.gender as "MALE" | "FEMALE" | "OTHER",
       age: String(student.age),
@@ -321,9 +348,19 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
           <h3 className="mb-3 text-sm font-semibold text-slate-900">{creating ? "Add New Student" : "Edit Student"}</h3>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             <Input
-              value={form.name}
-              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="Full name *"
+              value={form.firstName}
+              onChange={(e) => setForm((prev) => ({ ...prev, firstName: e.target.value }))}
+              placeholder="First name *"
+            />
+            <Input
+              value={form.middleName}
+              onChange={(e) => setForm((prev) => ({ ...prev, middleName: e.target.value }))}
+              placeholder="Middle name (optional)"
+            />
+            <Input
+              value={form.lastName}
+              onChange={(e) => setForm((prev) => ({ ...prev, lastName: e.target.value }))}
+              placeholder="Last name *"
             />
             <Input
               type="email"
@@ -479,6 +516,13 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => startEdit(student)}>
                           Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleResend(student.id, student.name)}
+                        >
+                          Resend
                         </Button>
                         {student.isActive && (
                           <Button size="sm" variant="outline" onClick={() => handleDeactivate(student.id)}>

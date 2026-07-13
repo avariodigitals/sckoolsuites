@@ -76,7 +76,9 @@ export function BasicTab({ student, studentId, onUpdate }: { student: any; stude
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const [form, setForm] = useState({
-    name: student.user?.name ?? "",
+    firstName: student.firstName ?? "",
+    middleName: student.middleName ?? "",
+    lastName: student.lastName ?? "",
     gender: student.gender ?? "MALE",
     age: String(student.age ?? ""),
     sportHouse: student.sportHouse ?? "",
@@ -92,7 +94,9 @@ export function BasicTab({ student, studentId, onUpdate }: { student: any; stude
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: form.name.trim(),
+          firstName: form.firstName.trim(),
+          middleName: form.middleName.trim() || null,
+          lastName: form.lastName.trim(),
           gender: form.gender,
           age: Number(form.age) || 0,
           sportHouse: form.sportHouse.trim() || null,
@@ -118,7 +122,9 @@ export function BasicTab({ student, studentId, onUpdate }: { student: any; stude
   function cancel() {
     setEditing(false);
     setForm({
-      name: student.user?.name ?? "",
+      firstName: student.firstName ?? "",
+      middleName: student.middleName ?? "",
+      lastName: student.lastName ?? "",
       gender: student.gender ?? "MALE",
       age: String(student.age ?? ""),
       sportHouse: student.sportHouse ?? "",
@@ -142,8 +148,16 @@ export function BasicTab({ student, studentId, onUpdate }: { student: any; stude
           {editing ? (
             <>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-500">Full Name</label>
-                <input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
+                <label className="mb-1 block text-xs font-medium text-slate-500">First Name</label>
+                <input value={form.firstName} onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-500">Middle Name</label>
+                <input value={form.middleName} onChange={(e) => setForm((p) => ({ ...p, middleName: e.target.value }))} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-500">Last Name</label>
+                <input value={form.lastName} onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500">Gender</label>
@@ -172,7 +186,9 @@ export function BasicTab({ student, studentId, onUpdate }: { student: any; stude
             </>
           ) : (
             <>
-              <FieldCard label="Full Name" value={student.user?.name} />
+              <FieldCard label="First Name" value={student.firstName} />
+              <FieldCard label="Middle Name" value={student.middleName} />
+              <FieldCard label="Last Name" value={student.lastName} />
               <FieldCard label="Gender" value={student.gender} />
               <FieldCard label="Age" value={student.age} />
               <FieldCard label="Sport House" value={student.sportHouse} />

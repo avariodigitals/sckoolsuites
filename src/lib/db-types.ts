@@ -149,6 +149,9 @@ export interface Student {
   classId?: number | null;
   armId?: number | null;
   admissionNo?: string | null;
+  firstName: string;
+  middleName?: string | null;
+  lastName: string;
   createdAt: Date | string;
   updatedAt: Date | string;
   user?: User;
