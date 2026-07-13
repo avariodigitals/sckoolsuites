@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { prisma } from "@/lib/db";
+import { hashPassword } from "@/auth";
 
 // ────────────────────────────────────────────────────────────────
 // Resend client
@@ -380,6 +381,49 @@ export async function sendWelcomeEmail({
       portalUrl,
     },
   });
+}
+
+function generateTempPassword(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  let pwd = "";
+  for (let i = 0; i < 10; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+  return pwd + "@1";
+}
+
+export async function resendUserCredentials({
+  userId,
+  role,
+  schoolId,
+}: {
+  userId: number;
+  role: string;
+  schoolId: string;
+}): Promise<{ ok: boolean; error?: string; password?: string }> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return { ok: false, error: "User not found" };
+  if (!user.email) return { ok: false, error: "User has no email address" };
+
+  const tempPassword = generateTempPassword();
+  const hashed = await hashPassword(tempPassword);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { password: hashed },
+  });
+
+  const result = await sendWelcomeEmail({
+    schoolId,
+    to: user.email,
+    userName: user.name,
+    email: user.email,
+    password: tempPassword,
+    role,
+  });
+
+  if (!result.ok) {
+    return { ok: false, error: (result as any).error ?? "Email delivery failed" };
+  }
+
+  return { ok: true, password: tempPassword };
 }
 
 // Convenience: send using a template
