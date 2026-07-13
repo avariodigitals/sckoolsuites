@@ -5,7 +5,7 @@ type AuditInput = {
   actorUserId?: number | null;
   action: string;
   targetType: string;
-  targetId?: string | null;
+  targetId?: string | number | null;
   metadata?: Record<string, any>;
   details?: string;
 };
@@ -17,7 +17,7 @@ export async function createAuditLog(input: AuditInput) {
       actorUserId: input.actorUserId ?? null,
       action: input.action,
       targetType: input.targetType,
-      targetId: input.targetId ?? null,
+      targetId: input.targetId != null ? String(input.targetId) : null,
       metadata: input.details ? { details: input.details } : input.metadata,
     },
   });
