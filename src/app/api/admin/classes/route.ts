@@ -229,10 +229,12 @@ export async function POST(request: Request) {
     }
 
     // Also inherit group-level assessments automatically
-    const groupAssessmentLinks = await prisma.classGroupAssessment.findMany({
-      where: { classGroupId: cls.classGroupId, isActive: true },
-      select: { assessmentId: true },
-    });
+    const groupAssessmentLinks = cls.classGroupId
+      ? await prisma.classGroupAssessment.findMany({
+          where: { classGroupId: cls.classGroupId, isActive: true },
+          select: { assessmentId: true },
+        })
+      : [];
     const groupAssessmentIds = groupAssessmentLinks.map((l) => l.assessmentId);
     const groupAssessments = groupAssessmentIds.length
       ? await prisma.assessment.findMany({ where: { id: { in: groupAssessmentIds } } })
