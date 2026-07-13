@@ -334,7 +334,7 @@ export async function POST(request: Request) {
         password: plaintextPassword,
         role: "Student",
       });
-      emailStatus = { sent: emailResult.ok };
+      emailStatus = { sent: emailResult.ok, error: emailResult.ok ? undefined : (emailResult as any).error ?? "Email delivery failed" };
     } catch (error) {
       emailStatus = {
         sent: false,

@@ -74,9 +74,14 @@ export async function sendWorkflowEmail({
         attachments: attachmentParts as any,
       });
       deliveryStatus = "sent";
-    } catch {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[email] Resend send failed:", msg);
       deliveryStatus = "resend_failed";
+      return { ok: false, deliveryStatus, error: msg };
     }
+  } else {
+    console.warn("[email] No Resend API key found — email will only be logged, not sent.");
   }
 
   const webhookUrl = process.env.EMAIL_WEBHOOK_URL;
