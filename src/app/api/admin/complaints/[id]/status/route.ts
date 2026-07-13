@@ -4,6 +4,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
 import { prisma } from "@/lib/db";
+import { parseNumericId } from "@/lib/id-helpers";
 
 const schema = z.object({
   status: z.nativeEnum(ComplaintStatus),
@@ -22,9 +23,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const parsedId = parseNumericId(rawId, "complaint id");
   const updated = await prisma.parentComplaint.updateMany({
-    where: { id, schoolId: "default" },
+    where: { id: parsedId, schoolId: "default" },
     data: {
       status: parsed.data.status,
       reviewedById: session.user.id,
@@ -36,7 +38,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
   }
 
-  const complaint = await prisma.parentComplaint.findFirst({ where: { id, schoolId: "default" } });
+  const complaint = await prisma.parentComplaint.findFirst({ where: { id: parsedId, schoolId: "default" } });
   if (!complaint) {
     return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
   }

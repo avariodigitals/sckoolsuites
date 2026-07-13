@@ -530,6 +530,7 @@ model FeeGroup {
 
 model FeeComponent {
   id          Int      @id @default(autoincrement())
+  schoolId    String   @default("default") @map("school_id")
   name        String   @unique
   description String?
   isActive    Boolean  @default(true) @map("is_active")

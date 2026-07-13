@@ -26,25 +26,21 @@ export function StudentPromoteDialog({
 }) {
   const { sessions, terms, activeSession, activeTerm } = useActiveSession();
 
+  const enrollmentSessionId = latestEnrollment?.session?.id ? String(latestEnrollment.session.id) : "";
+  const enrollmentTermId = latestEnrollment?.term?.id ? String(latestEnrollment.term.id) : "";
+  const fallbackSourceSessionId = enrollmentSessionId || (activeSession?.id ?? "");
+  const fallbackSourceTermId = enrollmentTermId || (activeTerm?.id ?? "");
+
   const [action, setAction] = useState<"PROMOTE" | "REPEAT" | "WITHDRAW">("PROMOTE");
-  const [sourceSessionId, setSourceSessionId] = useState<string>("");
-  const [sourceTermId, setSourceTermId] = useState<string>("");
-  const [targetSessionId, setTargetSessionId] = useState<string>("");
-  const [targetTermId, setTargetTermId] = useState<string>("");
+  const [sourceSessionId, setSourceSessionId] = useState<string>(() => fallbackSourceSessionId);
+  const [sourceTermId, setSourceTermId] = useState<string>(() => fallbackSourceTermId);
+  const [targetSessionId, setTargetSessionId] = useState<string>(() => activeSession?.id ?? fallbackSourceSessionId);
+  const [targetTermId, setTargetTermId] = useState<string>(() => activeTerm?.id ?? fallbackSourceTermId);
   const [nextClassId, setNextClassId] = useState<string>("");
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [loadingClasses, setLoadingClasses] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState("");
-
-  useEffect(() => {
-    const sourceSession = latestEnrollment?.session?.id ? String(latestEnrollment.session.id) : (activeSession?.id ?? "");
-    const sourceTerm = latestEnrollment?.term?.id ? String(latestEnrollment.term.id) : (activeTerm?.id ?? "");
-    setSourceSessionId(sourceSession);
-    setSourceTermId(sourceTerm);
-    setTargetSessionId(activeSession?.id ?? sourceSession);
-    setTargetTermId(activeTerm?.id ?? sourceTerm);
-  }, [latestEnrollment, activeSession, activeTerm]);
 
   useEffect(() => {
     async function loadClasses() {

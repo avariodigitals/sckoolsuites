@@ -4,7 +4,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
-import { Prisma } from "@prisma/client";
+import { Assessment, ClassArm, ClassAssessment } from "@prisma/client";
 
 const createSchema = z.object({
   name: z.string().min(1).max(50),
@@ -83,8 +83,8 @@ export async function GET() {
   const assessmentById = new Map(allAssessments.map((a) => [a.id, a]));
 
   // Build lookup maps
-  const assessmentsByClass = new Map<string, Array<Prisma.AssessmentGetPayload<{}> & { fromGroup: boolean }>>();
-  const assessmentsByGroup = new Map<string, Array<Prisma.AssessmentGetPayload<{}> & { fromGroup: boolean }>>();
+  const assessmentsByClass = new Map<string, Array<Assessment & { fromGroup: boolean }>>();
+  const assessmentsByGroup = new Map<string, Array<Assessment & { fromGroup: boolean }>>();
 
   for (const link of classAssessmentLinks) {
     const assessment = assessmentById.get(link.assessmentId);
@@ -108,7 +108,7 @@ export async function GET() {
       const classAssessments = assessmentsByClass.get(String(cls.id)) ?? [];
 
       // Merge: group first, then class overrides/adds
-      const byId = new Map<string, Prisma.AssessmentGetPayload<{}> & { fromGroup: boolean }>();
+      const byId = new Map<string, Assessment & { fromGroup: boolean }>();
       for (const a of groupAssessments) byId.set(String(a.id), a);
       for (const a of classAssessments) byId.set(String(a.id), a);
 
@@ -185,7 +185,7 @@ export async function POST(request: Request) {
     });
 
     // Create assigned arms from selected preset arms
-    const assignedArms: Array<Prisma.ClassArmGetPayload<{}>> = [];
+    const assignedArms: Array<ClassArm> = [];
     if (data.armIds && data.armIds.length > 0) {
       // Fetch preset arms
       const presetArms = await prisma.classArm.findMany({
@@ -211,7 +211,7 @@ export async function POST(request: Request) {
     }
 
     // Link selected assessments to the class
-    const linkedAssessments: Array<Prisma.ClassAssessmentGetPayload<{}>> = [];
+    const linkedAssessments: Array<ClassAssessment> = [];
     if (data.assessmentIds && data.assessmentIds.length > 0) {
       for (const assessmentId of data.assessmentIds) {
         try {

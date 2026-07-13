@@ -705,21 +705,14 @@ export function ExamTab({ data, studentId, onUpdate }: { data: any; studentId: s
   const scores = data?.scores ?? [];
   const { sessions, terms, activeSession, activeTerm, loading: contextLoading } = useActiveSession();
 
-  const [sessionId, setSessionId] = useState<string>(activeSession?.id ?? "");
-  const [termId, setTermId] = useState<string>(activeTerm?.id ?? "");
+  const initialSessionId = activeSession?.id ?? "";
+  const [sessionId, setSessionId] = useState<string>(() => initialSessionId);
+  const [termId, setTermId] = useState<string>(() =>
+    activeTerm?.sessionId === initialSessionId ? activeTerm.id : ""
+  );
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState("");
-
-  useEffect(() => {
-    if (activeSession && !sessionId) setSessionId(activeSession.id);
-  }, [activeSession, sessionId]);
-
-  useEffect(() => {
-    if (activeTerm && activeTerm.sessionId === sessionId && !termId) {
-      setTermId(activeTerm.id);
-    }
-  }, [activeTerm, sessionId, termId]);
 
   const sessionTerms = terms.filter((t) => t.sessionId === sessionId);
 
