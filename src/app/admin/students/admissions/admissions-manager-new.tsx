@@ -369,7 +369,8 @@ export function AdmissionsManager({ userRole }: { userRole?: string }) {
 
           {activeTab === "photo" && (
             <div className="space-y-4">
-              <div><label className="mb-1 block text-xs font-medium text-slate-700">Student Photo</label><div className="flex items-center gap-3"><Input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleUpload(f, setPhotoUrl); }} />{photoUrl && <img src={photoUrl} alt="Preview" className="h-16 w-16 rounded-full object-cover" />}</div>{photoUrl && <p className="mt-1 text-xs text-slate-500">{photoUrl}</p>}</div>
+              <div><label className="mb-1 block text-xs font-medium text-slate-700">Student Photo</label><div className="flex items-center gap-3"><Input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleUpload(f, setPhotoUrl); }} />{photoUrl && // eslint-disable-next-line @next/next/no-img-element
+<img src={photoUrl} alt="Preview" className="h-16 w-16 rounded-full object-cover" />}</div>{photoUrl && <p className="mt-1 text-xs text-slate-500">{photoUrl}</p>}</div>
             </div>
           )}
 
@@ -418,7 +419,8 @@ export function AdmissionsManager({ userRole }: { userRole?: string }) {
                     <div><label className="mb-1 block text-xs font-medium text-slate-700">ID Document Type</label><select className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" value={g.idDocumentType ?? ""} onChange={(e) => updateGuardian(i, "idDocumentType", e.target.value)}><option value="">Select type</option>{idDocumentTypes.map((t) => (<option key={t} value={t}>{t}</option>))}</select></div>
                     <div><label className="mb-1 block text-xs font-medium text-slate-700">ID Document Number</label><Input value={g.idDocumentNumber ?? ""} onChange={(e) => updateGuardian(i, "idDocumentNumber", e.target.value)} /></div>
                     <div className="sm:col-span-2 lg:col-span-3"><label className="mb-1 block text-xs font-medium text-slate-700">ID Document File</label><div className="flex items-center gap-2"><Input type="file" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleUpload(f, (url) => updateGuardian(i, "idDocumentUrl", url)); }} />{g.idDocumentUrl && <a href={g.idDocumentUrl} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 underline">View</a>}</div></div>
-                    <div><label className="mb-1 block text-xs font-medium text-slate-700">Guardian Photo</label><div className="flex items-center gap-2"><Input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleUpload(f, (url) => updateGuardian(i, "photoUrl", url)); }} />{g.photoUrl && <img src={g.photoUrl} alt="" className="h-10 w-10 rounded-full object-cover" />}</div></div>
+                    <div><label className="mb-1 block text-xs font-medium text-slate-700">Guardian Photo</label><div className="flex items-center gap-2"><Input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleUpload(f, (url) => updateGuardian(i, "photoUrl", url)); }} />{g.photoUrl && // eslint-disable-next-line @next/next/no-img-element
+<img src={g.photoUrl} alt="" className="h-10 w-10 rounded-full object-cover" />}</div></div>
                     <div className="flex items-center gap-2 pt-5"><input type="checkbox" id={`primary-${i}`} checked={g.isPrimary} onChange={(e) => updateGuardian(i, "isPrimary", e.target.checked)} className="h-4 w-4 rounded border-slate-300" /><label htmlFor={`primary-${i}`} className="text-xs text-slate-700">Primary guardian</label></div>
                   </div>
                 </div>
@@ -534,6 +536,7 @@ export function AdmissionsManager({ userRole }: { userRole?: string }) {
             {/* Header */}
             <div className="flex items-start gap-4 border-b border-slate-100 bg-slate-50/80 p-6">
               {viewingApp.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={viewingApp.photoUrl} alt="" className="h-16 w-16 rounded-full object-cover ring-2 ring-white shadow-sm" />
               ) : (
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 text-xl font-bold text-slate-500">

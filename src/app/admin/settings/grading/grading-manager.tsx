@@ -171,7 +171,7 @@ export function GradingManager() {
           </div>
           
           <div className="space-y-2">
-            {config.gradeBands.map((band, index) => (
+            {config.gradeBands.map((band) => (
               <div key={band.id} className="grid gap-2 md:grid-cols-4 items-center p-3 rounded-lg border border-slate-200 bg-slate-50">
                 <div>
                   <label className="block text-xs text-slate-500 mb-1">Min Score (%)</label>

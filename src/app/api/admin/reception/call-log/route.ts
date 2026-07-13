@@ -50,7 +50,7 @@ async function generateCallNumber(schoolId: string): Promise<string> {
   return `${prefix}${nextNumber.toString().padStart(digit, "0")}`;
 }
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   const session = await auth();
   const allowed = await crudPrivilege(session, "GET", "reception");
   if (!allowed) {

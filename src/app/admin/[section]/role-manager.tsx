@@ -101,7 +101,6 @@ export function RoleManager() {
     return () => clearTimeout(timer);
   }, [loadData]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (!selectedRoleId) {
       const timer = setTimeout(() => setPrivileges([]), 0);

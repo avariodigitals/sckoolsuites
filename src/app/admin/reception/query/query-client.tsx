@@ -10,7 +10,7 @@ export type Query = { id: string; queryNumber: string; querierName: string; quer
 const queryTypes = ["Information", "Clarification", "Complaint", "Suggestion"];
 const statuses = ["PENDING", "ANSWERED", "CLOSED"];
 
-export function QueryClient({ schoolId }: { schoolId: string }) {
+export function QueryClient({ schoolId: _schoolId }: { schoolId: string }) {
   const [queries, setQueries] = useState<Query[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");

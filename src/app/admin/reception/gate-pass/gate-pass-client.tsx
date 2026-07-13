@@ -25,7 +25,7 @@ export type GatePass = {
 const personTypes = ["Student", "Staff", "Visitor", "Other"];
 const statuses = ["ACTIVE", "RETURNED", "OVERDUE"];
 
-export function GatePassClient({ schoolId }: { schoolId: string }) {
+export function GatePassClient({ schoolId: _schoolId }: { schoolId: string }) {
   const [passes, setPasses] = useState<GatePass[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");

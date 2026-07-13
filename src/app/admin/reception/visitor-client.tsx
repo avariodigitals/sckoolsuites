@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { 
-  Plus, Trash2, CheckCircle2, X, Download, BarChart3, Search, 
+  Plus, Trash2, CheckCircle2, X, BarChart3, Search, 
   LogOut, Users, Clock, Calendar, TrendingUp, FileSpreadsheet,
   UserCircle, Building2, ArrowRightLeft
 } from "lucide-react";
@@ -28,7 +28,7 @@ export type Visitor = {
 const purposes = ["Meeting", "Delivery", "Interview", "Enquiry", "Parent Visit", "Other"];
 const departments = ["Administration", "Finance", "Academics", "Staff Room", "Principal Office", "Other"];
 
-export function VisitorClient({ schoolId }: { schoolId: string }) {
+export function VisitorClient({ schoolId: _schoolId }: { schoolId: string }) {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");

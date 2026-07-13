@@ -479,6 +479,7 @@ export function PortalTopbar({
           <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg border border-slate-200 bg-white p-1.5 pr-2 text-sm text-slate-700 transition hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-600">
             <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-slate-800 text-[11px] font-semibold text-white dark:bg-slate-700">
               {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={avatarUrl} alt={userName} className="h-8 w-8 object-cover" />
               ) : (
                 userInitials || "U"

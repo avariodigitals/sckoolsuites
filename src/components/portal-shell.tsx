@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { APP_POWERED_BY } from "@/lib/constants";
 import { navByRole } from "@/lib/navigation";
@@ -76,6 +75,7 @@ export function PortalShell({
           <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
             <div className="flex flex-col items-center text-center">
               {normalizedSchoolLogoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={normalizedSchoolLogoUrl}
                   alt={`${displaySchoolName} logo`}

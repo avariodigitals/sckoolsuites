@@ -105,12 +105,10 @@ export async function GET(request: Request) {
   ]);
 
   // Get LMS content based on type filter
-  /* eslint-disable @typescript-eslint/no-explicit-any */
   let lessons: any[] = [];
   let assignments: any[] = [];
   let quizzes: any[] = [];
   let onlineClasses: any[] = [];
-  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   const subjectFilter = subjectId ? { subjectId: parseInt(subjectId, 10) } : {};
   const classFilter = classId ? { classId: parseInt(classId, 10) } : {};

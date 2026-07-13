@@ -1,16 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { 
-  Users, 
-  UserPlus, 
-  LogOut, 
-  Clock, 
-  Search,
-  Filter,
-  MoreHorizontal,
+import {
+  Users,
+  LogOut,
+  Clock,
   FileText,
-  ClipboardList,
   StickyNote
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

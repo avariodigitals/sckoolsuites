@@ -29,8 +29,8 @@ export function TeacherManager() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [unassignedClasses, setUnassignedClasses] = useState<Option[]>([]);
   const [unassignedSubjects, setUnassignedSubjects] = useState<Option[]>([]);
-  const [allClasses, setAllClasses] = useState<Option[]>([]);
-  const [allSubjects, setAllSubjects] = useState<Option[]>([]);
+  const [, setAllClasses] = useState<Option[]>([]);
+  const [, setAllSubjects] = useState<Option[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
   const [searchQuery, setSearchQuery] = useState("");

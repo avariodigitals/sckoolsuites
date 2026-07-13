@@ -35,7 +35,7 @@ type Subject = {
 export function ArmSubjectMappingManager() {
   const [arms, setArms] = useState<ClassArm[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [teachers, setTeachers] = useState<Array<{ id: string; name: string; email: string }>>([]);
+  const [, setTeachers] = useState<Array<{ id: string; name: string; email: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,7 +80,6 @@ export function ArmSubjectMappingManager() {
         if (!cancelled) {
           setArms(armsData.arms ?? []);
           setSubjects(subjectsData.subjects ?? []);
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           setTeachers(teachersData.teachers ?? []);
         }
       } catch {

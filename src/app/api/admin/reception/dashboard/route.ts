@@ -7,7 +7,7 @@ function isAuthorized(role?: string) {
   return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN", "RECEPTIONIST"].includes(role) : false;
 }
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   const session = await auth();
   const allowed = await crudPrivilege(session, "GET", "reception");
   if (!allowed) {
@@ -57,7 +57,6 @@ export async function GET(request: Request) {
     const now = new Date();
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonthEnd = new Date(thisMonthStart);
     const thisYearStart = new Date(now.getFullYear(), 0, 1);
 
     // Conversion metrics

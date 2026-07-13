@@ -65,7 +65,7 @@ export function TransportManager() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
-  const [routeStops, setRouteStops] = useState<RouteStop[]>([]);
+  const [, setRouteStops] = useState<RouteStop[]>([]);
   const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");

@@ -273,6 +273,7 @@ export function ModernPortalShell({
         {/* Logo Section */}
         <div className="flex h-16 flex-shrink-0 items-center gap-3 border-b border-slate-200 px-4">
           {schoolLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={schoolLogoUrl}
               alt={`${displaySchoolName} logo`}
@@ -507,6 +508,7 @@ export function ModernPortalShell({
                 </div>
                 <div className="h-9 w-9 rounded-full flex items-center justify-center font-semibold overflow-hidden" style={{ backgroundColor: `${primaryColor ?? "#0B1F4D"}20`, color: primaryColor ?? "#0B1F4D" }}>
                   {avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={avatarUrl} alt={userName} className="h-9 w-9 object-cover" />
                   ) : (
                     userName.charAt(0).toUpperCase()

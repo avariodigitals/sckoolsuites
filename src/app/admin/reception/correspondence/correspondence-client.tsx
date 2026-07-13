@@ -21,7 +21,7 @@ export type Correspondence = {
 const types = ["INCOMING", "OUTGOING"];
 const statuses = ["PENDING", "PROCESSED", "ARCHIVED"];
 
-export function CorrespondenceClient({ schoolId }: { schoolId: string }) {
+export function CorrespondenceClient({ schoolId: _schoolId }: { schoolId: string }) {
   const [items, setItems] = useState<Correspondence[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");

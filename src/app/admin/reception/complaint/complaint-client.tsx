@@ -23,7 +23,7 @@ const statuses = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"];
 const types = ["Academic", "Administrative", "Facility", "Other"];
 const complainantTypes = ["Parent", "Student", "Staff", "Visitor"];
 
-export function ComplaintClient({ schoolId }: { schoolId: string }) {
+export function ComplaintClient({ schoolId: _schoolId }: { schoolId: string }) {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");

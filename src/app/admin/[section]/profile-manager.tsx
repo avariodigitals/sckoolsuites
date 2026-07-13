@@ -170,6 +170,7 @@ export function ProfileManager() {
           <div className="relative">
             <div className="h-24 w-24 overflow-hidden rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-2xl font-bold text-white shadow-lg">
               {profile?.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={profile.avatarUrl}
                   alt={profile.name}

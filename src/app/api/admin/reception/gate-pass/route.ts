@@ -92,7 +92,7 @@ export async function GET(request: Request) {
         createdAt: p.createdAt.toISOString(),
       })),
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to load gate passes" }, { status: 500 });
   }
 }
@@ -144,7 +144,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ pass: { ...pass, exitTime: pass.exitTime.toISOString() } }, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to create gate pass" }, { status: 500 });
   }
 }

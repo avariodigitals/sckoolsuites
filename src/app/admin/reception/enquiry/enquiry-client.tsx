@@ -4,7 +4,7 @@ import { useMemo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Plus, Search, Trash2, Edit2, Save, X, CheckCircle2, Download, Filter, BarChart3 } from "lucide-react";
+import { Plus, Search, Trash2, Edit2, Save, X, CheckCircle2, Download, BarChart3 } from "lucide-react";
 
 export type Enquiry = {
   id: string;
@@ -25,7 +25,7 @@ const defaultSources = ["Walk-in", "Phone", "Email", "Website", "Referral"];
 const defaultTypes = ["General", "Admission", "Fee", "Academic", "Other"];
 const defaultStages = ["New", "In Progress", "Follow-up", "Resolved", "Closed"];
 
-export function EnquiryClient({ schoolId }: { schoolId: string }) {
+export function EnquiryClient({ schoolId: _schoolId }: { schoolId: string }) {
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");

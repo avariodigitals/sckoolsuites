@@ -225,6 +225,7 @@ export function UserManager() {
                     <div className="flex items-center gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
                         {u.avatarUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img src={u.avatarUrl} alt={u.name} className="h-8 w-8 rounded-full object-cover" />
                         ) : (
                           u.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) ?? "U"

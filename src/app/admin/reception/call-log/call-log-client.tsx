@@ -20,9 +20,8 @@ export type CallLog = {
 };
 
 const purposes = ["Enquiry", "Complaint", "Follow-up", "Admission", "Fee", "Other"];
-const statuses = ["COMPLETED", "CALLBACK_REQUIRED", "NO_ANSWER"];
 
-export function CallLogClient({ schoolId }: { schoolId: string }) {
+export function CallLogClient({ schoolId: _schoolId }: { schoolId: string }) {
   const [calls, setCalls] = useState<CallLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");

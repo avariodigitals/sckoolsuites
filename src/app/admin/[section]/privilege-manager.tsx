@@ -127,14 +127,6 @@ export function PrivilegeManager() {
     return () => { cancelled = true; };
   }, [selectedUserId]);
 
-  const userPrivMap = useMemo(() => {
-    const map: Record<string, boolean> = {};
-    for (const up of userPrivileges) {
-      map[up.privilegeId] = up.isGranted;
-    }
-    return map;
-  }, [userPrivileges]);
-
   async function togglePrivilege(privilegeId: string, isGranted: boolean) {
     if (!selectedUserId) return;
     setStatus("");

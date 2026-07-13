@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { 
-  Users, MessageSquare, Phone, LogOut, HelpCircle, Mail,
-  TrendingUp, TrendingDown, Calendar, Clock, ArrowRight,
+  Users, MessageSquare, Phone, LogOut, HelpCircle,
+  TrendingUp, TrendingDown, Calendar,
   BarChart3, PieChart, Activity, Download
 } from "lucide-react";
 
@@ -53,7 +53,7 @@ export type DashboardData = {
   };
 };
 
-export function DashboardClient({ schoolId }: { schoolId: string }) {
+export function DashboardClient({ schoolId: _schoolId }: { schoolId: string }) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"overview" | "enquiries" | "admissions" | "visitors">("overview");
