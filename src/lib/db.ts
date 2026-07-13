@@ -32,7 +32,7 @@ function createPool(): Pool {
     ssl: sslDisabled ? false : true,
     max: parsePositiveInt(
       process.env.PG_POOL_MAX ?? process.env.DB_POOL_MAX,
-      10
+      5
     ),
     idleTimeoutMillis: parsePositiveInt(
       process.env.DB_IDLE_TIMEOUT_MS,
@@ -40,7 +40,7 @@ function createPool(): Pool {
     ),
     connectionTimeoutMillis: parsePositiveInt(
       process.env.DB_CONNECTION_TIMEOUT_MS,
-      10000
+      30000
     ),
   });
 
