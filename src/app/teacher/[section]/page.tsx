@@ -206,7 +206,7 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
                 name: item.name,
                 students: myStudents
                   .filter((student: any) => student.classId === item.id)
-                  .map((student: any) => ({ id: student.id, name: student.user.name })),
+                  .map((student: any) => ({ id: student.id, name: [student.firstName, student.middleName, student.lastName].filter(Boolean).join(" ") || student.user.name })),
               }))}
             />
             <Card>
@@ -214,7 +214,7 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
               <CardContent className="space-y-2 text-sm">
                 {myAttendance.slice(0, 20).map((item: any) => (
                   <div key={item.id} className="glass-soft rounded-xl p-3">
-                    <p className="font-medium">{item.student.user.name}</p>
+                    <p className="font-medium">{[item.student.firstName, item.student.middleName, item.student.lastName].filter(Boolean).join(" ") || item.student.user.name}</p>
                     <p>{item.class?.name ?? "Class"} • {humanizeEnum(item.status)} • {formatDate(item.date)}</p>
                   </div>
                 ))}
@@ -228,15 +228,15 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
           <div className="space-y-3">
             <TeacherScoreEntryForm
               subjectOptions={mySubjects.map((item: any) => ({ id: item.id, name: item.name, classId: item.classId }))}
-              studentOptions={myStudents.map((item: any) => ({ id: item.id, name: item.user.name, classId: item.classId }))}
+              studentOptions={myStudents.map((item: any) => ({ id: item.id, name: [item.firstName, item.middleName, item.lastName].filter(Boolean).join(" ") || item.user.name, classId: item.classId }))}
             />
-            <TeacherResultUploadForm studentOptions={myStudents.map((item: any) => ({ id: item.id, name: item.user.name }))} />
+            <TeacherResultUploadForm studentOptions={myStudents.map((item: any) => ({ id: item.id, name: [item.firstName, item.middleName, item.lastName].filter(Boolean).join(" ") || item.user.name }))} />
             <Card>
               <CardHeader><CardTitle>Score Entry Queue</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
                 {myScores.slice(0, 20).map((item: any) => (
                   <div key={item.id} className="glass-soft rounded-xl p-3">
-                    <p className="font-medium">{item.student.user.name} • {item.subject.name}</p>
+                    <p className="font-medium">{[item.student.firstName, item.student.middleName, item.student.lastName].filter(Boolean).join(" ") || item.student.user.name} • {item.subject.name}</p>
                     <p>CA: {item.caScore} • Exam: {item.examScore} • Total: {item.total}%</p>
                   </div>
                 ))}
