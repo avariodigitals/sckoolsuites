@@ -5,11 +5,11 @@ import { listInvoiceContestsByParent, submitInvoiceContest } from "@/lib/invoice
 import { prisma } from "@/lib/db";
 
 const submitSchema = z.object({
-  invoiceId: z.string().min(5),
+  invoiceId: z.coerce.number().int().positive(),
   parentComment: z.string().min(5),
   adjustments: z.array(
     z.object({
-      invoiceItemId: z.string().min(5),
+      invoiceItemId: z.coerce.number().int().positive(),
       proposedAmount: z.coerce.number().min(0),
     })
   ),

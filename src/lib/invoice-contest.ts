@@ -6,7 +6,7 @@ import { createAuditLog } from "@/lib/audit-log";
 export type InvoiceContestStatus = "SUBMITTED" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
 
 export type InvoiceContestItem = {
-  invoiceItemId: string;
+  invoiceItemId: number;
   feeName: string;
   originalAmount: number;
   proposedAmount: number;
@@ -14,7 +14,7 @@ export type InvoiceContestItem = {
 };
 
 export type InvoiceContestRecord = {
-  invoiceId: string;
+  invoiceId: number;
   invoiceNumber: string;
   studentName: string;
   parentId: number;
@@ -31,7 +31,7 @@ export type InvoiceContestRecord = {
 
 const INVOICE_CONTEST_KEY_PREFIX = "invoice_contest_";
 
-function contestKey(invoiceId: string) {
+function contestKey(invoiceId: number | string) {
   return `${INVOICE_CONTEST_KEY_PREFIX}${invoiceId}`;
 }
 
@@ -51,7 +51,7 @@ function toContestRecord(value: string): InvoiceContestRecord | null {
   }
 }
 
-export async function getInvoiceContestByInvoice(schoolId: string, invoiceId: string) {
+export async function getInvoiceContestByInvoice(schoolId: string, invoiceId: number) {
   const row = await prisma.schoolSetting.findUnique({
     where: { schoolId_key: { schoolId, key: contestKey(invoiceId) } },
   });
@@ -85,9 +85,9 @@ export async function submitInvoiceContest({
 }: {
   schoolId: string;
   parentUserId: number;
-  invoiceId: string;
+  invoiceId: number;
   parentComment: string;
-  adjustments: Array<{ invoiceItemId: string; proposedAmount: number }>;
+  adjustments: Array<{ invoiceItemId: number; proposedAmount: number }>;
 }) {
   const parent = await prisma.parent.findFirst({ where: { schoolId, userId: parentUserId } });
   if (!parent) {
@@ -221,7 +221,7 @@ function mapPaymentStatus(amountPaid: number, totalAmount: number): PaymentStatu
 
 async function writeContestAuditEntry(params: {
   schoolId: string;
-  invoiceId: string;
+  invoiceId: number;
   actorUserId?: number;
   actorRole?: string;
   action: string;
@@ -234,7 +234,7 @@ async function writeContestAuditEntry(params: {
       actorUserId: params.actorUserId,
       actorRole: params.actorRole,
       action: params.action,
-      details: params.details as Record<string, unknown>,
+      details: params.details as any,
     },
   });
 }
@@ -272,7 +272,7 @@ async function notifyContestStatusChange({
 }: {
   schoolId: string;
   invoiceNumber: string;
-  targetParent: { id: string; user?: { email?: string | null } | null } | null;
+  targetParent: { id: number; user?: { email?: string | null } | null } | null;
   status: "UNDER_REVIEW" | "APPROVED" | "REJECTED";
   staffComment: string;
 }) {
@@ -345,10 +345,10 @@ export async function reviewInvoiceContest({
   schoolId: string;
   actorUserId: number;
   actorRole: RoleType;
-  invoiceId: string;
+  invoiceId: number;
   action: "UNDER_REVIEW" | "APPROVED" | "REJECTED";
   staffComment: string;
-  finalAdjustments: Array<{ invoiceItemId: string; proposedAmount: number }>;
+  finalAdjustments: Array<{ invoiceItemId: number; proposedAmount: number }>;
 }) {
   if (actorRole !== "SUPER_ADMIN" && actorRole !== "SCHOOL_ADMIN" && actorRole !== "PRINCIPAL" && actorRole !== "ACCOUNTANT") {
     throw new Error("UNAUTHORIZED_REVIEWER");
@@ -479,7 +479,7 @@ export async function reviewInvoiceContest({
 
   const contestItemsMap = new Map(contest.items.map((item) => [item.invoiceItemId, item]));
 
-  const toUpdate: Array<{ id: string; amount: number }> = [];
+  const toUpdate: Array<{ id: number; amount: number }> = [];
   const updatedContestItems: InvoiceContestItem[] = [];
 
   for (const invoiceItem of invoice.items) {

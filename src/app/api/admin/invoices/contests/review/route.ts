@@ -6,13 +6,13 @@ import { auth } from "@/auth";
 import { reviewInvoiceContest } from "@/lib/invoice-contest";
 
 const reviewSchema = z.object({
-  invoiceId: z.string().min(5),
+  invoiceId: z.coerce.number().int().positive(),
   action: z.enum(["UNDER_REVIEW", "APPROVED", "REJECTED"]),
   staffComment: z.string().optional().default(""),
   finalAdjustments: z
     .array(
       z.object({
-        invoiceItemId: z.string().min(5),
+        invoiceItemId: z.coerce.number().int().positive(),
         proposedAmount: z.coerce.number().min(0),
       })
     )
