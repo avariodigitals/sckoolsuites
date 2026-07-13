@@ -9,7 +9,9 @@ import { PrintButton } from "@/components/print-button";
 
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   await requireUser();
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const id = parseInt(rawId, 10);
+  if (isNaN(id)) notFound();
 
   const invoice: any = await prisma.invoice.findUnique({
     where: { id },

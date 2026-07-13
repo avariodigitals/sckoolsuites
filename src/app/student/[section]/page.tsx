@@ -73,8 +73,8 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
         currentTermName={context.term?.name}
         sessions={core.sessions.map((item: any) => ({ id: item.id, name: item.name }))}
         terms={core.terms.map((item: any) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
-        selectedSessionId={context.session?.id}
-        selectedTermId={context.term?.id}
+        selectedSessionId={context.session?.id != null ? String(context.session.id) : undefined}
+        selectedTermId={context.term?.id != null ? String(context.term.id) : undefined}
         primaryColor={core.school?.branding?.primaryColor}
         secondaryColor={core.school?.branding?.secondaryColor}
       >
@@ -130,8 +130,8 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
   const pendingAssignments = myAssignments.filter((assignment: any) => !assignment.submittedAt).length;
   const presentCount = myAttendance.filter((item: any) => item.status === "PRESENT").length;
   const avgScore = myScores.length ? myScores.reduce((sum: any, score: any) => sum + score.total, 0) / myScores.length : 0;
-  const topScore = myScores.length ? [...myScores].sort((a, b) => b.total - a.total)[0] : null;
-  const topScoreMeta = topScore ? calculateGradeFromBands(topScore.total, gradingBands) : null;
+  const topScore = myScores.length ? [...myScores].sort((a, b) => (b.total ?? 0) - (a.total ?? 0))[0] : null;
+  const topScoreMeta = topScore ? calculateGradeFromBands(topScore.total ?? 0, gradingBands) : null;
 
   function renderSection() {
     switch (sectionKey) {
@@ -371,8 +371,8 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
       currentTermName={context.term?.name}
       sessions={core.sessions.map((item: any) => ({ id: item.id, name: item.name }))}
       terms={core.terms.map((item: any) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
-      selectedSessionId={context.session?.id}
-      selectedTermId={context.term?.id}
+      selectedSessionId={context.session?.id != null ? String(context.session.id) : undefined}
+      selectedTermId={context.term?.id != null ? String(context.term.id) : undefined}
       primaryColor={core.school?.branding?.primaryColor}
       secondaryColor={core.school?.branding?.secondaryColor}
     >

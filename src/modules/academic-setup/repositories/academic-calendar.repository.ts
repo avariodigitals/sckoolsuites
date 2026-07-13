@@ -34,14 +34,14 @@ export class AcademicCalendarRepository {
   }
 
   async createSession(data: Record<string, any>) {
-    return prisma.session.create({ data });
+    return prisma.session.create({ data: data as any });
   }
 
   async createTerm(data: Record<string, any>) {
     if (data.sessionId !== undefined) {
       data.sessionId = this.requireIntId(data.sessionId);
     }
-    return prisma.term.create({ data });
+    return prisma.term.create({ data: data as any });
   }
 
   async clearCurrentSession(schoolId: string) {

@@ -16,7 +16,7 @@ function nextReceiptNumber() {
   return `RCT-${now.getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
 }
 
-async function getApprovedPaidTotal(tx: any, invoiceId: string) {
+async function getApprovedPaidTotal(tx: any, invoiceId: number) {
   const aggregate = await tx.payment.aggregate({
     where: {
       invoiceId,
@@ -48,7 +48,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { paymentId } = await params;
+  const { paymentId: rawPaymentId } = await params;
+  const paymentIdInt = parseInt(rawPaymentId, 10);
+  if (isNaN(paymentIdInt)) {
+    return NextResponse.json({ error: "Invalid payment id" }, { status: 400 });
+  }
   const parsed = schema.safeParse(await request.json());
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -60,7 +64,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
   }
 
   const payment = await prisma.payment.findFirst({
-    where: { id: paymentId, schoolId: "default" },
+    where: { id: paymentIdInt, schoolId: "default" },
     include: {
       invoice: true,
       student: true,

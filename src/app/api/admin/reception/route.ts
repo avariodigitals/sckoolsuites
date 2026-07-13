@@ -16,7 +16,7 @@ const createSchema = z.object({
 });
 
 const checkoutSchema = z.object({
-  id: z.string().min(1),
+  id: z.coerce.number().int().min(1),
 });
 
 function isAuthorized(role?: string) {

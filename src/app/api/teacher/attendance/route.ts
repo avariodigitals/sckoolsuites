@@ -7,8 +7,8 @@ import { prisma } from "@/lib/db";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
 
 const schema = z.object({
-  studentId: z.string().min(5),
-  classId: z.string().min(5),
+  studentId: z.coerce.number().int().min(1),
+  classId: z.coerce.number().int().min(1),
   date: z.string().min(8),
   status: z.nativeEnum(AttendanceStatus),
 });

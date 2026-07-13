@@ -94,14 +94,14 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
   const prismaClient = prisma as unknown as {
     parentMessage?: {
       findMany: (args: {
-        where: { schoolId: string; parentId: string };
+        where: { schoolId: string; parentId: number };
         orderBy: { createdAt: "desc" };
         take: number;
       }) => Promise<Array<{ id: string; recipient: string; subject: string; message: string; status: string; createdAt: Date }>>;
     };
     parentComplaint?: {
       findMany: (args: {
-        where: { schoolId: string; parentId: string };
+        where: { schoolId: string; parentId: number };
         orderBy: { createdAt: "desc" };
         take: number;
       }) => Promise<Array<{ id: string; category: string; subject: string; complaint: string; status: string; createdAt: Date }>>;
@@ -362,8 +362,8 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
       currentTermName={context.term?.name}
       sessions={core.sessions.map((item: any) => ({ id: item.id, name: item.name }))}
       terms={core.terms.map((item: any) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
-      selectedSessionId={context.session?.id}
-      selectedTermId={context.term?.id}
+      selectedSessionId={context.session?.id != null ? String(context.session.id) : undefined}
+      selectedTermId={context.term?.id != null ? String(context.term.id) : undefined}
       primaryColor={core.school?.branding?.primaryColor}
       secondaryColor={core.school?.branding?.secondaryColor}
     >
@@ -476,7 +476,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
             const latest = results.find((item: any) => item.studentId === child.id);
             const isUploadedPdf = Boolean(latest?.fileUrl);
             const childScores = latest && !isUploadedPdf ? scores.filter((item: any) => item.studentId === child.id) : [];
-            const topSubjects = [...childScores].sort((a, b) => b.total - a.total).slice(0, 4);
+            const topSubjects = [...childScores].sort((a, b) => (b.total ?? 0) - (a.total ?? 0)).slice(0, 4);
             const average = childScores.length ? childScores.reduce((sum: any, item: any) => sum + item.total, 0) / childScores.length : 0;
 
             return (
@@ -530,7 +530,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                               <span className="text-slate-600">{score.total}% ({score.grade})</span>
                             </div>
                             <div className="h-2 rounded-full bg-slate-200">
-                              <div className="h-2 rounded-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]" style={{ width: `${Math.max(0, Math.min(100, score.total))}%` }} />
+                              <div className="h-2 rounded-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]" style={{ width: `${Math.max(0, Math.min(100, score.total ?? 0))}%` }} />
                             </div>
                           </div>
                         ))}

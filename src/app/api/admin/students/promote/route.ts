@@ -8,15 +8,15 @@ import { createAuditLog } from "@/lib/audit-log";
 const promoteSchema = z.object({
   promotions: z.array(
     z.object({
-      studentId: z.string().min(1),
+      studentId: z.coerce.number().int().min(1),
       action: z.enum(["PROMOTE", "REPEAT", "WITHDRAW"]),
-      nextClassId: z.string().optional().nullable(),
+      nextClassId: z.coerce.number().int().optional().nullable(),
     })
   ).min(1),
-  sourceSessionId: z.string().min(1),
-  sourceTermId: z.string().min(1),
-  targetSessionId: z.string().min(1),
-  targetTermId: z.string().min(1),
+  sourceSessionId: z.coerce.number().int().min(1),
+  sourceTermId: z.coerce.number().int().min(1),
+  targetSessionId: z.coerce.number().int().min(1),
+  targetTermId: z.coerce.number().int().min(1),
 });
 
 function isAuthorized(role?: string) {
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     }
 
     const results = await prisma.$transaction(async (tx: any) => {
-      const out: Array<{ studentId: string; action: string; success: boolean; error?: string }> = [];
+      const out: Array<{ studentId: number; action: string; success: boolean; error?: string }> = [];
 
       for (const p of promotions) {
         // Verify student exists and is enrolled in source session

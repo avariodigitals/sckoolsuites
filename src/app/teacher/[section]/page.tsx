@@ -130,19 +130,19 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
                     <p className="text-[11px] text-slate-500">Full Name</p>
-                    <p className="font-medium text-slate-900">{teacher.user?.name}</p>
+                    <p className="font-medium text-slate-900">{teacher?.user?.name}</p>
                   </div>
                   <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
                     <p className="text-[11px] text-slate-500">Email</p>
-                    <p className="font-medium text-slate-900">{teacher.user?.email}</p>
+                    <p className="font-medium text-slate-900">{teacher?.user?.email}</p>
                   </div>
                   <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
                     <p className="text-[11px] text-slate-500">Phone</p>
-                    <p className="font-medium text-slate-900">{teacher.user?.phone ?? "—"}</p>
+                    <p className="font-medium text-slate-900">{teacher?.user?.phone ?? "—"}</p>
                   </div>
                   <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
                     <p className="text-[11px] text-slate-500">Address</p>
-                    <p className="font-medium text-slate-900">{teacher.user?.address ?? "—"}</p>
+                    <p className="font-medium text-slate-900">{teacher?.user?.address ?? "—"}</p>
                   </div>
                 </div>
 
@@ -353,8 +353,8 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
       currentTermName={context.term?.name}
       sessions={core.sessions.map((item: any) => ({ id: item.id, name: item.name }))}
       terms={core.terms.map((item: any) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
-      selectedSessionId={context.session?.id}
-      selectedTermId={context.term?.id}
+      selectedSessionId={context.session?.id != null ? String(context.session.id) : undefined}
+      selectedTermId={context.term?.id != null ? String(context.term.id) : undefined}
       primaryColor={core.school?.branding?.primaryColor}
       secondaryColor={core.school?.branding?.secondaryColor}
     >

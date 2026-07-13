@@ -201,7 +201,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     await Promise.all(
       settingUpdates.map((item) =>
         prisma.schoolSetting.upsert({
-          where: { key: item.key },
+          where: { schoolId_key: { schoolId, key: item.key } },
           update: { value: item.value },
           create: { key: item.key, value: item.value, school: { connect: { id: "default" } } },
         })

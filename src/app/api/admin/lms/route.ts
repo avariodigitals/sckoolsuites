@@ -112,8 +112,8 @@ export async function GET(request: Request) {
   let onlineClasses: any[] = [];
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
-  const subjectFilter = subjectId ? { subjectId } : {};
-  const classFilter = classId ? { classId } : {};
+  const subjectFilter = subjectId ? { subjectId: parseInt(subjectId, 10) } : {};
+  const classFilter = classId ? { classId: parseInt(classId, 10) } : {};
 
   if (!type || type === "lessons") {
     lessons = await prisma.lesson.findMany({
@@ -240,9 +240,11 @@ export async function POST(request: Request) {
   const schoolId = "default";
   const data = parsed.data;
 
+  const teacherIdInt = parseInt(data.teacherId, 10);
+
   // Validate teacher
   const teacher = await prisma.teacher.findFirst({
-    where: { id: data.teacherId, schoolId },
+    where: { id: teacherIdInt, schoolId },
   });
   if (!teacher) {
     return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
@@ -257,9 +259,9 @@ export async function POST(request: Request) {
         result = await prisma.lesson.create({
           data: {
             schoolId,
-            subjectId: data.subjectId,
-            teacherId: data.teacherId,
-            classId: data.classId ?? null,
+            subjectId: parseInt(data.subjectId, 10),
+            teacherId: teacherIdInt,
+            classId: data.classId ? parseInt(data.classId, 10) : null,
             title: data.title,
             note: data.note ?? "",
           },
@@ -272,10 +274,10 @@ export async function POST(request: Request) {
         result = await prisma.assignment.create({
           data: {
             schoolId,
-            subjectId: data.subjectId ?? null,
-            teacherId: data.teacherId,
-            classId: data.classId ?? null,
-            lessonId: data.lessonId ?? null,
+            subjectId: data.subjectId ? parseInt(data.subjectId, 10) : null,
+            teacherId: teacherIdInt,
+            classId: data.classId ? parseInt(data.classId, 10) : null,
+            lessonId: data.lessonId ? parseInt(data.lessonId, 10) : null,
             title: data.title,
             instruction: data.instruction,
             dueDate: new Date(data.dueDate),
@@ -289,9 +291,9 @@ export async function POST(request: Request) {
         result = await prisma.quiz.create({
           data: {
             schoolId,
-            subjectId: data.subjectId ?? null,
-            teacherId: data.teacherId,
-            classId: data.classId ?? null,
+            subjectId: data.subjectId ? parseInt(data.subjectId, 10) : null,
+            teacherId: teacherIdInt,
+            classId: data.classId ? parseInt(data.classId, 10) : null,
             title: data.title,
             instruction: data.instruction ?? null,
             totalMarks: data.totalMarks,
@@ -306,9 +308,9 @@ export async function POST(request: Request) {
         result = await prisma.onlineClass.create({
           data: {
             schoolId,
-            subjectId: data.subjectId ?? null,
-            teacherId: data.teacherId,
-            classId: data.classId ?? null,
+            subjectId: data.subjectId ? parseInt(data.subjectId, 10) : null,
+            teacherId: teacherIdInt,
+            classId: data.classId ? parseInt(data.classId, 10) : null,
             title: data.title,
             platform: data.platform ?? null,
             meetingLink: data.meetingLink ?? null,

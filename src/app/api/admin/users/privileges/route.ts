@@ -6,8 +6,8 @@ import { checkPrivilege } from "@/lib/privileges";
 import { createAuditLog } from "@/lib/audit-log";
 
 const assignSchema = z.object({
-  userId: z.string().min(1),
-  privilegeId: z.string().min(1),
+  userId: z.coerce.number().int().min(1),
+  privilegeId: z.coerce.number().int().min(1),
   isGranted: z.boolean(),
 });
 
@@ -19,10 +19,11 @@ export async function GET(request: Request) {
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const url = new URL(request.url);
-  const userId = url.searchParams.get("userId");
-  if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+  const rawUserId = url.searchParams.get("userId");
+  if (!rawUserId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+  const userId = Number(rawUserId);
 
-  const user = await prisma.user.findUnique({ where: { id: Number(userId) }, include: { role: true } });
+  const user = await prisma.user.findUnique({ where: { id: userId }, include: { role: true } });
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   const [allPrivileges, rolePrivs, userPrivs] = await Promise.all([
@@ -70,11 +71,11 @@ export async function POST(request: Request) {
 
   const { userId, privilegeId, isGranted } = parsed.data;
 
-  const user = await prisma.user.findUnique({ where: { id: Number(userId) }, select: { roleId: true } });
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { roleId: true } });
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   const rolePriv = user.roleId
-    ? await prisma.rolePrivilege.findFirst({ where: { roleId: user.roleId, privilegeId: Number(privilegeId) } })
+    ? await prisma.rolePrivilege.findFirst({ where: { roleId: user.roleId, privilegeId } })
     : null;
   const roleDefault = rolePriv?.isGranted ?? false;
 
@@ -93,7 +94,7 @@ export async function POST(request: Request) {
       });
     } else {
       await prisma.userPrivilege.create({
-        data: { userId, privilegeId: Number(privilegeId), isGranted, grantedBy: session.user.id },
+        data: { userId, privilegeId, isGranted, grantedBy: Number(session.user.id) },
       });
     }
   }
@@ -118,7 +119,8 @@ export async function DELETE(request: Request) {
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const payload = await request.json();
-  const { userId, privilegeId } = payload;
+  const userId = Number(payload.userId);
+  const privilegeId = Number(payload.privilegeId);
   if (!userId || !privilegeId) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }

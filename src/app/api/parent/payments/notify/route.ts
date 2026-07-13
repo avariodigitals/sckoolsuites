@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 
 const schema = z.object({
-  invoiceId: z.string().min(5),
+  invoiceId: z.coerce.number().int().min(1),
   amountPaid: z.coerce.number().positive(),
   paymentMethod: z.string().min(2),
   bankName: z.string().optional().default(""),

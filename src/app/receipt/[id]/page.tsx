@@ -7,7 +7,9 @@ import { PrintButton } from "@/components/print-button";
 
 export default async function ReceiptPage({ params }: { params: Promise<{ id: string }> }) {
   await requireUser();
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const id = parseInt(rawId, 10);
+  if (isNaN(id)) notFound();
 
   const receipt: any = await prisma.receipt.findFirst({
     where: { OR: [{ id }, { invoiceId: id }] },

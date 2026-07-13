@@ -292,7 +292,7 @@ export async function getUserPrivileges(userId: string | number): Promise<Record
     roleId
       ? prisma.rolePrivilege.findMany({ where: { roleId } })
       : Promise.resolve([] as any[]),
-    prisma.userPrivilege.findMany({ where: { userId } }),
+    prisma.userPrivilege.findMany({ where: { userId: Number(userId) } }),
     prisma.privilege.findMany(),
   ]);
 

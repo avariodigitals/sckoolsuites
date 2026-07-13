@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Upload } from "lucide-react";
 import { useActiveSession } from "@/components/active-session-provider";
 

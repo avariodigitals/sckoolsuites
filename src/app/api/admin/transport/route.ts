@@ -11,12 +11,12 @@ const vehicleSchema = z.object({
   type: z.string().min(1).max(50),
   plateNumber: z.string().min(1).max(50),
   capacity: z.number().int().min(1),
-  driverId: z.string().optional().nullable(),
+  driverId: z.coerce.number().int().optional().nullable(),
 });
 
 // Driver schema
 const driverSchema = z.object({
-  userId: z.string().min(1),
+  userId: z.coerce.number().int().min(1),
   licenseNumber: z.string().min(1).max(100),
   phone: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
@@ -25,14 +25,14 @@ const driverSchema = z.object({
 // Route schema
 const routeSchema = z.object({
   name: z.string().min(1).max(100),
-  vehicleId: z.string().optional().nullable(),
+  vehicleId: z.coerce.number().int().optional().nullable(),
   pickupTime: z.string().optional().nullable(),
   dropoffTime: z.string().optional().nullable(),
 });
 
 // Route Stop schema
 const routeStopSchema = z.object({
-  routeId: z.string().min(1),
+  routeId: z.coerce.number().int().min(1),
   name: z.string().min(1).max(100),
   address: z.string().min(1).max(255),
   order: z.number().int().min(0).default(0),
@@ -72,7 +72,6 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     }),
     prisma.routeStop.findMany({
-      where: { schoolId },
       orderBy: { order: "asc" },
     }),
     // Get users without drivers (available to be assigned as drivers)
@@ -242,7 +241,6 @@ export async function POST(request: Request) {
         const data = parsed.data;
         const stop = await prisma.routeStop.create({
           data: {
-            schoolId,
             routeId: data.routeId,
             name: data.name.trim(),
             address: data.address.trim(),

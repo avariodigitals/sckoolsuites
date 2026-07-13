@@ -25,10 +25,8 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = "default";
-
   const components = await prisma.feeComponent.findMany({
-    where: { schoolId, isActive: true },
+    where: { isActive: true },
     orderBy: { name: "asc" },
   });
 
@@ -57,7 +55,6 @@ export async function POST(request: Request) {
   try {
     const component = await prisma.feeComponent.create({
       data: {
-        schoolId,
         name: data.name.trim(),
         description: data.description?.trim() || null,
       },

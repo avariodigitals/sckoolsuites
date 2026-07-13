@@ -27,16 +27,16 @@ export async function POST() {
     if (currentSession) {
       await prisma.schoolSetting.upsert({
         where: { schoolId_key: { schoolId: school.id, key: "active_session_id" } },
-        update: { value: currentSession.id },
-        create: { schoolId: school.id, key: "active_session_id", value: currentSession.id },
+        update: { value: String(currentSession.id) },
+        create: { schoolId: school.id, key: "active_session_id", value: String(currentSession.id) },
       });
     }
 
     if (currentTerm) {
       await prisma.schoolSetting.upsert({
         where: { schoolId_key: { schoolId: school.id, key: "active_term_id" } },
-        update: { value: currentTerm.id },
-        create: { schoolId: school.id, key: "active_term_id", value: currentTerm.id },
+        update: { value: String(currentTerm.id) },
+        create: { schoolId: school.id, key: "active_term_id", value: String(currentTerm.id) },
       });
     }
 
@@ -44,13 +44,13 @@ export async function POST() {
     if (currentSession && currentTerm) {
       await prisma.schoolSetting.upsert({
         where: { schoolId_key: { schoolId: school.id, key: `user_context_session_${user.id}` } },
-        update: { value: currentSession.id },
-        create: { schoolId: school.id, key: `user_context_session_${user.id}`, value: currentSession.id },
+        update: { value: String(currentSession.id) },
+        create: { schoolId: school.id, key: `user_context_session_${user.id}`, value: String(currentSession.id) },
       });
       await prisma.schoolSetting.upsert({
         where: { schoolId_key: { schoolId: school.id, key: `user_context_term_${user.id}` } },
-        update: { value: currentTerm.id },
-        create: { schoolId: school.id, key: `user_context_term_${user.id}`, value: currentTerm.id },
+        update: { value: String(currentTerm.id) },
+        create: { schoolId: school.id, key: `user_context_term_${user.id}`, value: String(currentTerm.id) },
       });
     }
 

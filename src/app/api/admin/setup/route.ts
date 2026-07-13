@@ -3,7 +3,6 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
-import { buildFeeItemDedupeKey } from "@/lib/finance";
 import { getSetupWizardState, saveSetupWizardStatus, setupStepOrder } from "@/lib/setup-wizard";
 
 const requestSchema = z.object({
@@ -160,7 +159,7 @@ export async function POST(request: Request) {
       });
 
       const currentTerm = await prisma.term.upsert({
-        where: { schoolId_sessionId_name: { schoolId, sessionId: currentSession.id, name: termName } },
+        where: { sessionId_name: { sessionId: currentSession.id, name: termName } },
         update: {
           isCurrent: true,
           status: "ACTIVE",
@@ -185,14 +184,14 @@ export async function POST(request: Request) {
 
       await prisma.schoolSetting.upsert({
         where: { schoolId_key: { schoolId, key: "active_session_id" } },
-        update: { value: currentSession.id },
-        create: { schoolId, key: "active_session_id", value: currentSession.id },
+        update: { value: String(currentSession.id) },
+        create: { schoolId, key: "active_session_id", value: String(currentSession.id) },
       });
 
       await prisma.schoolSetting.upsert({
         where: { schoolId_key: { schoolId, key: "active_term_id" } },
-        update: { value: currentTerm.id },
-        create: { schoolId, key: "active_term_id", value: currentTerm.id },
+        update: { value: String(currentTerm.id) },
+        create: { schoolId, key: "active_term_id", value: String(currentTerm.id) },
       });
 
       await prisma.schoolSetting.upsert({
@@ -252,14 +251,15 @@ export async function POST(request: Request) {
           if (session.id === academic.currentSessionId) {
             await prisma.schoolSetting.upsert({
               where: { schoolId_key: { schoolId, key: "active_session_id" } },
-              update: { value: newSession.id },
-              create: { schoolId, key: "active_session_id", value: newSession.id },
+              update: { value: String(newSession.id) },
+              create: { schoolId, key: "active_session_id", value: String(newSession.id) },
             });
           }
         } else {
           // Update existing session
+          const sessionIdInt = parseInt(session.id, 10);
           await prisma.session.update({
-            where: { id: session.id },
+            where: { id: sessionIdInt },
             data: {
               name: session.name,
               startDate: session.startDate ? new Date(session.startDate) : undefined,
@@ -279,7 +279,7 @@ export async function POST(request: Request) {
             data: {
               schoolId,
               name: term.name,
-              sessionId: term.sessionId,
+              sessionId: parseInt(term.sessionId, 10),
               startDate: term.startDate ? new Date(term.startDate) : null,
               endDate: term.endDate ? new Date(term.endDate) : null,
               isCurrent: term.id === academic.currentTermId,
@@ -289,17 +289,18 @@ export async function POST(request: Request) {
           if (term.id === academic.currentTermId) {
             await prisma.schoolSetting.upsert({
               where: { schoolId_key: { schoolId, key: "active_term_id" } },
-              update: { value: newTerm.id },
-              create: { schoolId, key: "active_term_id", value: newTerm.id },
+              update: { value: String(newTerm.id) },
+              create: { schoolId, key: "active_term_id", value: String(newTerm.id) },
             });
           }
         } else {
           // Update existing term
+          const termIdInt = parseInt(term.id, 10);
           await prisma.term.update({
-            where: { id: term.id },
+            where: { id: termIdInt },
             data: {
               name: term.name,
-              sessionId: term.sessionId,
+              sessionId: parseInt(term.sessionId, 10),
               startDate: term.startDate ? new Date(term.startDate) : undefined,
               endDate: term.endDate ? new Date(term.endDate) : undefined,
               isCurrent: term.id === academic.currentTermId,
@@ -310,33 +311,35 @@ export async function POST(request: Request) {
 
       // Set active session/term from existing IDs
       if (academic.currentSessionId && !academic.currentSessionId.startsWith("session-")) {
+        const curSessionInt = parseInt(academic.currentSessionId, 10);
         await prisma.schoolSetting.upsert({
           where: { schoolId_key: { schoolId, key: "active_session_id" } },
           update: { value: academic.currentSessionId },
           create: { schoolId, key: "active_session_id", value: academic.currentSessionId },
         });
         await prisma.session.updateMany({
-          where: { schoolId, id: academic.currentSessionId },
+          where: { schoolId, id: curSessionInt },
           data: { isCurrent: true },
         });
         await prisma.session.updateMany({
-          where: { schoolId, id: { not: academic.currentSessionId } },
+          where: { schoolId, id: { not: curSessionInt } },
           data: { isCurrent: false },
         });
       }
 
       if (academic.currentTermId && !academic.currentTermId.startsWith("term-")) {
+        const curTermInt = parseInt(academic.currentTermId, 10);
         await prisma.schoolSetting.upsert({
           where: { schoolId_key: { schoolId, key: "active_term_id" } },
           update: { value: academic.currentTermId },
           create: { schoolId, key: "active_term_id", value: academic.currentTermId },
         });
         await prisma.term.updateMany({
-          where: { schoolId, id: academic.currentTermId },
+          where: { schoolId, id: curTermInt },
           data: { isCurrent: true },
         });
         await prisma.term.updateMany({
-          where: { schoolId, id: { not: academic.currentTermId } },
+          where: { schoolId, id: { not: curTermInt } },
           data: { isCurrent: false },
         });
       }
@@ -345,7 +348,7 @@ export async function POST(request: Request) {
     if (step === "classes-arms") {
       const rows = parseDelimitedRows(data.classArms);
       const requestedGroups = parseDelimitedList(data.classGroups);
-      const groupByName = new Map<string, string>();
+      const groupByName = new Map<string, number>();
 
       for (const groupName of requestedGroups) {
         const group = await prisma.classGroup.upsert({
@@ -362,17 +365,17 @@ export async function POST(request: Request) {
         const armsRaw = row.length >= 3 ? asString(row[2]) : asString(row[1]);
         if (!className) continue;
 
-        const groupId = groupName
-          ? groupByName.get(groupName.toLowerCase()) ?? (
+        const groupId: number | null = groupName
+          ? (groupByName.get(groupName.toLowerCase()) ?? (
             await prisma.classGroup.upsert({
               where: { schoolId_name: { schoolId, name: groupName } },
               update: {},
               create: { schoolId, name: groupName },
             })
-          ).id
+          ).id)
           : null;
 
-        if (groupName && groupId) {
+        if (groupName && groupId !== null) {
           groupByName.set(groupName.toLowerCase(), groupId);
         }
 
@@ -385,7 +388,7 @@ export async function POST(request: Request) {
         const arms = armsRaw.split(",").map((item: any) => item.trim()).filter(Boolean);
         for (const armName of arms) {
           await prisma.classArm.upsert({
-            where: { schoolId_classId_name: { schoolId, classId: classRow.id, name: armName } },
+            where: { classId_name: { classId: classRow.id, name: armName } },
             update: { isActive: true },
             create: { schoolId, classId: classRow.id, name: armName, isActive: true },
           });
@@ -440,23 +443,29 @@ export async function POST(request: Request) {
         const groupIdByName = new Map(groupsByName.map((item: any) => [item.name, item.id]));
         const primaryClassGroupId = classGroupNames.length ? groupIdByName.get(classGroupNames[0]) ?? null : null;
 
-        await prisma.subject.upsert({
-          where: { schoolId_name: { schoolId, name: subjectName } },
-          update: {
-            classId: primaryClassId,
-            classNames: classNames.length ? classNames.join(", ") : null,
-            classGroupId: primaryClassGroupId,
-            classGroupNames: classGroupNames.length ? classGroupNames.join(", ") : null,
-          },
-          create: {
-            schoolId,
-            name: subjectName,
-            classId: primaryClassId,
-            classNames: classNames.length ? classNames.join(", ") : null,
-            classGroupId: primaryClassGroupId,
-            classGroupNames: classGroupNames.length ? classGroupNames.join(", ") : null,
-          },
-        });
+        const existingSubject = await prisma.subject.findFirst({ where: { schoolId, name: subjectName }, select: { id: true } });
+        if (existingSubject) {
+          await prisma.subject.update({
+            where: { id: existingSubject.id },
+            data: {
+              classId: primaryClassId,
+              classNames: classNames.length ? classNames.join(", ") : null,
+              classGroupId: primaryClassGroupId,
+              classGroupNames: classGroupNames.length ? classGroupNames.join(", ") : null,
+            },
+          });
+        } else {
+          await prisma.subject.create({
+            data: {
+              schoolId,
+              name: subjectName,
+              classId: primaryClassId,
+              classNames: classNames.length ? classNames.join(", ") : null,
+              classGroupId: primaryClassGroupId,
+              classGroupNames: classGroupNames.length ? classGroupNames.join(", ") : null,
+            },
+          });
+        }
       }
     }
 
@@ -505,7 +514,7 @@ export async function POST(request: Request) {
       const groupRows = parseDelimitedRows(data.feeGroups);
       const itemRows = parseDelimitedRows(data.feeItems);
 
-      const groupByName = new Map<string, string>();
+      const groupByName = new Map<string, number>();
       for (const row of groupRows) {
         const name = asString(row[0]);
         const code = asString(row[1]) || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -519,6 +528,7 @@ export async function POST(request: Request) {
         });
         groupByName.set(name.toLowerCase(), group.id);
       }
+
 
       for (const row of itemRows) {
         const groupName = asString(row[0]);
@@ -542,61 +552,55 @@ export async function POST(request: Request) {
           sessionName ? prisma.session.findFirst({ where: { schoolId, name: sessionName }, select: { id: true } }) : Promise.resolve(null),
         ]);
 
-        const sessionId = sessionRow?.id || currentSessionId;
+        const sessionId: number | null = sessionRow?.id ?? (currentSessionId ? parseInt(currentSessionId, 10) : null);
         if (!sessionId) continue;
 
         const termRow = termName
           ? await prisma.term.findFirst({ where: { schoolId, sessionId, name: termName }, select: { id: true } })
           : null;
-        const termId = termRow?.id || currentTermId;
+        const termId: number | null = termRow?.id ?? (currentTermId ? parseInt(currentTermId, 10) : null);
         if (!termId) continue;
 
         const armRow = armName && classRow
           ? await prisma.classArm.findFirst({ where: { schoolId, classId: classRow.id, name: armName }, select: { id: true } })
           : null;
 
-        const dedupeKey = buildFeeItemDedupeKey({
-          feeGroupId,
-          name,
-          classId: classRow?.id ?? null,
-          armId: armRow?.id ?? null,
-          sessionId,
-          termId,
-        });
-
-        await prisma.feeItem.upsert({
-          where: { schoolId_dedupeKey: { schoolId, dedupeKey } },
-          update: {
-            category: category || groupName,
-            amount,
-            description: description || null,
-            isOptional,
-            dueDate: dueDate ? new Date(dueDate) : null,
-            sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
-            isActive: true,
-            classId: classRow?.id ?? null,
-            armId: armRow?.id ?? null,
-            sessionId,
-            termId,
-          },
-          create: {
-            schoolId,
-            feeGroupId,
-            category: category || groupName,
-            name,
-            amount,
-            description: description || null,
-            isOptional,
-            dueDate: dueDate ? new Date(dueDate) : null,
-            sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
-            isActive: true,
-            classId: classRow?.id ?? null,
-            armId: armRow?.id ?? null,
-            sessionId,
-            termId,
-            dedupeKey,
-          },
-        });
+        const existingFeeItem = await prisma.feeItem.findFirst({ where: { schoolId, feeGroupId, name, sessionId, termId }, select: { id: true } });
+        if (existingFeeItem) {
+          await prisma.feeItem.update({
+            where: { id: existingFeeItem.id },
+            data: {
+              category: category || groupName,
+              amount,
+              description: description || null,
+              isOptional,
+              dueDate: dueDate ? new Date(dueDate) : null,
+              sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
+              isActive: true,
+              classId: classRow?.id ?? null,
+              armId: armRow?.id ?? null,
+            },
+          });
+        } else {
+          await prisma.feeItem.create({
+            data: {
+              schoolId,
+              feeGroupId,
+              category: category || groupName,
+              name,
+              amount,
+              description: description || null,
+              isOptional,
+              dueDate: dueDate ? new Date(dueDate) : null,
+              sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
+              isActive: true,
+              classId: classRow?.id ?? null,
+              armId: armRow?.id ?? null,
+              sessionId,
+              termId,
+            },
+          });
+        }
       }
     }
 

@@ -76,9 +76,9 @@ export async function POST(request: Request) {
   ];
 
   await Promise.all(values.map((item) => prisma.schoolSetting.upsert({
-    where: { key: item.key },
+    where: { schoolId_key: { schoolId: "default", key: item.key } },
     update: { value: item.value },
-    create: { key: item.key, value: item.value },
+    create: { schoolId: "default", key: item.key, value: item.value },
   })));
 
   return NextResponse.json({ ok: true });

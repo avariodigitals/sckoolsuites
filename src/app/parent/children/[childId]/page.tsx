@@ -100,8 +100,8 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
       currentTermName={context.term?.name}
       sessions={core.sessions.map((item: any) => ({ id: item.id, name: item.name }))}
       terms={core.terms.map((item: any) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
-      selectedSessionId={context.session?.id}
-      selectedTermId={context.term?.id}
+      selectedSessionId={context.session?.id != null ? String(context.session.id) : undefined}
+      selectedTermId={context.term?.id != null ? String(context.term.id) : undefined}
       primaryColor={core.school?.branding?.primaryColor}
       secondaryColor={core.school?.branding?.secondaryColor}
     >
@@ -115,7 +115,7 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
           <div className="flex flex-wrap gap-2 text-xs">
             <ChildWorkspaceSwitcher
               childOptions={linkedChildren.map((item: any) => ({ id: item.id, name: item.user.name }))}
-              currentChildId={child.id}
+              currentChildId={String(child.id)}
             />
             <Link href="/parent/children" className="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-white">Back to children</Link>
             <Link href="#lessons" className="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-white">Lessons</Link>

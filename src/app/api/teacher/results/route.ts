@@ -37,12 +37,12 @@ export async function GET(request: Request) {
 
     if (!isAdmin && teacher) {
       const assignedClasses = await prisma.class.findMany({
-        where: { OR: [{ teacherId: teacher.id }, { classArms: { some: { teacherId: teacher.id } } }] },
-        select: { id: true, classArms: { select: { id: true } } },
+        where: { OR: [{ teacherId: teacher.id }, { arms: { some: { teacherId: teacher.id } } }] },
+        select: { id: true, arms: { select: { id: true } } },
       });
 
       const classIds = assignedClasses.map((item: any) => item.id);
-      const armIds = assignedClasses.flatMap((item: any) => item.classArms.map((arm: any) => arm.id));
+      const armIds = assignedClasses.flatMap((item: any) => item.arms.map((arm: any) => arm.id));
 
       where.student = {
         OR: [{ classId: { in: classIds } }, { armId: { in: armIds } }],
