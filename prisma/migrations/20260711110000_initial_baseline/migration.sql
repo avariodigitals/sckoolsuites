@@ -2,25 +2,53 @@
 CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "AcademicStatus" AS ENUM ('DRAFT', 'ACTIVE', 'CLOSED', 'ARCHIVED');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'AcademicStatus') THEN
+    CREATE TYPE "AcademicStatus" AS ENUM ('DRAFT', 'ACTIVE', 'CLOSED', 'ARCHIVED');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "PaymentStatus" AS ENUM ('UNPAID', 'PART_PAYMENT', 'PAID', 'PENDING', 'REVERSED');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'PaymentStatus') THEN
+    CREATE TYPE "PaymentStatus" AS ENUM ('UNPAID', 'PART_PAYMENT', 'PAID', 'PENDING', 'REVERSED');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "PaymentProofStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'PaymentProofStatus') THEN
+    CREATE TYPE "PaymentProofStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "AttendanceStatus" AS ENUM ('PRESENT', 'ABSENT', 'LATE', 'EXCUSED');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'AttendanceStatus') THEN
+    CREATE TYPE "AttendanceStatus" AS ENUM ('PRESENT', 'ABSENT', 'LATE', 'EXCUSED');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "MessageStatus" AS ENUM ('SENT', 'READ', 'REPLIED', 'CLOSED');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'MessageStatus') THEN
+    CREATE TYPE "MessageStatus" AS ENUM ('SENT', 'READ', 'REPLIED', 'CLOSED');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "ComplaintStatus" AS ENUM ('OPEN', 'IN_REVIEW', 'RESOLVED', 'CLOSED');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ComplaintStatus') THEN
+    CREATE TYPE "ComplaintStatus" AS ENUM ('OPEN', 'IN_REVIEW', 'RESOLVED', 'CLOSED');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE IF NOT EXISTS "ResultStatus" AS ENUM ('DRAFT', 'APPROVED', 'PUBLISHED', 'REJECTED');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ResultStatus') THEN
+    CREATE TYPE "ResultStatus" AS ENUM ('DRAFT', 'APPROVED', 'PUBLISHED', 'REJECTED');
+  END IF;
+END $$;
 
 -- CreateTable
 CREATE TABLE "school" (
