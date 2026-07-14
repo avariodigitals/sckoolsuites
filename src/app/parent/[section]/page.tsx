@@ -637,7 +637,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                     <p className="text-3xl font-extrabold">{attendancePercent.toFixed(1)}%</p>
                     <p className="text-xs text-white/80">attendance rate</p>
                   </div>
-                  <ParentAttendanceNotify children={attendanceChildren} />
+                  <ParentAttendanceNotify childOptions={attendanceChildren} />
                 </div>
               </div>
             </div>

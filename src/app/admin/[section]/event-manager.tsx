@@ -159,7 +159,7 @@ export function EventManager() {
       ) : events.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
           <Calendar className="h-10 w-10 text-slate-300" />
-          <p className="text-sm text-slate-500">No events created yet. Click "Add Event" to create one.</p>
+          <p className="text-sm text-slate-500">No events created yet. Click &ldquo;Add Event&rdquo; to create one.</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

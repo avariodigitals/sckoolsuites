@@ -87,7 +87,7 @@ export function ParentLmsPanel({
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">Learning Management System</p>
             <h2 className="mt-2 text-3xl font-bold">Coming Soon</h2>
             <p className="mx-auto mt-3 max-w-md text-sm text-white/80">
-              We're building a powerful LMS experience for parents to monitor assignments, lessons,
+              We&apos;re building a powerful LMS experience for parents to monitor assignments, lessons,
               quizzes, and live classes — all in one place.
             </p>
           </div>
@@ -130,10 +130,10 @@ export function ParentLmsPanel({
           <Clock className="h-6 w-6 text-slate-400" />
         </div>
         <p className="text-sm font-medium text-slate-600">
-          You'll be notified when the LMS portal goes live for your child's class.
+          You&apos;ll be notified when the LMS portal goes live for your child&apos;s class.
         </p>
         <p className="text-xs text-slate-400">
-          In the meantime, assignments and lesson notes are shared through the school announcements and your child's teacher.
+          In the meantime, assignments and lesson notes are shared through the school announcements and your child&apos;s teacher.
         </p>
       </div>
     </section>

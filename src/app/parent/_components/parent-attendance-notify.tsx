@@ -9,12 +9,12 @@ type ChildOption = {
   className: string;
 };
 
-export function ParentAttendanceNotify({ children }: { children: ChildOption[] }) {
+export function ParentAttendanceNotify({ childOptions }: { childOptions: ChildOption[] }) {
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
-    studentId: children[0]?.id ?? 0,
+    studentId: childOptions[0]?.id ?? 0,
     date: new Date().toISOString().split("T")[0],
     reason: "Illness",
     notes: "",
@@ -48,7 +48,7 @@ export function ParentAttendanceNotify({ children }: { children: ChildOption[] }
     }
   }
 
-  if (!children.length) return null;
+  if (!childOptions.length) return null;
 
   return (
     <>
@@ -79,7 +79,7 @@ export function ParentAttendanceNotify({ children }: { children: ChildOption[] }
                   value={form.studentId}
                   onChange={(e) => setForm((s) => ({ ...s, studentId: Number(e.target.value) }))}
                 >
-                  {children.map((child) => (
+                  {childOptions.map((child) => (
                     <option key={child.id} value={child.id}>{child.name} - {child.className}</option>
                   ))}
                 </select>
@@ -135,7 +135,7 @@ export function ParentAttendanceNotify({ children }: { children: ChildOption[] }
               )}
 
               <p className="text-xs text-slate-500">
-                This will notify the class teacher, admin, head of school and principal about your child's absence.
+                This will notify the class teacher, admin, head of school and principal about your child&apos;s absence.
               </p>
             </div>
           </div>
