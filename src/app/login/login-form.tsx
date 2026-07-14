@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useTransition, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,8 +19,16 @@ type FormValues = z.infer<typeof schema>;
 export function LoginForm() {
   const [pending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
-  const searchParams = useSearchParams();
-  const timedOut = searchParams.get("reason") === "inactivity";
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("login_reason") === "inactivity") {
+        setTimedOut(true);
+        sessionStorage.removeItem("login_reason");
+      }
+    } catch {}
+  }, []);
   const {
     register,
     handleSubmit,

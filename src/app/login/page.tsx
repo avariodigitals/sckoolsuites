@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
 import Image from "next/image";
 import { auth } from "@/auth";
 import { LoginForm } from "@/app/login/login-form";
@@ -68,9 +67,7 @@ export default async function LoginPage() {
         </div>
 
         <div className="rounded-2xl bg-white/90 p-8 shadow-lg ring-1 ring-slate-900/5 backdrop-blur-sm">
-          <Suspense fallback={null}>
-            <LoginForm />
-          </Suspense>
+          <LoginForm />
         </div>
 
         <div className="space-y-1 text-center">

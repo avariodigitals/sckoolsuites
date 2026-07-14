@@ -43,7 +43,8 @@ export function InactivityTimer() {
 
       if (remaining <= 0) {
         setShowWarning(false);
-        signOut({ callbackUrl: "/login?reason=inactivity" });
+        try { sessionStorage.setItem("login_reason", "inactivity"); } catch {}
+        signOut({ callbackUrl: "/login" });
       } else if (remaining <= WARNING_MS) {
         setShowWarning(true);
         setRemainingMs(remaining);
