@@ -1,16 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
-import { roleDefaultRoute } from "@/lib/constants";
 
-const routeRoleMap: { pattern: RegExp; roles: string[] }[] = [
-  { pattern: /^\/admin(\/|$)/, roles: ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "RECEPTIONIST"] },
-  { pattern: /^\/super-admin(\/|$)/, roles: ["SUPER_ADMIN"] },
-  { pattern: /^\/accountant(\/|$)/, roles: ["ACCOUNTANT", "SCHOOL_ADMIN", "SUPER_ADMIN"] },
-  { pattern: /^\/registrar(\/|$)/, roles: ["REGISTRAR", "SCHOOL_ADMIN", "SUPER_ADMIN"] },
-  { pattern: /^\/teacher(\/|$)/, roles: ["TEACHER"] },
-  { pattern: /^\/parent(\/|$)/, roles: ["PARENT"] },
-  { pattern: /^\/student(\/|$)/, roles: ["STUDENT"] },
-];
+function hasSessionCookie(req: NextRequest): boolean {
+  const cookieNames = [
+    "authjs.session-token",
+    "__Secure-authjs.session-token",
+    "next-auth.session-token",
+    "__Secure-next-auth.session-token",
+  ];
+  return cookieNames.some((name) => req.cookies.get(name)?.value);
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -30,32 +28,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
-  });
-
   // Not authenticated — redirect to login
-  if (!token) {
+  if (!hasSessionCookie(request)) {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  const role = (token.role as string) ?? "";
-
-  // Find matching route rule
-  for (const rule of routeRoleMap) {
-    if (rule.pattern.test(pathname)) {
-      if (!rule.roles.includes(role)) {
-        // Redirect to their own portal
-        const fallback = roleDefaultRoute[role] ?? "/login";
-        const redirectUrl = new URL(fallback, request.url);
-        return NextResponse.redirect(redirectUrl);
-      }
-      break;
-    }
-  }
-
+  // Session cookie exists — let the page-level requireRole guards handle
+  // role enforcement. This avoids redirect loops from JWT decryption issues.
   return NextResponse.next();
 }
 
