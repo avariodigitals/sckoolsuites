@@ -112,7 +112,7 @@ export async function GET(request: Request) {
       email: student.user.email,
       gender: student.gender,
       age: student.age,
-      dateOfBirth: student.dateOfBirth ? student.dateOfBirth.toISOString() : null,
+      dateOfBirth: (student as any).dateOfBirth ? new Date((student as any).dateOfBirth).toISOString() : null,
       classId: student.classId,
       className: student.class?.name ?? null,
       armId: student.armId,
@@ -304,8 +304,7 @@ export async function POST(request: Request) {
         guardianInfo.isNew = true;
       }
 
-      const student = await tx.student.create({
-        data: {
+      const studentData: Record<string, unknown> = {
           schoolId,
           userId: user.id,
           parentId,
@@ -317,11 +316,16 @@ export async function POST(request: Request) {
           lastName,
           gender: data.gender,
           age: data.age,
-          dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
           sportHouse: data.sportHouse?.trim() || null,
           coCurricular: data.coCurricular?.trim() || null,
           responsibilities: data.responsibilities?.trim() || null,
-        },
+      };
+      if (data.dateOfBirth) {
+        studentData.dateOfBirth = new Date(data.dateOfBirth);
+      }
+
+      const student = await tx.student.create({
+        data: studentData as any,
       });
 
       if (createdGuardian && parentId) {
@@ -444,7 +448,7 @@ export async function POST(request: Request) {
         email: result.user.email,
         gender: result.student.gender,
         age: result.student.age,
-        dateOfBirth: result.student.dateOfBirth ? result.student.dateOfBirth.toISOString() : null,
+        dateOfBirth: (result.student as any).dateOfBirth ? new Date((result.student as any).dateOfBirth).toISOString() : null,
         classId: result.student.classId,
         armId: result.student.armId,
         parentId: result.student.parentId,
