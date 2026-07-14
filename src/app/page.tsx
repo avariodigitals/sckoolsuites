@@ -16,7 +16,7 @@ export default async function Home() {
       where: { id: "default" },
     });
     admin = await prisma.user.findFirst({
-      where: { role: { name: "SCHOOL_ADMIN" } },
+      where: { role: { name: { in: ["SCHOOL_ADMIN", "SUPER_ADMIN"] } } },
     });
   } catch {
     redirect("/setup");
