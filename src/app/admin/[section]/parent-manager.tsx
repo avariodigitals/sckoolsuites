@@ -196,6 +196,28 @@ export function ParentManager() {
     }
   }
 
+  async function handleHardDelete(id: string, name: string) {
+    if (!window.confirm(`Permanently DELETE ${name}? This will remove the parent and their user account. This cannot be undone.`)) {
+      return;
+    }
+
+    setStatus("");
+    try {
+      const response = await fetch(`/api/admin/parents/${id}?permanent=true`, { method: "DELETE" });
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setStatus(payload?.error ?? "Failed to delete parent.");
+        return;
+      }
+
+      setStatus("Parent permanently deleted.");
+      await loadData();
+    } catch {
+      setStatus("An error occurred.");
+    }
+  }
+
   function startEdit(parent: Parent) {
     setEditingId(parent.id);
     setForm({
@@ -365,6 +387,16 @@ export function ParentManager() {
                             onClick={() => handleDeactivate(parent.id, parent.name)}
                           >
                             Deactivate
+                          </Button>
+                        )}
+                        {parent.children.length === 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-rose-600 hover:bg-rose-50"
+                            onClick={() => handleHardDelete(parent.id, parent.name)}
+                          >
+                            Delete
                           </Button>
                         )}
                         {unlinkedStudents.length > 0 && (

@@ -115,6 +115,32 @@ function calcAgeFromDOB(dob: string): number {
   return Math.max(0, age);
 }
 
+function calcDetailedAge(dob: string): string {
+  const birth = new Date(dob);
+  const now = new Date();
+  if (birth > now) return "0 years";
+
+  let years = now.getFullYear() - birth.getFullYear();
+  let months = now.getMonth() - birth.getMonth();
+  let days = now.getDate() - birth.getDate();
+
+  if (days < 0) {
+    months--;
+    const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    days += prevMonth.getDate();
+  }
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+
+  const parts: string[] = [];
+  if (years > 0) parts.push(`${years} year${years !== 1 ? "s" : ""}`);
+  if (months > 0) parts.push(`${months} month${months !== 1 ? "s" : ""}`);
+  if (days > 0) parts.push(`${days} day${days !== 1 ? "s" : ""}`);
+  return parts.length > 0 ? parts.join(" ") : "0 days";
+}
+
 export function StudentManager({ sessionId, termId }: { sessionId?: string | null; termId?: string | null }) {
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
@@ -407,8 +433,8 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
               max={new Date().toISOString().split("T")[0]}
             />
             {form.dateOfBirth && (
-              <div className="flex items-center text-sm text-slate-500">
-                Age: {calcAgeFromDOB(form.dateOfBirth)} years
+              <div className="flex items-center text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
+                Age: <span className="font-medium text-slate-900 ml-1">{calcDetailedAge(form.dateOfBirth)}</span>
               </div>
             )}
             <select
@@ -508,6 +534,7 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
                 <th className="px-2 py-2">Name</th>
                 <th className="px-2 py-2">Email</th>
                 <th className="px-2 py-2">Gender</th>
+                <th className="px-2 py-2">Date of Birth</th>
                 <th className="px-2 py-2">Age</th>
                 <th className="px-2 py-2">Class</th>
                 <th className="px-2 py-2">Parent</th>
@@ -518,7 +545,7 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
             <tbody>
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-2 py-4 text-center text-slate-500">
+                  <td colSpan={10} className="px-2 py-4 text-center text-slate-500">
                     No students found.
                   </td>
                 </tr>
@@ -531,7 +558,12 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
                     <td className="px-2 py-2 font-medium text-slate-900">{student.name}</td>
                     <td className="px-2 py-2 text-slate-600">{student.email}</td>
                     <td className="px-2 py-2">{student.gender}</td>
-                    <td className="px-2 py-2">{student.age}</td>
+                    <td className="px-2 py-2 text-slate-600 whitespace-nowrap">
+                      {student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "-"}
+                    </td>
+                    <td className="px-2 py-2 text-slate-600 whitespace-nowrap">
+                      {student.dateOfBirth ? calcDetailedAge(student.dateOfBirth) : `${student.age} years`}
+                    </td>
                     <td className="px-2 py-2">{student.className ?? "-"}</td>
                     <td className="px-2 py-2">{student.parentName ?? "-"}</td>
                     <td className="px-2 py-2">

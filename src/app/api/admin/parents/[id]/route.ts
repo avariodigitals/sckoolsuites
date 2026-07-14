@@ -162,7 +162,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 }
 
-export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   const allowed = await crudPrivilege(session, "DELETE", "parents");
   if (!allowed) {
@@ -173,6 +173,8 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   }
 
   const { id } = await params;
+  const url = new URL(request.url);
+  const permanent = url.searchParams.get("permanent") === "true";
 
   let parentId: number;
   try {
@@ -195,12 +197,41 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   // Check if parent has linked students
   if (existing.students.length > 0) {
     return NextResponse.json(
-      { error: "Cannot deactivate parent with linked students. Unlink all children first." },
+      { error: "Cannot delete parent with linked students. Unlink all children first." },
       { status: 409 }
     );
   }
 
   try {
+    if (permanent) {
+      // Hard delete: remove studentGuardian records, parent, and user
+      await prisma.studentGuardian.deleteMany({
+        where: { parentId },
+      });
+      await prisma.parent.delete({
+        where: { id: parentId },
+      });
+      await prisma.user.delete({
+        where: { id: existing.userId },
+      });
+
+      await createAuditLog({
+        schoolId,
+        actorUserId: session.user.id,
+        action: "PARENT_DELETED",
+        targetType: "Parent",
+        targetId: id,
+        metadata: {
+          parentId: id,
+          userId: existing.userId,
+          name: existing.user.name,
+          email: existing.user.email,
+        },
+      });
+
+      return NextResponse.json({ ok: true, deleted: true });
+    }
+
     // Soft delete by deactivating user
     await prisma.user.update({
       where: { id: existing.userId },

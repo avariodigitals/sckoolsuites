@@ -81,6 +81,7 @@ export function BasicTab({ student, studentId, onUpdate }: { student: any; stude
     lastName: student.lastName ?? "",
     gender: student.gender ?? "MALE",
     age: String(student.age ?? ""),
+    dateOfBirth: student.dateOfBirth ? String(student.dateOfBirth).split("T")[0] : "",
     sportHouse: student.sportHouse ?? "",
     coCurricular: student.coCurricular ?? "",
     responsibilities: student.responsibilities ?? "",
@@ -99,6 +100,7 @@ export function BasicTab({ student, studentId, onUpdate }: { student: any; stude
           lastName: form.lastName.trim(),
           gender: form.gender,
           age: Number(form.age) || 0,
+          dateOfBirth: form.dateOfBirth || null,
           sportHouse: form.sportHouse.trim() || null,
           coCurricular: form.coCurricular.trim() || null,
           responsibilities: form.responsibilities.trim() || null,
@@ -127,6 +129,7 @@ export function BasicTab({ student, studentId, onUpdate }: { student: any; stude
       lastName: student.lastName ?? "",
       gender: student.gender ?? "MALE",
       age: String(student.age ?? ""),
+      dateOfBirth: student.dateOfBirth ? String(student.dateOfBirth).split("T")[0] : "",
       sportHouse: student.sportHouse ?? "",
       coCurricular: student.coCurricular ?? "",
       responsibilities: student.responsibilities ?? "",
@@ -168,8 +171,17 @@ export function BasicTab({ student, studentId, onUpdate }: { student: any; stude
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-500">Age</label>
-                <input type="number" value={form.age} onChange={(e) => setForm((p) => ({ ...p, age: e.target.value }))} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
+                <label className="mb-1 block text-xs font-medium text-slate-500">Date of Birth</label>
+                <input type="date" value={form.dateOfBirth} max={new Date().toISOString().split("T")[0]} onChange={(e) => {
+                  const dob = e.target.value;
+                  const ageNum = dob ? (() => { const b = new Date(dob); const n = new Date(); let a = n.getFullYear() - b.getFullYear(); const m = n.getMonth() - b.getMonth(); if (m < 0 || (m === 0 && n.getDate() < b.getDate())) a--; return Math.max(0, a); })() : "";
+                  setForm((p) => ({ ...p, dateOfBirth: dob, age: String(ageNum) }));
+                }} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
+                {form.dateOfBirth && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    Age: {(() => { const b = new Date(form.dateOfBirth); const n = new Date(); let y = n.getFullYear() - b.getFullYear(); let mo = n.getMonth() - b.getMonth(); let d = n.getDate() - b.getDate(); if (d < 0) { mo--; d += new Date(n.getFullYear(), n.getMonth(), 0).getDate(); } if (mo < 0) { y--; mo += 12; } const p: string[] = []; if (y > 0) p.push(`${y} yr${y !== 1 ? "s" : ""}`); if (mo > 0) p.push(`${mo} mo${mo !== 1 ? "s" : ""}`); if (d > 0) p.push(`${d} day${d !== 1 ? "s" : ""}`); return p.join(" ") || "0 days"; })()}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500">Sport House</label>
@@ -190,7 +202,8 @@ export function BasicTab({ student, studentId, onUpdate }: { student: any; stude
               <FieldCard label="Middle Name" value={student.middleName} />
               <FieldCard label="Last Name" value={student.lastName} />
               <FieldCard label="Gender" value={student.gender} />
-              <FieldCard label="Age" value={student.age} />
+              <FieldCard label="Date of Birth" value={student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "-"} />
+              <FieldCard label="Age" value={student.dateOfBirth ? (() => { const b = new Date(student.dateOfBirth); const n = new Date(); let y = n.getFullYear() - b.getFullYear(); let mo = n.getMonth() - b.getMonth(); let d = n.getDate() - b.getDate(); if (d < 0) { mo--; d += new Date(n.getFullYear(), n.getMonth(), 0).getDate(); } if (mo < 0) { y--; mo += 12; } const p: string[] = []; if (y > 0) p.push(`${y} year${y !== 1 ? "s" : ""}`); if (mo > 0) p.push(`${mo} month${mo !== 1 ? "s" : ""}`); if (d > 0) p.push(`${d} day${d !== 1 ? "s" : ""}`); return p.join(" ") || "0 days"; })() : `${student.age} years`} />
               <FieldCard label="Sport House" value={student.sportHouse} />
               <FieldCard label="Co-curricular" value={student.coCurricular} />
               <FieldCard label="Responsibilities" value={student.responsibilities} />
@@ -559,7 +572,7 @@ export function SiblingTab({ data }: { data: any }) {
           <div key={sib.id} className="rounded-lg border border-slate-200 p-4 text-sm">
             <div className="font-medium text-slate-900">{sib.user?.name}</div>
             <div className="text-slate-600">{sib.class?.name ?? "No class"}</div>
-            <div className="text-slate-500">{sib.gender} · Age {sib.age}</div>
+            <div className="text-slate-500">{sib.gender} · {sib.dateOfBirth ? (() => { const b = new Date(sib.dateOfBirth); const n = new Date(); let y = n.getFullYear() - b.getFullYear(); let mo = n.getMonth() - b.getMonth(); let d = n.getDate() - b.getDate(); if (d < 0) { mo--; d += new Date(n.getFullYear(), n.getMonth(), 0).getDate(); } if (mo < 0) { y--; mo += 12; } return `${y}y ${mo}m`; })() : `Age ${sib.age}`}</div>
           </div>
         ))}
       </div>
