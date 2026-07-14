@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { MessageStatus } from "@/lib/db-types";
 import { createAuditLog } from "@/lib/audit-log";
+import { createNotificationsForRoles } from "@/lib/notification-helpers";
 import { prisma } from "@/lib/db";
 
 const createSchema = z.object({
@@ -81,6 +82,17 @@ export async function POST(request: Request) {
       recipient: created.recipient,
       subject: created.subject,
     },
+  });
+
+  // Notify admin staff about the new parent message
+  await createNotificationsForRoles("default", ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"], {
+    type: "message",
+    title: `New Message from Parent: ${created.subject}`,
+    body: `A parent has sent a message regarding "${created.subject}".`,
+    link: "/admin/messages",
+    actorUserId: session.user.id,
+    excludeActorUserId: session.user.id,
+    metadata: { messageId: created.id, parentId: parent.id, subject: created.subject },
   });
 
   return NextResponse.json({

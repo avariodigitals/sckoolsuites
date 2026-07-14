@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { AnnouncementViewModal, type AnnouncementData } from "@/components/ui/announcement-view-modal";
 
 type Announcement = {
   id: string;
@@ -56,6 +57,7 @@ export function AnnouncementManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [viewingAnnouncement, setViewingAnnouncement] = useState<AnnouncementData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredAnnouncements = useMemo(() => {
@@ -251,6 +253,7 @@ export function AnnouncementManager() {
   }
 
   return (
+    <>
     <div className="space-y-4">
       {status && (
         <div className={`rounded-lg border px-3 py-2 text-sm ${status.includes("success") || status.includes("created") || status.includes("deleted") || status.includes("updated") ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"}`}>
@@ -408,6 +411,13 @@ export function AnnouncementManager() {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => setViewingAnnouncement(announcement)}
+                    >
+                      View
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => startEdit(announcement)}
                     >
                       Edit
@@ -426,6 +436,12 @@ export function AnnouncementManager() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+
+      <AnnouncementViewModal
+        announcement={viewingAnnouncement}
+        onClose={() => setViewingAnnouncement(null)}
+      />
+    </>
   );
 }

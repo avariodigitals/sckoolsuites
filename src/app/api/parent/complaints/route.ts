@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { ComplaintStatus } from "@/lib/db-types";
 import { createAuditLog } from "@/lib/audit-log";
+import { createNotificationsForRoles } from "@/lib/notification-helpers";
 import { prisma } from "@/lib/db";
 
 const createSchema = z.object({
@@ -84,6 +85,17 @@ export async function POST(request: Request) {
       subject: created.subject,
       status: created.status,
     },
+  });
+
+  // Notify admin staff about the new parent complaint
+  await createNotificationsForRoles("default", ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"], {
+    type: "complaint",
+    title: `New Complaint: ${created.subject}`,
+    body: `A parent has filed a complaint regarding "${created.subject}" (${created.category}).`,
+    link: "/admin/complaints",
+    actorUserId: session.user.id,
+    excludeActorUserId: session.user.id,
+    metadata: { complaintId: created.id, parentId: parent.id, category: created.category, subject: created.subject },
   });
 
   return NextResponse.json({

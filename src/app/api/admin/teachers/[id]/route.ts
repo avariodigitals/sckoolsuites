@@ -9,6 +9,9 @@ import { parseNumericId } from "@/lib/id-helpers";
 const updateSchema = z.object({
   name: z.string().min(2).max(120).optional(),
   isActive: z.boolean().optional(),
+  designation: z.string().optional().nullable(),
+  reportsToId: z.number().int().optional().nullable(),
+  classGroupId: z.number().int().optional().nullable(),
 });
 
 const assignSchema = z.object({
@@ -260,6 +263,19 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           ...(data.name !== undefined ? { name: data.name.trim() } : {}),
           ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
         },
+      });
+    }
+
+    // Update teacher designation/reportsTo/classGroup if provided
+    const teacherUpdate: Record<string, any> = {};
+    if (data.designation !== undefined) teacherUpdate.designation = data.designation || null;
+    if (data.reportsToId !== undefined) teacherUpdate.reportsToId = data.reportsToId || null;
+    if (data.classGroupId !== undefined) teacherUpdate.classGroupId = data.classGroupId || null;
+
+    if (Object.keys(teacherUpdate).length > 0) {
+      await prisma.teacher.update({
+        where: { id: teacherId },
+        data: teacherUpdate,
       });
     }
 

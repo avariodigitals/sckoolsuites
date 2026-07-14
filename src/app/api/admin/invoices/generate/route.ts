@@ -3,6 +3,7 @@ import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
+import { createNotificationsForParents } from "@/lib/notification-helpers";
 import { prisma } from "@/lib/db";
 import { getSetupWizardState } from "@/lib/setup-wizard";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
@@ -185,6 +186,17 @@ export async function POST(request: Request) {
       generatedFeeItemIds: netNewItems.map((item) => item.id),
       invoiceNumber: invoice.invoiceNumber,
     },
+  });
+
+  // Notify parent about new invoice
+  await createNotificationsForParents("default", [student.id], {
+    type: "invoice",
+    title: "New Fee Invoice Generated",
+    body: `A new fee invoice (${invoice.invoiceNumber}) for ${invoice.totalAmount} has been generated. Please review it in the Fees section.`,
+    link: "/parent/fees",
+    actorUserId: session.user.id,
+    excludeActorUserId: session.user.id,
+    metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, totalAmount: invoice.totalAmount },
   });
 
   return NextResponse.json({

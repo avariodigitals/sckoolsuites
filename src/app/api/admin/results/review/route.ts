@@ -8,6 +8,7 @@ import { getClassGroupGradingProfiles, resolveClassGroupProfile } from "@/lib/cl
 import { calculateGradeFromBands } from "@/lib/grades";
 import { prisma } from "@/lib/db";
 import { sendTemplatedEmail } from "@/lib/email";
+import { createNotificationsForParents } from "@/lib/notification-helpers";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 import { getSetupWizardState } from "@/lib/setup-wizard";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
@@ -47,7 +48,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(session.user.role)) {
+  if (!["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN", "HEAD_TEACHER", "HEAD_OF_DEPARTMENT"].includes(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -67,12 +68,43 @@ export async function GET(request: Request) {
 
   const schoolId = session.user.schoolId || "default";
 
+  const isHOD = session.user.role === "HEAD_OF_DEPARTMENT";
+  const isHeadTeacher = session.user.role === "HEAD_TEACHER";
+
+  let classGroupFilter: any = {};
+  if (isHOD || isHeadTeacher) {
+    const teacher = await prisma.teacher.findFirst({
+      where: { schoolId, userId: session.user.id },
+      select: { id: true, classGroupId: true },
+    });
+
+    if (isHOD && teacher?.classGroupId) {
+      classGroupFilter = {
+        student: {
+          class: { classGroupId: teacher.classGroupId },
+        },
+      };
+    } else if (isHeadTeacher) {
+      // Head Teacher sees results for classes they teach or all if no specific class group
+      if (teacher?.classGroupId) {
+        classGroupFilter = {
+          student: {
+            class: { classGroupId: teacher.classGroupId },
+          },
+        };
+      }
+    } else if (!teacher) {
+      return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 });
+    }
+  }
+
   const results = await prisma.result.findMany({
     where: {
       schoolId,
       ...(status ? { status } : { status: { in: [ResultStatus.DRAFT, ResultStatus.APPROVED, ResultStatus.REJECTED] } }),
       ...(parsedQuery.data.sessionId ? { sessionId: parsedQuery.data.sessionId } : {}),
       ...(parsedQuery.data.termId ? { termId: parsedQuery.data.termId } : {}),
+      ...classGroupFilter,
     },
     include: {
       student: { include: { user: true, class: true } },
@@ -129,7 +161,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(session.user.role)) {
+  const approverRoles = ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN", "HEAD_TEACHER", "HEAD_OF_DEPARTMENT"];
+  if (!approverRoles.includes(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -175,6 +208,22 @@ export async function POST(request: Request) {
 
   if (!student) {
     return NextResponse.json({ error: "Student not found" }, { status: 404 });
+  }
+
+  // Class group authorization for HEAD_TEACHER and HEAD_OF_DEPARTMENT
+  const isHOD = session.user.role === "HEAD_OF_DEPARTMENT";
+  const isHeadTeacher = session.user.role === "HEAD_TEACHER";
+  if (isHOD || isHeadTeacher) {
+    const approverTeacher = await prisma.teacher.findFirst({
+      where: { schoolId, userId: session.user.id },
+      select: { id: true, classGroupId: true },
+    });
+    if (!approverTeacher) {
+      return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 });
+    }
+    if (approverTeacher.classGroupId && student.class?.classGroupId !== approverTeacher.classGroupId) {
+      return NextResponse.json({ error: "You can only approve results for students in your assigned class group." }, { status: 403 });
+    }
   }
 
   const now = new Date();
@@ -413,6 +462,17 @@ export async function POST(request: Request) {
     } catch {
       // suppress non-critical notification errors; result is already published
     }
+
+    // Create in-app notification for the parent
+    await createNotificationsForParents(schoolId, [studentId], {
+      type: "result",
+      title: "Results Published",
+      body: `Results have been published for your child. Check the portal for details.`,
+      link: "/parent/results",
+      actorUserId: session.user.id,
+      excludeActorUserId: session.user.id,
+      metadata: { resultId: published.id, studentId, termId, sessionId },
+    });
 
     return NextResponse.json({ ok: true, result: { id: published.id, status: published.status } });
   }

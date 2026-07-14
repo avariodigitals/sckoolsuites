@@ -9,6 +9,7 @@ import { calculateGradeFromBands } from "@/lib/grades";
 import { prisma } from "@/lib/db";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 import { formatDate, humanizeEnum } from "@/lib/utils";
+import { AnnouncementListWithModal } from "@/components/announcement-list-with-modal";
 
 const allowed = ["profile", "subjects", "timetable", "assignments", "attendance", "lms", "results", "report-card", "announcements"] as const;
 
@@ -345,24 +346,20 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
             <CardHeader>
               <CardTitle>Announcements</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {core.announcements.slice(0, 20).map((item: any) => (
-                <div key={item.id} className="glass-soft rounded-xl p-3">
-                  <p className="font-medium">{item.title}</p>
-                  {item.isHtml ? (
-                    <div className="prose prose-sm max-w-none text-slate-600 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline" dangerouslySetInnerHTML={{ __html: item.body }} />
-                  ) : (
-                    <p className="text-slate-600">{item.body.slice(0, 180)}</p>
-                  )}
-                  {item.attachmentUrl && (
-                    <a href={item.attachmentUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-blue-600 hover:text-blue-700">
-                      📎 {item.attachmentName ?? "Download attachment"}
-                    </a>
-                  )}
-                  <p className="text-xs text-slate-500 mt-1">{formatDate(item.createdAt)}</p>
-                </div>
-              ))}
-              {!core.announcements.length ? <p className="text-slate-500">No announcements available.</p> : null}
+            <CardContent className="text-sm">
+              <AnnouncementListWithModal
+                announcements={core.announcements.slice(0, 20).map((item: any) => ({
+                  id: item.id,
+                  title: item.title,
+                  body: item.body,
+                  isHtml: item.isHtml ?? false,
+                  audience: item.audience,
+                  attachmentUrl: item.attachmentUrl ?? null,
+                  attachmentName: item.attachmentName ?? null,
+                  createdAt: item.createdAt?.toISOString?.() ?? item.createdAt,
+                }))}
+                emptyMessage="No announcements available."
+              />
             </CardContent>
           </Card>
         );

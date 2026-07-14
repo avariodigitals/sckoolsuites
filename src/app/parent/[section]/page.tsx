@@ -27,6 +27,7 @@ import { ParentProfilePanel } from "@/app/parent/_components/parent-profile-pane
 import { SchoolCalendarView } from "@/app/parent/_components/school-calendar-view";
 import { ParentResultsPanel } from "@/app/parent/_components/parent-results-panel";
 import { ParentLmsPanel } from "@/app/parent/_components/parent-lms-panel";
+import { AnnouncementListWithModal } from "@/components/announcement-list-with-modal";
 import { calculateGradeFromBands } from "@/lib/grades";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 
@@ -81,7 +82,11 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
     );
   }
 
-  const children = core.students.filter((student: any) => student.parentId === parentProfile.id);
+  const children = await prisma.student.findMany({
+    where: { schoolId, parentId: parentProfile.id },
+    include: { user: true, class: true, parent: { include: { user: true } } },
+    orderBy: { createdAt: "desc" },
+  });
   const childIds = new Set(children.map((child: any) => child.id));
   const childClassIds = new Set(children.map((child: any) => child.classId).filter((id: any): id is string => Boolean(id)));
 
@@ -715,23 +720,20 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
       {sectionKey === "announcements" ? (
         <Card className="glass-panel">
           <CardHeader><CardTitle>Announcements</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {core.announcements.length ? core.announcements.slice(0, 20).map((item: any) => (
-              <div key={item.id} className="glass-soft rounded-xl p-3">
-                <p className="font-medium">{item.title}</p>
-                <p className="text-xs text-slate-500">Date: {formatDate(item.createdAt)} • Audience: {humanizeEnum(item.audience)}</p>
-                {item.isHtml ? (
-                  <div className="prose prose-sm max-w-none text-slate-700 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline" dangerouslySetInnerHTML={{ __html: item.body }} />
-                ) : (
-                  <p>{item.body}</p>
-                )}
-                {item.attachmentUrl ? (
-                  <a href={item.attachmentUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-blue-600 hover:text-blue-700">
-                    📎 {item.attachmentName ?? "Download attachment"}
-                  </a>
-                ) : null}
-              </div>
-            )) : <p className="text-slate-500">No announcements published yet.</p>}
+          <CardContent className="text-sm">
+            <AnnouncementListWithModal
+              announcements={core.announcements.map((item: any) => ({
+                id: item.id,
+                title: item.title,
+                body: item.body,
+                isHtml: item.isHtml ?? false,
+                audience: humanizeEnum(item.audience),
+                attachmentUrl: item.attachmentUrl ?? null,
+                attachmentName: item.attachmentName ?? null,
+                createdAt: item.createdAt?.toISOString?.() ?? item.createdAt,
+              }))}
+              emptyMessage="No announcements published yet."
+            />
           </CardContent>
         </Card>
       ) : null}

@@ -54,11 +54,14 @@ import { navByRole, type NavItem as RoleNavItem } from "@/lib/navigation";
 
 type Notification = {
   id: string;
-  type: "announcement" | "message" | "complaint" | "contest";
+  recordId?: number;
+  type: "announcement" | "message" | "complaint" | "contest" | "invoice" | "result" | "attendance" | "admission" | "fee_reminder" | "general";
   title: string;
   description: string;
   audience: string;
   createdAt: string;
+  link?: string;
+  isRead?: boolean;
 };
 
 type NavItem = {
@@ -126,26 +129,33 @@ export function ModernPortalShell({
     [displaySchoolName]
   );
 
-  // Fetch notifications
+  // Fetch notifications from both persistent records and legacy API
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await fetch("/api/notifications/latest", { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
-          setNotifications(data.notifications || []);
-        }
+        const [recordsRes, legacyRes] = await Promise.all([
+          fetch("/api/notifications/records", { cache: "no-store" }),
+          fetch("/api/notifications/latest", { cache: "no-store" }),
+        ]);
+        const recordsData = recordsRes.ok ? await recordsRes.json() : { notifications: [] };
+        const legacyData = legacyRes.ok ? await legacyRes.json() : { notifications: [] };
+        const recordNotifs = recordsData.notifications || [];
+        const legacyNotifs = legacyData.notifications || [];
+        const seenIds = new Set(recordNotifs.map((n: Notification) => n.id));
+        const merged = [...recordNotifs, ...legacyNotifs.filter((n: Notification) => !seenIds.has(n.id))];
+        setNotifications(merged);
       } catch {
         // Silently fail
       }
     };
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60000);
+    const interval = setInterval(fetchNotifications, 15000);
     return () => clearInterval(interval);
   }, []);
 
-  const hasUnread = notifications.length > 0;
+  const unreadNotifications = notifications.filter((n) => !n.isRead);
+  const hasUnread = unreadNotifications.length > 0;
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/login" });
@@ -223,83 +233,106 @@ export function ModernPortalShell({
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-          {getNavItems(role).map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-            const hasChildren = item.children && item.children.length > 0;
-            const expanded = isExpanded(item.href);
+          {(() => {
+            const items = getNavItems(role);
+            const groups: { label: string | null; items: NavItem[] }[] = [];
+            const groupMap = new Map<string | null, NavItem[]>();
+            for (const item of items) {
+              const g = item.group ?? null;
+              if (!groupMap.has(g)) groupMap.set(g, []);
+              groupMap.get(g)!.push(item);
+            }
+            for (const [label, groupItems] of groupMap) {
+              groups.push({ label, items: groupItems });
+            }
 
-            return (
-              <div key={item.href} className="space-y-1">
-                {hasChildren ? (
-                  <>
-                    <button
-                      onClick={() => toggleMenu(item.href)}
-                      className={cn(
-                        "flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                        isActive
-                          ? "text-[var(--brand-primary)]"
-                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                      )}
-                      style={isActive ? { backgroundColor: `${primaryColor ?? "#0B1F4D"}15` } : undefined}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className={cn("h-5 w-5", isActive ? "text-[var(--brand-primary)]" : "text-slate-400")} />
-                        {item.label}
-                      </div>
-                      <ChevronDown
-                        className={cn(
-                          "h-4 w-4 transition-transform duration-200",
-                          expanded ? "rotate-180" : "",
-                          isActive ? "text-[var(--brand-primary)]" : "text-slate-400"
-                        )}
-                      />
-                    </button>
-                    {expanded && item.children && (
-                      <div className="ml-2 mt-1 space-y-0.5">
-                        {item.children.map((child) => {
-                          const ChildIcon = child.icon;
-                          const isChildActive = pathname === child.href;
-                          return (
-                            <Link
-                              key={`${child.href}-${child.label}`}
-                              href={child.href}
-                              onClick={() => setSidebarOpen(false)}
+            return groups.map((group, gi) => (
+              <div key={gi} className="space-y-1">
+                {group.label ? (
+                  <div className="px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    {group.label.replace(/^\d+\.\s*/, "")}
+                  </div>
+                ) : null}
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  const hasChildren = item.children && item.children.length > 0;
+                  const expanded = isExpanded(item.href);
+
+                  return (
+                    <div key={item.href} className="space-y-1">
+                      {hasChildren ? (
+                        <>
+                          <button
+                            onClick={() => toggleMenu(item.href)}
+                            className={cn(
+                              "flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                              isActive
+                                ? "text-[var(--brand-primary)]"
+                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                            )}
+                            style={isActive ? { backgroundColor: `${primaryColor ?? "#0B1F4D"}15` } : undefined}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Icon className={cn("h-5 w-5", isActive ? "text-[var(--brand-primary)]" : "text-slate-400")} />
+                              {item.label}
+                            </div>
+                            <ChevronDown
                               className={cn(
-                                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                                isChildActive
-                                  ? "text-[var(--brand-primary)] font-medium"
-                                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                                "h-4 w-4 transition-transform duration-200",
+                                expanded ? "rotate-180" : "",
+                                isActive ? "text-[var(--brand-primary)]" : "text-slate-400"
                               )}
-                              style={isChildActive ? { backgroundColor: `${primaryColor ?? "#0B1F4D"}15` } : undefined}
-                            >
-                              <ChildIcon className={cn("h-4 w-4", isChildActive ? "text-[var(--brand-primary)]" : "text-slate-400")} />
-                              {child.label}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <Link
-                    href={item.href}
-                    onClick={() => setSidebarOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                      isActive
-                        ? "text-[var(--brand-primary)]"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    )}
-                    style={isActive ? { backgroundColor: `${primaryColor ?? "#0B1F4D"}15` } : undefined}
-                  >
-                    <Icon className={cn("h-5 w-5", isActive ? "text-[var(--brand-primary)]" : "text-slate-400")} />
-                    {item.label}
-                  </Link>
-                )}
+                            />
+                          </button>
+                          {expanded && item.children && (
+                            <div className="ml-2 mt-1 space-y-0.5">
+                              {item.children.map((child) => {
+                                const ChildIcon = child.icon;
+                                const isChildActive = pathname === child.href;
+                                return (
+                                  <Link
+                                    key={`${child.href}-${child.label}`}
+                                    href={child.href}
+                                    onClick={() => setSidebarOpen(false)}
+                                    className={cn(
+                                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                                      isChildActive
+                                        ? "text-[var(--brand-primary)] font-medium"
+                                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                                    )}
+                                    style={isChildActive ? { backgroundColor: `${primaryColor ?? "#0B1F4D"}15` } : undefined}
+                                  >
+                                    <ChildIcon className={cn("h-4 w-4", isChildActive ? "text-[var(--brand-primary)]" : "text-slate-400")} />
+                                    {child.label}
+                                  </Link>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <Link
+                          href={item.href}
+                          onClick={() => setSidebarOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                            isActive
+                              ? "text-[var(--brand-primary)]"
+                              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                          )}
+                          style={isActive ? { backgroundColor: `${primaryColor ?? "#0B1F4D"}15` } : undefined}
+                        >
+                          <Icon className={cn("h-5 w-5", isActive ? "text-[var(--brand-primary)]" : "text-slate-400")} />
+                          {item.label}
+                        </Link>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            ));
+          })()}
         </nav>
 
         {/* Sign Out */}
@@ -362,7 +395,7 @@ export function ModernPortalShell({
                       <h3 className="font-semibold text-slate-900">Notifications</h3>
                       {hasUnread && (
                         <span className="text-xs font-medium text-indigo-600">
-                          {notifications.length} new
+                          {unreadNotifications.length} new
                         </span>
                       )}
                       <button 
@@ -374,15 +407,15 @@ export function ModernPortalShell({
                     </div>
                     
                     <div className="max-h-80 overflow-y-auto">
-                      {notifications.length === 0 ? (
+                      {unreadNotifications.length === 0 ? (
                         <div className="px-4 py-8 text-center">
                           <div className="mx-auto mb-3 rounded-full bg-slate-100 p-3 w-fit">
                             <Bell className="h-6 w-6 text-slate-400" />
                           </div>
-                          <p className="text-sm text-slate-500">No notifications</p>
+                          <p className="text-sm text-slate-500">No unread notifications</p>
                         </div>
                       ) : (
-                        notifications.map((notif) => {
+                        unreadNotifications.map((notif) => {
                           const Icon = notif.type === "announcement" ? Megaphone : 
                                        notif.type === "message" ? MessageSquare : AlertTriangle;
                           const iconColor = notif.type === "announcement" ? "bg-blue-100 text-blue-600" :
@@ -409,14 +442,34 @@ export function ModernPortalShell({
                       )}
                     </div>
                     
-                    {notifications.length > 0 && (
-                      <div className="px-4 py-3 border-t border-slate-100 bg-slate-50">
+                    {unreadNotifications.length > 0 && (
+                      <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+                        <button
+                          onClick={async () => {
+                            const recordIds = unreadNotifications.filter((n) => n.recordId).map((n) => n.recordId!);
+                            setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+                            if (recordIds.length) {
+                              try {
+                                await fetch("/api/notifications/read", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ recordIds }),
+                                });
+                              } catch {
+                                setNotifications((prev) => prev.map((n) => recordIds.includes(n.recordId!) ? { ...n, isRead: false } : n));
+                              }
+                            }
+                          }}
+                          className="text-sm font-medium text-slate-600 hover:text-slate-800"
+                        >
+                          Mark all read
+                        </button>
                         <Link 
                           href="/admin/announcements" 
-                          className="flex items-center justify-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                          className="flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700"
                           onClick={() => setNotificationsOpen(false)}
                         >
-                          View all announcements
+                          View all
                           <ChevronRight className="h-4 w-4" />
                         </Link>
                       </div>

@@ -198,6 +198,8 @@ model User {
   queries                  Query[]               @relation("RespondedQueries")
   receptionComplaints      ReceptionComplaint[]  @relation("ResolvedReceptionComplaints")
   invoiceContestAudits     InvoiceContestAudit[] @relation("ActorInvoiceContestAudits")
+  notifications            NotificationRecord[]
+  authoredNotifications    NotificationRecord[]  @relation("NotificationActor")
 
   @@index([email])
   @@index([roleId])
@@ -237,14 +239,20 @@ model Parent {
 }
 
 model Teacher {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique @map("user_id")
-  schoolId  String   @default("default") @map("school_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique @map("user_id")
+  schoolId      String   @default("default") @map("school_id")
+  designation   String?  @map("designation")
+  reportsToId   Int?     @map("reports_to_id")
+  classGroupId  Int?     @map("class_group_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
 
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   school        School        @relation(fields: [schoolId], references: [id])
+  reportsTo     Teacher?      @relation("TeacherReporting", fields: [reportsToId], references: [id], onDelete: SetNull)
+  directReports Teacher[]     @relation("TeacherReporting")
+  classGroup    ClassGroup?   @relation(fields: [classGroupId], references: [id], onDelete: SetNull)
   classes       Class[]
   classArms     ClassArm[]
   subjects      Subject[]
@@ -258,6 +266,8 @@ model Teacher {
 
   @@index([userId])
   @@index([schoolId])
+  @@index([reportsToId])
+  @@index([classGroupId])
   @@map("teacher")
 }
 
@@ -361,6 +371,7 @@ model ClassGroup {
   classes     Class[]
   subjects    Subject[]
   assessments ClassGroupAssessment[]
+  teachers    Teacher[]
 
   @@unique([schoolId, name])
   @@index([schoolId])
@@ -1720,4 +1731,27 @@ model SchoolTemplate {
 
   @@index([schoolId])
   @@map("school_template")
+}
+
+model NotificationRecord {
+  id           Int       @id @default(autoincrement())
+  schoolId     String    @map("school_id")
+  userId       Int       @map("user_id")
+  type         String
+  title        String
+  body         String
+  link         String?
+  isRead       Boolean   @default(false) @map("is_read")
+  readAt       DateTime? @map("read_at")
+  actorUserId  Int?      @map("actor_user_id")
+  metadata     String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actor User?  @relation("NotificationActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead])
+  @@index([schoolId])
+  @@index([createdAt])
+  @@map("notification_record")
 }

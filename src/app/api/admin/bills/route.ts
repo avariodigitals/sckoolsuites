@@ -4,6 +4,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
+import { createNotificationsForParents } from "@/lib/notification-helpers";
 import { parseNumericSearchParamResponse } from "@/lib/id-helpers";
 
 const createBillSchema = z.object({
@@ -292,6 +293,17 @@ export async function POST(request: Request) {
         studentId: data.studentId,
         totalAmount,
       },
+    });
+
+    // Notify parent about new invoice
+    await createNotificationsForParents(schoolId, [data.studentId], {
+      type: "invoice",
+      title: "New Fee Invoice",
+      body: `A new fee invoice (${invoiceNumber}) for ${totalAmount} has been generated. Please review it in the Fees section.`,
+      link: "/parent/fees",
+      actorUserId: session.user.id,
+      excludeActorUserId: session.user.id,
+      metadata: { invoiceId: invoice.id, invoiceNumber, totalAmount },
     });
 
     return NextResponse.json(

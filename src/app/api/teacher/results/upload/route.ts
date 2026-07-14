@@ -107,12 +107,12 @@ export async function POST(request: Request) {
         fileUrl: uploadResult.url,
         fileName: file.name,
         uploadedById: session.user.id,
-        status: "PUBLISHED",
+        status: "DRAFT",
         reviewNote: null,
         approvedById: null,
         approvedAt: null,
-        publishedById: session.user.id,
-        publishedAt: new Date(),
+        publishedById: null,
+        publishedAt: null,
       },
       create: {
         schoolId,
@@ -122,9 +122,7 @@ export async function POST(request: Request) {
         fileUrl: uploadResult.url,
         fileName: file.name,
         uploadedById: session.user.id,
-        status: "PUBLISHED",
-        publishedById: session.user.id,
-        publishedAt: new Date(),
+        status: "DRAFT",
       },
     });
 

@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 import { sendWorkflowEmail } from "@/lib/email";
+import { createNotificationsForRoles } from "@/lib/notification-helpers";
 
 const createSchema = z.object({
   title: z.string().min(1).max(200),
@@ -191,6 +192,18 @@ export async function POST(request: Request) {
         data.attachmentName
       );
     }
+
+    // Create in-app notifications for all users in the audience (excluding the sender)
+    const audienceRoles = audienceRoleMap[data.audience] ?? audienceRoleMap.ALL;
+    await createNotificationsForRoles(schoolId, audienceRoles, {
+      type: "announcement",
+      title: `New Announcement: ${data.title}`,
+      body: data.isHtml ? data.body.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 200) : data.body.slice(0, 200),
+      link: "/announcements",
+      actorUserId: session.user.id,
+      excludeActorUserId: session.user.id,
+      metadata: { announcementId: announcement.id, audience: data.audience },
+    });
 
     return NextResponse.json(
       {

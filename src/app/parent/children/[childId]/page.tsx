@@ -42,11 +42,23 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
     );
   }
 
-  const child = core.students.find((student: any) => student.id === childId && student.parentId === parentProfile.id);
+  const childIdNum = Number(childId);
+  if (Number.isNaN(childIdNum)) {
+    notFound();
+  }
+
+  const child = await prisma.student.findFirst({
+    where: { id: childIdNum, schoolId, parentId: parentProfile.id },
+    include: { user: true, class: true, parent: { include: { user: true } } },
+  });
   if (!child) {
     notFound();
   }
-  const linkedChildren = core.students.filter((student: any) => student.parentId === parentProfile.id);
+  const linkedChildren = await prisma.student.findMany({
+    where: { schoolId, parentId: parentProfile.id },
+    include: { user: true, class: true },
+    orderBy: { createdAt: "desc" },
+  });
 
   const childInvoices = core.bills.filter((invoice: any) => invoice.studentId === child.id);
   const childAttendance = core.attendance.filter((row: any) => row.studentId === child.id);

@@ -166,7 +166,7 @@ export const getCoreSchoolDataByContext = cache(async function getCoreSchoolData
       });
     })(),
     prisma.parent.findMany({ where: { schoolId }, take: 20, orderBy: { createdAt: "desc" }, include: { user: true, students: { include: { user: true } } } }),
-    prisma.teacher.findMany({ where: { schoolId }, take: 20, orderBy: { createdAt: "desc" }, include: { user: true } }),
+    prisma.teacher.findMany({ where: { schoolId }, take: 20, orderBy: { createdAt: "desc" }, include: { user: true, reportsTo: { include: { user: true } }, classGroup: true } }),
     prisma.class.findMany({ where: { schoolId }, take: 20, orderBy: { createdAt: "desc" }, include: { teacher: { include: { user: true } }, students: true } }),
     prisma.subject.findMany({ where: { schoolId }, take: 20, orderBy: { createdAt: "desc" }, include: { teacher: { include: { user: true } }, class: true } }),
     prisma.feeItem.findMany({ where: { schoolId }, take: 20, orderBy: { createdAt: "desc" }, include: { class: true } }),

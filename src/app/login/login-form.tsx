@@ -108,6 +108,15 @@ export function LoginForm() {
         {pending ? "Signing in..." : "Sign In"}
         {!pending && <ArrowRight className="h-4 w-4" />}
       </Button>
+
+      <div className="text-center">
+        <a
+          href="/forgot-password"
+          className="text-sm text-indigo-600 hover:text-indigo-700 hover:underline"
+        >
+          Forgot password?
+        </a>
+      </div>
     </form>
   );
 }

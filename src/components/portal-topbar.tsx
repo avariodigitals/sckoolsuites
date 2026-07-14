@@ -9,11 +9,14 @@ const THEME_EVENT = "sckoolsuite-theme-change";
 
 type NotificationItem = {
   id: string;
-  type: "announcement" | "message" | "complaint" | "contest";
+  recordId?: number;
+  type: "announcement" | "message" | "complaint" | "contest" | "invoice" | "result" | "attendance" | "admission" | "fee_reminder" | "general";
   title: string;
   description: string;
   audience: string;
   createdAt: string;
+  link?: string;
+  isRead?: boolean;
 };
 
 type NotificationFilter = "all" | NotificationItem["type"];
@@ -48,7 +51,6 @@ export function PortalTopbar({
 }) {
   const router = useRouter();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [notificationError, setNotificationError] = useState("");
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -56,7 +58,6 @@ export function PortalTopbar({
   const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
   const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => "light");
   const dark = theme === "dark";
-  const readStorageKey = useMemo(() => `notification-read-${pathname.split("/")[1] ?? "app"}-${userName}`.replaceAll(" ", "-"), [pathname, userName]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
@@ -94,8 +95,7 @@ export function PortalTopbar({
   const systemStrength = 88;
   const systemStatus = systemStrength >= 85 ? "Operational" : systemStrength >= 65 ? "Stable" : "Attention";
 
-  const readNotificationSet = useMemo(() => new Set(readNotificationIds), [readNotificationIds]);
-  const unreadNotifications = useMemo(() => notifications.filter((item) => !readNotificationSet.has(item.id)), [notifications, readNotificationSet]);
+  const unreadNotifications = useMemo(() => notifications.filter((item) => !item.isRead), [notifications]);
   const notificationCount = unreadNotifications.length;
 
   const filteredNotifications = useMemo(() => {
@@ -113,6 +113,16 @@ export function PortalTopbar({
         return "Message";
       case "complaint":
         return "Complaint";
+      case "invoice":
+        return "Invoice";
+      case "result":
+        return "Result";
+      case "attendance":
+        return "Attendance";
+      case "admission":
+        return "Admission";
+      case "fee_reminder":
+        return "Fee Reminder";
       default:
         return type;
     }
@@ -128,6 +138,15 @@ export function PortalTopbar({
         return <MessageSquareText className="h-3.5 w-3.5 text-emerald-600" />;
       case "complaint":
         return <AlertTriangle className="h-3.5 w-3.5 text-rose-600" />;
+      case "invoice":
+      case "fee_reminder":
+        return <FileCheck2 className="h-3.5 w-3.5 text-orange-600" />;
+      case "result":
+        return <FileCheck2 className="h-3.5 w-3.5 text-purple-600" />;
+      case "attendance":
+        return <AlertTriangle className="h-3.5 w-3.5 text-yellow-600" />;
+      case "admission":
+        return <Megaphone className="h-3.5 w-3.5 text-green-600" />;
       default:
         return <Bell className="h-3.5 w-3.5 text-slate-600" />;
     }
@@ -147,7 +166,7 @@ export function PortalTopbar({
   function notificationHref(item: NotificationItem) {
     const scope = roleScopeFromPath();
 
-    const routeMap: Record<DashboardScope, Record<NotificationItem["type"], string>> = {
+    const routeMap: Record<DashboardScope, Partial<Record<NotificationItem["type"], string>>> = {
       superadmin: {
         contest: "/super-admin/dashboard",
         announcement: "/super-admin/dashboard",
@@ -216,18 +235,37 @@ export function PortalTopbar({
   }
 
   function openNotification(item: NotificationItem) {
-    const href = isBillContestNotification(item) && roleScopeFromPath() === "parent" ? "/parent/fees" : notificationHref(item);
-    const nextReadIds = Array.from(new Set([...readNotificationIds, item.id]));
-    setReadNotificationIds(nextReadIds);
-    window.localStorage.setItem(readStorageKey, JSON.stringify(nextReadIds));
+    const href = item.link || (isBillContestNotification(item) && roleScopeFromPath() === "parent" ? "/parent/fees" : notificationHref(item));
+    // Mark as read on server
+    if (item.recordId) {
+      fetch("/api/notifications/read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recordIds: [item.recordId] }),
+      }).catch(() => {});
+    }
+    // Optimistically update local state
+    setNotifications((prev) => prev.map((n) => n.id === item.id ? { ...n, isRead: true } : n));
     setShowNotifications(false);
     router.push(href);
   }
 
-  function markAllAsRead() {
-    const nextReadIds = Array.from(new Set([...readNotificationIds, ...notifications.map((item) => item.id)]));
-    setReadNotificationIds(nextReadIds);
-    window.localStorage.setItem(readStorageKey, JSON.stringify(nextReadIds));
+  async function markAllAsRead() {
+    const unreadRecordIds = unreadNotifications.filter((n) => n.recordId).map((n) => n.recordId!);
+    // Optimistically update
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    if (unreadRecordIds.length) {
+      try {
+        await fetch("/api/notifications/read", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ recordIds: unreadRecordIds }),
+        });
+      } catch {
+        // Revert on failure
+        setNotifications((prev) => prev.map((n) => unreadRecordIds.includes(n.recordId!) ? { ...n, isRead: false } : n));
+      }
+    }
   }
 
   async function loadNotifications() {
@@ -235,15 +273,22 @@ export function PortalTopbar({
     setNotificationError("");
 
     try {
-      const response = await fetch("/api/notifications/latest", { cache: "no-store" });
-      const payload = (await response.json().catch(() => ({}))) as { notifications?: NotificationItem[]; error?: string };
+      // Fetch persistent notifications from the new API
+      const recordsRes = await fetch("/api/notifications/records", { cache: "no-store" });
+      const recordsData = (await recordsRes.json().catch(() => ({}))) as { notifications?: NotificationItem[]; unreadCount?: number; error?: string };
 
-      if (!response.ok) {
-        setNotificationError(payload.error ?? "Could not load notifications.");
-        return;
-      }
+      // Also fetch legacy notifications for backward compatibility
+      const legacyRes = await fetch("/api/notifications/latest", { cache: "no-store" });
+      const legacyData = (await legacyRes.json().catch(() => ({}))) as { notifications?: NotificationItem[]; error?: string };
 
-      setNotifications(Array.isArray(payload.notifications) ? payload.notifications : []);
+      const recordNotifs = Array.isArray(recordsData.notifications) ? recordsData.notifications : [];
+      const legacyNotifs = Array.isArray(legacyData.notifications) ? legacyData.notifications : [];
+
+      // Merge: persistent records take priority, then add legacy ones not already present
+      const seenIds = new Set(recordNotifs.map((n) => n.id));
+      const merged = [...recordNotifs, ...legacyNotifs.filter((n) => !seenIds.has(n.id))];
+
+      setNotifications(merged);
     } catch {
       setNotificationError("Could not load notifications.");
     } finally {
@@ -271,31 +316,16 @@ export function PortalTopbar({
       void loadNotifications();
     }, 0);
 
+    // Poll every 15 seconds for near real-time updates
+    const interval = window.setInterval(() => {
+      void loadNotifications();
+    }, 15_000);
+
     return () => {
       window.clearTimeout(timer);
+      window.clearInterval(interval);
     };
   }, []);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      try {
-        const stored = window.localStorage.getItem(readStorageKey);
-        if (!stored) {
-          setReadNotificationIds([]);
-          return;
-        }
-
-        const parsed = JSON.parse(stored) as string[];
-        setReadNotificationIds(Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : []);
-      } catch {
-        setReadNotificationIds([]);
-      }
-    }, 0);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [readStorageKey]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -308,19 +338,11 @@ export function PortalTopbar({
   }, []);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(readStorageKey, JSON.stringify(readNotificationIds));
-    } catch {
-      // Ignore storage write failures.
-    }
-  }, [readNotificationIds, readStorageKey]);
-
-  useEffect(() => {
     if (!showNotifications) return;
 
     const interval = window.setInterval(() => {
       loadNotifications();
-    }, 45_000);
+    }, 10_000);
 
     return () => {
       window.clearInterval(interval);

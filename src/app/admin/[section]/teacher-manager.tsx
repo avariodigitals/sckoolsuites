@@ -15,6 +15,10 @@ type Teacher = {
   assignedClasses: { id: string; name: string }[];
   assignedSubjects: { id: string; name: string }[];
   studentCount: number;
+  designation: string | null;
+  reportsTo: { id: number; name: string } | null;
+  classGroupId: number | null;
+  classGroupName: string | null;
 };
 
 type Option = { id: string; name: string };
@@ -23,6 +27,9 @@ const emptyTeacher = {
   name: "",
   email: "",
   password: "",
+  designation: "",
+  reportsToId: "",
+  classGroupId: "",
 };
 
 export function TeacherManager() {
@@ -40,6 +47,7 @@ export function TeacherManager() {
   const [unassigningClassId, setUnassigningClassId] = useState<string | null>(null);
   const [unassigningSubjectId, setUnassigningSubjectId] = useState<string | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
+  const [classGroups, setClassGroups] = useState<{ id: number; name: string }[]>([]);
 
   const filteredTeachers = useMemo(() => {
     if (!searchQuery.trim()) return teachers;
@@ -68,6 +76,7 @@ export function TeacherManager() {
       setUnassignedSubjects(payload.unassignedSubjects ?? []);
       setAllClasses(payload.allClasses ?? []);
       setAllSubjects(payload.allSubjects ?? []);
+      setClassGroups(payload.classGroups ?? []);
     } catch {
       setStatus("Failed to load data.");
     } finally {
@@ -86,7 +95,14 @@ export function TeacherManager() {
     setStatus("");
     setSubmitting(true);
 
-    const body = { ...form };
+    const body = {
+      name: form.name,
+      email: form.email,
+      ...(form.password ? { password: form.password } : {}),
+      ...(form.designation ? { designation: form.designation } : {}),
+      ...(form.reportsToId ? { reportsToId: Number(form.reportsToId) } : {}),
+      ...(form.classGroupId ? { classGroupId: Number(form.classGroupId) } : {}),
+    };
 
     const isEditing = editingId !== null;
     const url = isEditing ? `/api/admin/teachers/${editingId}` : "/api/admin/teachers";
@@ -263,6 +279,9 @@ export function TeacherManager() {
       name: teacher.name,
       email: teacher.email,
       password: "",
+      designation: teacher.designation ?? "",
+      reportsToId: teacher.reportsTo ? String(teacher.reportsTo.id) : "",
+      classGroupId: teacher.classGroupId ? String(teacher.classGroupId) : "",
     });
   }
 
@@ -331,6 +350,39 @@ export function TeacherManager() {
               placeholder="Password (optional, default: email prefix + 123)"
             />
           )}
+          <select
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.designation}
+            onChange={(e) => setForm((prev) => ({ ...prev, designation: e.target.value }))}
+          >
+            <option value="">Designation...</option>
+            <option value="CLASS_TEACHER">Class Teacher</option>
+            <option value="SUBJECT_TEACHER">Subject Teacher</option>
+            <option value="HEAD_OF_DEPARTMENT">Head of Department</option>
+            <option value="HEAD_TEACHER">Head Teacher</option>
+          </select>
+          <select
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.reportsToId}
+            onChange={(e) => setForm((prev) => ({ ...prev, reportsToId: e.target.value }))}
+          >
+            <option value="">Reports to...</option>
+            {teachers.filter((t) => t.id !== editingId).map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+          {classGroups.length > 0 && (
+            <select
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+              value={form.classGroupId}
+              onChange={(e) => setForm((prev) => ({ ...prev, classGroupId: e.target.value }))}
+            >
+              <option value="">Class Group (for HOD/HT)...</option>
+              {classGroups.map((cg) => (
+                <option key={cg.id} value={cg.id}>{cg.name}</option>
+              ))}
+            </select>
+          )}
         </div>
         <div className="mt-3 flex gap-2">
           <Button onClick={handleSubmit} disabled={submitting}>
@@ -355,6 +407,8 @@ export function TeacherManager() {
               <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                 <th className="px-2 py-2">Name</th>
                 <th className="px-2 py-2">Email</th>
+                <th className="px-2 py-2">Designation</th>
+                <th className="px-2 py-2">Reports To</th>
                 <th className="px-2 py-2">Classes</th>
                 <th className="px-2 py-2">Subjects</th>
                 <th className="px-2 py-2">Students</th>
@@ -365,7 +419,7 @@ export function TeacherManager() {
             <tbody>
               {filteredTeachers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-2 py-4 text-center text-slate-500">
+                  <td colSpan={9} className="px-2 py-4 text-center text-slate-500">
                     No teachers found.
                   </td>
                 </tr>
@@ -374,6 +428,14 @@ export function TeacherManager() {
                   <tr key={teacher.id} className="border-b border-slate-100 hover:bg-slate-50">
                     <td className="px-2 py-2 font-medium text-slate-900">{teacher.name}</td>
                     <td className="px-2 py-2 text-slate-600">{teacher.email}</td>
+                    <td className="px-2 py-2">
+                      {teacher.designation ? (
+                        <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{teacher.designation.replace(/_/g, " ")}</span>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-2 py-2 text-slate-600">{teacher.reportsTo?.name ?? <span className="text-slate-400">—</span>}</td>
                     <td className="px-2 py-2">
                       {teacher.assignedClasses.length === 0 ? (
                         <span className="text-slate-400">No classes</span>

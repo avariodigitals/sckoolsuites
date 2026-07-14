@@ -12,6 +12,9 @@ const createSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6).optional(),
   isActive: z.boolean().optional(),
+  designation: z.string().optional().nullable(),
+  reportsToId: z.number().int().optional().nullable(),
+  classGroupId: z.number().int().optional().nullable(),
 });
 
 function isAuthorized(role?: string) {
@@ -30,7 +33,7 @@ export async function GET() {
 
   const schoolId = session.user.schoolId || "default";
 
-  const [teachers, classes, subjects] = await Promise.all([
+  const [teachers, classes, subjects, classGroups] = await Promise.all([
     prisma.teacher.findMany({
       where: { schoolId },
       include: {
@@ -38,6 +41,8 @@ export async function GET() {
         classes: true,
         subjects: true,
         students: { include: { user: true } },
+        reportsTo: { include: { user: true } },
+        classGroup: true,
       },
       orderBy: [{ createdAt: "desc" }],
     }),
@@ -49,6 +54,10 @@ export async function GET() {
     prisma.subject.findMany({
       where: { schoolId },
       include: { teacher: { include: { user: true } } },
+      orderBy: { name: "asc" },
+    }),
+    prisma.classGroup.findMany({
+      where: { schoolId },
       orderBy: { name: "asc" },
     }),
   ]);
@@ -64,6 +73,10 @@ export async function GET() {
       assignedClasses: teacher.classes?.map((c: any) => ({ id: c.id, name: c.name })) ?? [],
       assignedSubjects: teacher.subjects?.map((s: any) => ({ id: s.id, name: s.name })) ?? [],
       studentCount: teacher.students.length,
+      designation: teacher.designation ?? null,
+      reportsTo: teacher.reportsTo ? { id: teacher.reportsTo.id, name: teacher.reportsTo.user.name } : null,
+      classGroupId: teacher.classGroupId ?? null,
+      classGroupName: teacher.classGroup?.name ?? null,
     })),
     unassignedClasses: classes
       .filter((c: any) => !c.teacherId)
@@ -73,6 +86,7 @@ export async function GET() {
       .map((s: any) => ({ id: s.id, name: s.name })),
     allClasses: classes.map((c: any) => ({ id: c.id, name: c.name })),
     allSubjects: subjects.map((s: any) => ({ id: s.id, name: s.name })),
+    classGroups: classGroups.map((cg: any) => ({ id: cg.id, name: cg.name })),
   });
 }
 
@@ -133,6 +147,9 @@ export async function POST(request: Request) {
         data: {
           schoolId,
           userId: user.id,
+          designation: data.designation || null,
+          reportsToId: data.reportsToId || null,
+          classGroupId: data.classGroupId || null,
         },
         include: {
           user: true,

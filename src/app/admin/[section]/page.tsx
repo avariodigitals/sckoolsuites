@@ -24,6 +24,7 @@ import { UserManager } from "./user-manager";
 import { RoleManager } from "./role-manager";
 import { PrivilegeManager } from "./privilege-manager";
 import { ProfileManager } from "./profile-manager";
+import { PasswordResetRequests } from "./password-reset-requests";
 import { requireRole } from "@/lib/auth-guards";
 import { getAdminOverview, getDashboardData, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
 import { adminModuleScopeBySection } from "@/lib/module-blueprint";
@@ -588,7 +589,12 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
 
         {section === "bills" ? <BillManager /> : null}
 
-        {section === "users" ? <UserManager /> : null}
+        {section === "users" ? (
+          <div className="space-y-6">
+            <PasswordResetRequests />
+            <UserManager />
+          </div>
+        ) : null}
 
         {section === "roles" ? <RoleManager /> : null}
 

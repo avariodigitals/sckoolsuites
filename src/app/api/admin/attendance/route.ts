@@ -5,6 +5,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
+import { createNotificationsForParents } from "@/lib/notification-helpers";
 
 const querySchema = z.object({
   date: z.string().optional(),
@@ -280,6 +281,19 @@ export async function POST(request: Request) {
         status: data.status,
       },
     });
+
+    // Notify parent if student is marked absent
+    if (data.status === "ABSENT") {
+      await createNotificationsForParents(schoolId, [data.studentId], {
+        type: "attendance",
+        title: "Attendance Alert: Absent",
+        body: `Your child was marked absent on ${data.date}.`,
+        link: "/parent/attendance",
+        actorUserId: session.user.id,
+        excludeActorUserId: session.user.id,
+        metadata: { attendanceId: attendance.id, studentId: data.studentId, date: data.date, status: data.status },
+      });
+    }
 
     return NextResponse.json({
       attendance: {

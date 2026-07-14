@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { hashPassword } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
 import { sendTemplatedEmail } from "@/lib/email";
+import { createNotification } from "@/lib/notification-helpers";
 import { parseNumericId } from "@/lib/id-helpers";
 import { Prisma } from "@prisma/client";
 
@@ -242,6 +243,34 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         userId: result.user.id,
       },
     });
+
+    // Create in-app notifications for the new student and guardian users
+    await createNotification({
+      schoolId,
+      userId: result.user.id,
+      type: "admission",
+      title: "Welcome! Admission Approved",
+      body: `Your admission has been approved. Welcome to ${school?.name ?? "the school"}.`,
+      link: "/student/profile",
+      actorUserId: session.user.id,
+      metadata: { studentId: result.student.id, applicantNumber: application.applicantNumber },
+    });
+
+    for (const g of result.guardianUsers) {
+      const guardianUser = await prisma.user.findUnique({ where: { email: g.email }, select: { id: true } });
+      if (guardianUser && guardianUser.id !== session.user.id) {
+        await createNotification({
+          schoolId,
+          userId: guardianUser.id,
+          type: "admission",
+          title: "Admission Approved - Guardian Account",
+          body: `Admission has been approved for ${result.user.name}. Your guardian account is now active.`,
+          link: "/parent/children",
+          actorUserId: session.user.id,
+          metadata: { studentId: result.student.id, applicantNumber: application.applicantNumber },
+        });
+      }
+    }
 
     return NextResponse.json({
       ok: true,

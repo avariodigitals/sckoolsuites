@@ -6,6 +6,8 @@ export const roleDefaultRoute: Record<string, string> = {
   SCHOOL_ADMIN: "/admin/dashboard",
   HEAD_OF_SCHOOL: "/admin/dashboard",
   PRINCIPAL: "/admin/dashboard",
+  HEAD_TEACHER: "/admin/dashboard",
+  HEAD_OF_DEPARTMENT: "/admin/dashboard",
   ACCOUNTANT: "/accountant/dashboard",
   REGISTRAR: "/registrar/dashboard",
   TEACHER: "/teacher/dashboard",

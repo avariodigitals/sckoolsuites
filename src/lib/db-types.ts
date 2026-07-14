@@ -11,6 +11,8 @@ export enum RoleType {
   SCHOOL_ADMIN = "SCHOOL_ADMIN",
   HEAD_OF_SCHOOL = "HEAD_OF_SCHOOL",
   PRINCIPAL = "PRINCIPAL",
+  HEAD_TEACHER = "HEAD_TEACHER",
+  HEAD_OF_DEPARTMENT = "HEAD_OF_DEPARTMENT",
   ACCOUNTANT = "ACCOUNTANT",
   REGISTRAR = "REGISTRAR",
   TEACHER = "TEACHER",
@@ -142,9 +144,13 @@ export interface Teacher {
   id: number;
   userId: number;
   schoolId: string;
+  designation?: string | null;
+  reportsToId?: number | null;
+  classGroupId?: number | null;
   createdAt: Date | string;
   updatedAt: Date | string;
   user?: User;
+  reportsTo?: Teacher | null;
 }
 
 export interface Student {
