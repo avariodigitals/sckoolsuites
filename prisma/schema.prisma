@@ -123,6 +123,7 @@ model School {
   paymentMethods        PaymentMethod[]
   schoolBankAccounts    SchoolBankAccount[]
   schoolTemplates       SchoolTemplate[]
+  schoolEvents          SchoolEvent[]
 
   @@map("school")
 }
@@ -200,6 +201,7 @@ model User {
   invoiceContestAudits     InvoiceContestAudit[] @relation("ActorInvoiceContestAudits")
   notifications            NotificationRecord[]
   authoredNotifications    NotificationRecord[]  @relation("NotificationActor")
+  schoolEvents             SchoolEvent[]         @relation("SchoolEventCreator")
 
   @@index([email])
   @@index([roleId])
@@ -1754,4 +1756,27 @@ model NotificationRecord {
   @@index([schoolId])
   @@index([createdAt])
   @@map("notification_record")
+}
+
+model SchoolEvent {
+  id          Int       @id @default(autoincrement())
+  schoolId    String    @default("default") @map("school_id")
+  title       String
+  description String?
+  eventType   String    @default("general") @map("event_type")
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime? @map("end_date")
+  location    String?
+  isAllDay    Boolean   @default(true) @map("is_all_day")
+  createdBy   Int?      @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  school   School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  creator  User?    @relation("SchoolEventCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([startDate])
+  @@index([eventType])
+  @@map("school_event")
 }

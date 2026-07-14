@@ -27,6 +27,7 @@ import { ParentProfilePanel } from "@/app/parent/_components/parent-profile-pane
 import { SchoolCalendarView } from "@/app/parent/_components/school-calendar-view";
 import { ParentResultsPanel } from "@/app/parent/_components/parent-results-panel";
 import { ParentLmsPanel } from "@/app/parent/_components/parent-lms-panel";
+import { ParentAttendanceNotify } from "@/app/parent/_components/parent-attendance-notify";
 import { AnnouncementListWithModal } from "@/components/announcement-list-with-modal";
 import { calculateGradeFromBands } from "@/lib/grades";
 import { getActiveSchoolConfig } from "@/lib/school-config";
@@ -70,6 +71,12 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
   const core = await getCoreSchoolDataByContext(profile.schoolId, {
     sessionId: context.session?.id,
     termId: context.term?.id,
+  });
+
+  const schoolEvents = await prisma.schoolEvent.findMany({
+    where: { schoolId },
+    orderBy: { startDate: "asc" },
+    take: 100,
   });
 
   const parentProfile = core.parents.find((parent: any) => parent.userId === user.id);
@@ -404,7 +411,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                       <div>
                         <p className="text-base font-semibold text-slate-900">{child.user.name}</p>
                         <p className="text-xs text-slate-500">{child.class?.name ?? "Not assigned"} • {child.gender} • Age {child.age}</p>
-                        <p className="text-xs text-slate-500">Adm: {child.id.slice(0, 10).toUpperCase()}</p>
+                        <p className="text-xs text-slate-500">Adm: {String(child.id).slice(0, 10).toUpperCase()}</p>
                       </div>
                     </div>
                     <Link href={`/parent/children/${child.id}`} className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800">
@@ -470,7 +477,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
       {sectionKey === "results" ? <ParentResultsPanel data={resultPanelData} /> : null}
 
       {sectionKey === "report-cards" ? (
-        <section className="grid gap-3 xl:grid-cols-2">
+        <section className="grid gap-5 xl:grid-cols-2">
           {childrenWithPublishedResults.length ? childrenWithPublishedResults.map((child: any) => {
             const latest = results.find((item: any) => item.studentId === child.id);
             const isUploadedPdf = Boolean(latest?.fileUrl);
@@ -493,7 +500,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                       />
                       <div>
                         <CardTitle className="text-base text-white">{child.user.name}</CardTitle>
-                        <p className="text-xs text-white/80">{child.class?.name ?? "Not assigned"} • Report glimpse</p>
+                        <p className="text-xs text-white/80">{child.class?.name ?? "Not assigned"} • Report</p>
                       </div>
                     </div>
                     <span className="rounded-full border border-white/35 bg-white/10 px-2 py-1 text-[11px] uppercase tracking-wide">
@@ -502,26 +509,26 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                   </div>
                 </CardHeader>
 
-                <CardContent className="space-y-3 p-4 text-sm">
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    <div className="rounded-lg border border-slate-200 bg-white/70 p-2">
+                <CardContent className="space-y-4 p-5 text-sm">
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl border border-slate-200 bg-white/70 p-3">
                       <p className="text-[11px] text-slate-500">Term Grade</p>
                       <p className="text-base font-semibold text-slate-900">{latest?.termGrade ?? "-"}</p>
                     </div>
-                    <div className="rounded-lg border border-slate-200 bg-white/70 p-2">
+                    <div className="rounded-xl border border-slate-200 bg-white/70 p-3">
                       <p className="text-[11px] text-slate-500">Term GPA</p>
                       <p className="text-base font-semibold text-slate-900">{latest && latest.termGpa !== null ? latest.termGpa.toFixed(2) : "-"}</p>
                     </div>
-                    <div className="rounded-lg border border-slate-200 bg-white/70 p-2">
+                    <div className="rounded-xl border border-slate-200 bg-white/70 p-3">
                       <p className="text-[11px] text-slate-500">Average Score</p>
-                      <p className="text-base font-semibold text-slate-900">{childScores.length ? `${average.toFixed(1)}%` : "-"}</p>
+                      <p className="text-base font-semibold text-slate-900">{latest?.average !== null && latest?.average !== undefined ? `${latest.average.toFixed(1)}%` : childScores.length ? `${average.toFixed(1)}%` : "-"}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-slate-200 bg-white/70 p-3">
-                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">Subject Highlights</p>
+                  <div className="rounded-xl border border-slate-200 bg-white/70 p-4">
+                    <p className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-500">Subject Highlights</p>
                     {topSubjects.length ? (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {topSubjects.map((score) => (
                           <div key={score.id} className="space-y-1">
                             <div className="flex items-center justify-between text-xs">
@@ -539,14 +546,27 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                     )}
                   </div>
 
-                  <div className="rounded-xl border border-slate-200 bg-white/70 p-3 text-xs text-slate-600">
+                  <div className="rounded-xl border border-slate-200 bg-white/70 p-4 text-xs text-slate-600">
                     <p className="font-medium text-slate-700">Teacher Comment</p>
                     <p className="mt-1">{latest?.classTeacherComment ?? "Comment not yet published."}</p>
                   </div>
 
-                  <div className="flex justify-end">
+                  {isUploadedPdf && latest?.fileUrl && (
+                    <div className="overflow-hidden rounded-xl border border-slate-200">
+                      <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Report Preview</p>
+                        <a href={latest.fileUrl} download target="_blank" rel="noopener noreferrer" className="rounded-md bg-slate-900 px-3 py-1 text-[11px] font-medium text-white hover:bg-slate-800">Download</a>
+                      </div>
+                      <iframe src={latest.fileUrl} title={`${child.user.name} report preview`} className="h-[500px] w-full bg-white" />
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap justify-end gap-3">
+                    {isUploadedPdf && latest?.fileUrl && (
+                      <a href={latest.fileUrl} download target="_blank" rel="noopener noreferrer" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">Download PDF</a>
+                    )}
                     <Link href={`/reports/${child.id}`} className="rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800">
-                      {isUploadedPdf ? "View / Download PDF" : "View Full Report Card"}
+                      {isUploadedPdf ? "View Full Report" : "View Full Report Card"}
                     </Link>
                   </div>
                 </CardContent>
@@ -576,6 +596,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
         const absentCount = attendance.filter((item: any) => item.status === "ABSENT").length;
         const lateCount = attendance.filter((item: any) => item.status === "LATE").length;
         const totalCount = attendance.length;
+        const attendanceChildren = children.map((child: any) => ({ id: child.id, name: child.user.name, className: child.class?.name ?? "Not assigned" }));
 
         function dateKey(value: Date) {
           return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
@@ -603,7 +624,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
         });
 
         return (
-          <section className="space-y-4">
+          <section className="space-y-6">
             <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--brand-primary)] via-[#1a3a6e] to-[var(--brand-secondary)] p-6 text-white shadow-lg">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -611,14 +632,17 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                   <h2 className="mt-1 text-2xl font-bold">Attendance Calendar / List</h2>
                   <p className="text-sm text-white/85">Real-time attendance visibility for your linked children.</p>
                 </div>
-                <div className="rounded-xl border border-white/30 bg-white/10 px-4 py-3 text-center backdrop-blur-sm">
-                  <p className="text-3xl font-extrabold">{attendancePercent.toFixed(1)}%</p>
-                  <p className="text-xs text-white/80">attendance rate</p>
+                <div className="flex flex-col items-end gap-3">
+                  <div className="rounded-xl border border-white/30 bg-white/10 px-4 py-3 text-center backdrop-blur-sm">
+                    <p className="text-3xl font-extrabold">{attendancePercent.toFixed(1)}%</p>
+                    <p className="text-xs text-white/80">attendance rate</p>
+                  </div>
+                  <ParentAttendanceNotify children={attendanceChildren} />
                 </div>
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
               <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">Present Days</p>
                 <p className="mt-1 text-2xl font-extrabold text-slate-900">{presentCount}</p>
@@ -641,7 +665,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm font-semibold text-slate-800">Last 14 Days Activity</p>
                 <div className="flex items-center gap-2 text-[11px] text-slate-500">
@@ -650,7 +674,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                   <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500" /> Absent</span>
                 </div>
               </div>
-              <div className="grid grid-cols-7 gap-2 sm:grid-cols-14">
+              <div className="grid grid-cols-7 gap-3 sm:grid-cols-14">
                 {trendDays.map((day) => (
                   <div key={day.key} className="rounded-lg border border-slate-200 p-2 text-center">
                     <div
@@ -671,7 +695,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="border-b border-slate-200 bg-slate-50 px-5 py-3">
                 <h3 className="text-sm font-semibold text-slate-800">Attendance Records</h3>
               </div>
               {attendance.length ? (
@@ -818,7 +842,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
         const recentAnnouncements = core.announcements.slice(0, 5);
 
         return (
-          <section className="space-y-4">
+          <section className="space-y-6">
             {/* hero banner */}
             <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--brand-primary)] via-[#1a3a6e] to-[var(--brand-secondary)] p-6 text-white shadow-lg">
               <div className="flex flex-wrap items-start justify-between gap-4">
@@ -847,7 +871,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
             </div>
 
             {/* key dates */}
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <div className="flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white text-lg">📅</div>
                 <div>
@@ -878,7 +902,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
               </div>
             </div>
 
-            <div className="grid gap-4 xl:grid-cols-2">
+            <div className="grid gap-5 xl:grid-cols-2">
               {/* attendance this term */}
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <p className="mb-4 text-sm font-semibold text-slate-800">📊 Attendance Summary</p>
@@ -934,13 +958,18 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                 const dt = new Date(d);
                 return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
               }
-              type CalEv = { date: string; label: string; type: "term-start" | "term-end" | "resumption" | "announcement" | "holiday" };
+              type CalEv = { date: string; label: string; type: "term-start" | "term-end" | "resumption" | "announcement" | "holiday" | "school-event" };
               const calEvents: CalEv[] = [];
               // all terms across all sessions
               for (const t of core.terms) {
                 if (t.startDate) calEvents.push({ date: toYMD(t.startDate)!, label: t.name, type: "term-start" });
                 if (t.endDate)   calEvents.push({ date: toYMD(t.endDate)!,   label: t.name, type: "term-end" });
                 if (t.resumptionDate) calEvents.push({ date: toYMD(t.resumptionDate)!, label: `${t.name} Resumption`, type: "resumption" });
+              }
+              // school events
+              for (const ev of schoolEvents) {
+                const d = toYMD(ev.startDate);
+                if (d) calEvents.push({ date: d, label: ev.title, type: "school-event" });
               }
               // announcements
               for (const ann of core.announcements) {

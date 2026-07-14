@@ -472,7 +472,6 @@ export const navByRole: Record<string, NavItem[]> = {
   ],
   PARENT: [
     { label: "Dashboard", href: "/parent/dashboard", icon: LayoutDashboard, group: "1. Overview" },
-    { label: "Profile", href: "/parent/profile", icon: Users, group: "1. Overview" },
     { label: "My Children", href: "/parent/children", icon: Users, group: "1. Overview" },
     { label: "Fees & Bills", href: "/parent/fees", icon: CreditCard, group: "2. Finance" },
     { label: "Payments", href: "/parent/payments", icon: CreditCard, group: "2. Finance" },
@@ -484,6 +483,7 @@ export const navByRole: Record<string, NavItem[]> = {
     { label: "Complaints", href: "/parent/complaints", icon: MessageSquareWarning, group: "4. Communication" },
     { label: "Announcements", href: "/parent/announcements", icon: Megaphone, group: "4. Communication" },
     { label: "LMS", href: "/parent/lms", icon: BookOpen, group: "5. Learning" },
+    { label: "My Profile", href: "/parent/profile", icon: Users, group: "6. Settings" },
   ],
   STUDENT: [
     { label: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard, group: "1. Overview" },

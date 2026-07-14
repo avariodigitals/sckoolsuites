@@ -92,7 +92,8 @@ export async function POST(request: Request) {
 
     const uploadResult = await uploadToCloudinary(buffer, file.type, {
       schoolId,
-      folder: "result-uploads",
+      folder: `result-uploads/session_${effectiveSessionId}/term_${effectiveTermId}`,
+      overwrite: false,
     });
 
     const result = await prisma.result.upsert({

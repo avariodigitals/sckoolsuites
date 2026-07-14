@@ -38,7 +38,7 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
   }
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-5">
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -52,12 +52,12 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
           onClick={() => setActiveTab("preview")}
           className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${activeTab === "preview" ? "bg-[var(--brand-primary)] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
         >
-          A4 Preview
+          Preview
         </button>
       </div>
 
       {activeTab === "recent" ? (
-        <section className="space-y-3">
+        <section className="space-y-5">
           {data.map((item) => {
             const average = item.subjects.length ? item.subjects.reduce((sum, row) => sum + row.total, 0) / item.subjects.length : 0;
             const isUploadedPdf = Boolean(item.fileUrl);
@@ -70,20 +70,74 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
                 </div>
 
                 {isUploadedPdf ? (
-                  <div className="space-y-3 p-4">
-                    <p className="text-sm text-slate-600">This result was uploaded as a PDF by the class teacher.</p>
-                    <a
-                      href={item.fileUrl!}
-                      download
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex rounded-lg bg-[var(--brand-primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-                    >
-                      Download PDF ({item.fileName || "result.pdf"})
-                    </a>
+                  <div className="space-y-4 p-4">
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                      <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">Term Percentage</p>
+                        <p className="mt-1 text-xl font-extrabold text-slate-900">{item.termPercentage !== null ? `${item.termPercentage.toFixed(1)}%` : "-"}</p>
+                      </div>
+                      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Term Grade</p>
+                        <p className="mt-1 text-xl font-extrabold text-slate-900">{item.termGrade ?? "-"}</p>
+                      </div>
+                      <div className="rounded-xl border border-violet-200 bg-violet-50 p-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-700">Term GPA</p>
+                        <p className="mt-1 text-xl font-extrabold text-slate-900">{item.termGpa !== null ? item.termGpa.toFixed(2) : "-"}</p>
+                      </div>
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">Subject Average</p>
+                        <p className="mt-1 text-xl font-extrabold text-slate-900">{item.subjects.length ? `${average.toFixed(1)}%` : "-"}</p>
+                      </div>
+                    </div>
+
+                    {(item.classTeacherComment || item.principalComment) && (
+                      <div className="grid gap-3 xl:grid-cols-2">
+                        {item.classTeacherComment && (
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-600">Class Teacher Comment</p>
+                            <p className="text-sm text-slate-700">{item.classTeacherComment}</p>
+                          </div>
+                        )}
+                        {item.principalComment && (
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-600">Principal Comment</p>
+                            <p className="text-sm text-slate-700">{item.principalComment}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="overflow-hidden rounded-xl border border-slate-200">
+                      <div className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">Document Preview</div>
+                      <iframe
+                        src={item.fileUrl!}
+                        title={`${item.studentName} result preview`}
+                        className="h-[600px] w-full bg-white"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                      <a
+                        href={item.fileUrl!}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex rounded-lg bg-[var(--brand-primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                      >
+                        Download PDF ({item.fileName || "result.pdf"})
+                      </a>
+                      <a
+                        href={item.fileUrl!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                      >
+                        Open in New Tab
+                      </a>
+                    </div>
                   </div>
                 ) : (
-                  <div className="space-y-4 p-4">
+                  <div className="space-y-5 p-4">
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">Term Percentage</p>
@@ -154,7 +208,7 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
           })}
         </section>
       ) : (
-        <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-end">
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Select Report</label>
@@ -192,7 +246,7 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
 
           {previewUrl ? (
             <div className="overflow-hidden rounded-xl border border-slate-200">
-              <div className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">A4 Report Preview</div>
+              <div className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">Report Preview</div>
               <iframe
                 key={previewUrl}
                 title="A4 report preview"

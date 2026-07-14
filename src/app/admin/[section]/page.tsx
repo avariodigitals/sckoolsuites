@@ -16,6 +16,8 @@ import { AttendanceManager } from "./attendance-manager";
 import { LMSManager } from "./lms-manager";
 import { AnnouncementManager } from "./announcement-manager";
 import { MessageManager } from "./message-manager";
+import { ComplaintManager } from "./complaint-manager";
+import { EventManager } from "./event-manager";
 import { TransportManager } from "./transport-manager";
 import { ReceptionManager } from "./reception-manager";
 import { FeeProfileManager } from "./fee-profile-manager";
@@ -58,6 +60,7 @@ const allowed = [
   "attendance",
   "announcements",
   "messages",
+  "complaints",
   "transport",
   "settings",
   "users",
@@ -214,6 +217,12 @@ const blueprints: Record<AllowedSection, AdminSectionBlueprint> = {
     metrics: [],
     actionChips: ["View Messages", "Reply", "Filter by Status"],
   },
+  complaints: {
+    title: "Parent Complaints",
+    subtitle: "Review, track, and resolve complaints submitted by parents.",
+    metrics: [],
+    actionChips: ["View Complaints", "Resolve", "Filter by Status"],
+  },
   transport: {
     title: "Transport & Driver",
     subtitle: "Bus routes, drivers, pickup planning, and transport readiness.",
@@ -268,6 +277,9 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
   const needsDashboardData = ["dashboard", "students", "teachers", "fees", "finance", "income", "expenses", "debtors", "ledger", "revenue", "invoices", "payments", "results", "lms", "attendance", "announcements"].includes(section);
   const needsPrivilegeData = ["dashboard", "users", "roles", "privileges"].includes(section);
   const needsFeeGroupCount = ["dashboard", "fees", "finance", "income", "expenses", "debtors", "ledger", "revenue", "invoices", "payments"].includes(section);
+  const needsComplaintCounts = ["complaints", "dashboard"].includes(section);
+  const needsMessageCounts = ["messages", "dashboard"].includes(section);
+  const needsTransportCounts = ["transport", "dashboard"].includes(section);
 
   const [
     overview,
@@ -280,6 +292,9 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
     privilegeCount,
     rolePrivilegeCount,
     userPrivilegeCount,
+    complaintCounts,
+    messageCounts,
+    transportCounts,
   ] = await Promise.all([
     getAdminOverview(profile.schoolId, { sessionId: context.session?.id, termId: context.term?.id }),
     needsDashboardData ? getDashboardData(profile.schoolId, { sessionId: context.session?.id, termId: context.term?.id }) : Promise.resolve(null),
@@ -291,6 +306,20 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
     needsPrivilegeData ? prisma.privilege.count() : Promise.resolve(0),
     needsPrivilegeData ? prisma.rolePrivilege.count() : Promise.resolve(0),
     needsPrivilegeData ? prisma.userPrivilege.count() : Promise.resolve(0),
+    needsComplaintCounts ? Promise.all([
+      prisma.parentComplaint.count({ where: { schoolId: profile.schoolId } }),
+      prisma.parentComplaint.count({ where: { schoolId: profile.schoolId, status: "OPEN" } }),
+      prisma.parentComplaint.count({ where: { schoolId: profile.schoolId, status: "RESOLVED" } }),
+    ]) : Promise.resolve([0, 0, 0] as [number, number, number]),
+    needsMessageCounts ? Promise.all([
+      prisma.parentMessage.count({ where: { schoolId: profile.schoolId } }),
+      prisma.parentMessage.count({ where: { schoolId: profile.schoolId, status: "SENT" } }),
+    ]) : Promise.resolve([0, 0] as [number, number]),
+    needsTransportCounts ? Promise.all([
+      prisma.route.count({ where: { schoolId: profile.schoolId } }),
+      prisma.driver.count({ where: { schoolId: profile.schoolId } }),
+      prisma.vehicle.count({ where: { schoolId: profile.schoolId } }),
+    ]) : Promise.resolve([0, 0, 0] as [number, number, number]),
   ]);
 
   // Cast to any for legacy metric property access (subjects, lessons, assignments, etc.)
@@ -447,16 +476,22 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
       { label: "Students", value: String(overview.students), helper: "Learner recipients" },
     ],
     messages: [
-      { label: "Messages", value: "—", helper: "Parent messages" },
-      { label: "Unread", value: "—", helper: "Awaiting review" },
+      { label: "Messages", value: String(messageCounts[0]), helper: "Parent messages" },
+      { label: "Sent", value: String(messageCounts[1]), helper: "Messages received" },
       { label: "Parents", value: String(overview.parents), helper: "Active parent accounts" },
       { label: "Announcements", value: String(overview.announcements), helper: "Broadcast posts" },
     ],
+    complaints: [
+      { label: "Complaints", value: String(complaintCounts[0]), helper: "Parent complaints" },
+      { label: "Open", value: String(complaintCounts[1]), helper: "Awaiting resolution" },
+      { label: "Parents", value: String(overview.parents), helper: "Active parent accounts" },
+      { label: "Resolved", value: String(complaintCounts[2]), helper: "Closed complaints" },
+    ],
     transport: [
-      { label: "Routes", value: "—", helper: "No routes configured" },
-      { label: "Drivers", value: "—", helper: "No drivers configured" },
-      { label: "Vehicles", value: "—", helper: "No vehicles configured" },
-      { label: "Stops", value: "—", helper: "No stops configured" },
+      { label: "Routes", value: String(transportCounts[0]), helper: "Bus routes" },
+      { label: "Drivers", value: String(transportCounts[1]), helper: "Assigned drivers" },
+      { label: "Vehicles", value: String(transportCounts[2]), helper: "School vehicles" },
+      { label: "Students", value: String(overview.students), helper: "Transport eligible" },
     ],
     settings: [
       { label: "Config Versions", value: String(activeConfig.version), helper: activeConfig.source },
@@ -585,6 +620,12 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
 
         {section === "teachers" ? <TeacherManager /> : null}
 
+        {section === "academics" ? (
+          <div className="space-y-6">
+            <EventManager />
+          </div>
+        ) : null}
+
         {section === "classes" ? <ClassManager /> : null}
 
         {section === "subjects" ? <SubjectManager /> : null}
@@ -598,6 +639,8 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
         {section === "announcements" ? <AnnouncementManager /> : null}
 
         {section === "messages" ? <MessageManager /> : null}
+
+        {section === "complaints" ? <ComplaintManager /> : null}
 
         {section === "transport" ? <TransportManager /> : null}
 
@@ -631,7 +674,7 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
 
 
         {/* Module Scope - Hidden for all sections with functional managers */}
-        {!["dashboard", "students", "reception", "classes", "parents", "teachers", "subjects", "assessments", "attendance", "lms", "announcements", "messages", "transport", "fees", "finance", "income", "expenses", "debtors", "ledger", "revenue", "invoices", "payments", "bills", "results", "settings", "users", "roles", "privileges", "profile"].includes(section) && (
+        {!["dashboard", "students", "reception", "classes", "parents", "teachers", "academics", "subjects", "assessments", "attendance", "lms", "announcements", "messages", "complaints", "transport", "fees", "finance", "income", "expenses", "debtors", "ledger", "revenue", "invoices", "payments", "bills", "results", "settings", "users", "roles", "privileges", "profile"].includes(section) && (
           <SectionCard title={`${moduleScope.module} Module Scope`}>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">

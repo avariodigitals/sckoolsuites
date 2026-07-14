@@ -5,7 +5,7 @@ import { useState } from "react";
 type CalendarEvent = {
   date: string; // ISO yyyy-mm-dd
   label: string;
-  type: "term-start" | "term-end" | "resumption" | "announcement" | "holiday";
+  type: "term-start" | "term-end" | "resumption" | "announcement" | "holiday" | "school-event";
 };
 
 interface SchoolCalendarViewProps {
@@ -18,6 +18,7 @@ const TYPE_META: Record<CalendarEvent["type"], { dot: string; badge: string; tex
   resumption:      { dot: "bg-emerald-500",badge: "bg-emerald-100 text-emerald-700 border-emerald-300",text: "Resumption", emoji: "🔔" },
   announcement:    { dot: "bg-amber-500",  badge: "bg-amber-100 text-amber-700 border-amber-300", text: "Announcement",  emoji: "📢" },
   holiday:         { dot: "bg-violet-500", badge: "bg-violet-100 text-violet-700 border-violet-300",text: "Holiday",     emoji: "🎉" },
+  "school-event":  { dot: "bg-indigo-500", badge: "bg-indigo-100 text-indigo-700 border-indigo-300",text: "School Event", emoji: "🏫" },
 };
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];

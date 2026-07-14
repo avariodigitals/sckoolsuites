@@ -115,8 +115,12 @@ export function ModernPortalShell({
   );
 
   // Fetch notifications from both persistent records and legacy API
+  // Smart polling: 60s interval, only when tab is visible
   useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+
     const fetchNotifications = async () => {
+      if (document.visibilityState === "hidden") return;
       try {
         const [recordsRes, legacyRes] = await Promise.all([
           fetch("/api/notifications/records", { cache: "no-store" }),
@@ -134,9 +138,34 @@ export function ModernPortalShell({
       }
     };
 
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 15000);
-    return () => clearInterval(interval);
+    const startPolling = () => {
+      if (interval) return;
+      fetchNotifications();
+      interval = setInterval(fetchNotifications, 60000);
+    };
+
+    const stopPolling = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
   const unreadNotifications = notifications.filter((n) => !n.isRead);

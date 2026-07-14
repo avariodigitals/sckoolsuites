@@ -63,6 +63,10 @@ function canSeeStaffContestNotifications(role: NotificationRole) {
   );
 }
 
+function toISO(date: Date | string): string {
+  return typeof date === "string" ? date : date.toISOString();
+}
+
 function sortByDateDesc(items: DashboardNotification[]) {
   return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
@@ -154,7 +158,7 @@ export async function getLatestNotifications({
       title: item.title,
       description: item.body,
       audience: normalizeAudience(item.audience),
-      createdAt: item.createdAt.toISOString(),
+      createdAt: toISO(item.createdAt),
       isHtml: item.isHtml ?? false,
       attachmentUrl: item.attachmentUrl ?? null,
       attachmentName: item.attachmentName ?? null,
@@ -170,7 +174,7 @@ export async function getLatestNotifications({
           title: parsed.title?.trim() || "Bill Contest Update",
           description: parsed.message?.trim() || "A bill contest was updated.",
           audience: normalizeAudience(parsed.audience ?? "ADMIN"),
-          createdAt: parsed.createdAt ?? row.createdAt.toISOString(),
+          createdAt: parsed.createdAt ?? toISO(row.createdAt),
         };
       } catch {
         return null;
@@ -195,7 +199,7 @@ export async function getLatestNotifications({
     title: item.subject?.trim() || "Message sent",
     description: item.message?.trim() || "Your message was sent.",
     audience: "PARENT",
-    createdAt: item.createdAt.toISOString(),
+    createdAt: toISO(item.createdAt),
   })) as DashboardNotification[];
 
   const complaintItems = complaints.map((item: any) => ({
@@ -204,7 +208,7 @@ export async function getLatestNotifications({
     title: item.subject?.trim() || "Complaint submitted",
     description: item.complaint?.trim() || "Your complaint was submitted.",
     audience: "PARENT",
-    createdAt: item.createdAt.toISOString(),
+    createdAt: toISO(item.createdAt),
   })) as DashboardNotification[];
 
   return sortByDateDesc([...roleBaseItems, ...messageItems, ...complaintItems]).slice(0, take);
