@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "parent" ADD COLUMN "title" TEXT;
+ALTER TABLE "parent" ADD COLUMN IF NOT EXISTS "title" TEXT;

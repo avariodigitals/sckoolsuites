@@ -1,5 +1,5 @@
 -- Create notification_record table for persistent notifications with read tracking
-CREATE TABLE "notification_record" (
+CREATE TABLE IF NOT EXISTS "notification_record" (
     "id" SERIAL PRIMARY KEY,
     "school_id" TEXT NOT NULL,
     "user_id" INTEGER NOT NULL,
@@ -15,12 +15,20 @@ CREATE TABLE "notification_record" (
 );
 
 -- Add foreign key constraints
-ALTER TABLE "notification_record" ADD CONSTRAINT "notification_record_user_id_fkey"
-  FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE;
-ALTER TABLE "notification_record" ADD CONSTRAINT "notification_record_actor_user_id_fkey"
-  FOREIGN KEY ("actor_user_id") REFERENCES "user"("id") ON DELETE SET NULL;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'notification_record_user_id_fkey') THEN
+    ALTER TABLE "notification_record" ADD CONSTRAINT "notification_record_user_id_fkey"
+      FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'notification_record_actor_user_id_fkey') THEN
+    ALTER TABLE "notification_record" ADD CONSTRAINT "notification_record_actor_user_id_fkey"
+      FOREIGN KEY ("actor_user_id") REFERENCES "user"("id") ON DELETE SET NULL;
+  END IF;
+END $$;
 
 -- Add indexes
-CREATE INDEX "notification_record_user_id_is_read_idx" ON "notification_record"("user_id", "is_read");
-CREATE INDEX "notification_record_school_id_idx" ON "notification_record"("school_id");
-CREATE INDEX "notification_record_created_at_idx" ON "notification_record"("created_at");
+CREATE INDEX IF NOT EXISTS "notification_record_user_id_is_read_idx" ON "notification_record"("user_id", "is_read");
+CREATE INDEX IF NOT EXISTS "notification_record_school_id_idx" ON "notification_record"("school_id");
+CREATE INDEX IF NOT EXISTS "notification_record_created_at_idx" ON "notification_record"("created_at");

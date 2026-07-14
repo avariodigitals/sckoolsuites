@@ -2,9 +2,9 @@
 -- firstName and lastName are NOT NULL; middleName is nullable
 -- Backfill from user.name for existing rows, then enforce NOT NULL
 
-ALTER TABLE "student" ADD COLUMN "first_name" TEXT;
-ALTER TABLE "student" ADD COLUMN "middle_name" TEXT;
-ALTER TABLE "student" ADD COLUMN "last_name" TEXT;
+ALTER TABLE "student" ADD COLUMN IF NOT EXISTS "first_name" TEXT;
+ALTER TABLE "student" ADD COLUMN IF NOT EXISTS "middle_name" TEXT;
+ALTER TABLE "student" ADD COLUMN IF NOT EXISTS "last_name" TEXT;
 
 -- Backfill: split user.name into first/middle/last for existing students
 UPDATE "student" s
@@ -43,6 +43,20 @@ WHERE s."user_id" = u."id";
 UPDATE "student" SET "first_name" = 'Unknown' WHERE "first_name" IS NULL;
 UPDATE "student" SET "last_name" = 'Unknown' WHERE "last_name" IS NULL;
 
--- Now enforce NOT NULL
-ALTER TABLE "student" ALTER COLUMN "first_name" SET NOT NULL;
-ALTER TABLE "student" ALTER COLUMN "last_name" SET NOT NULL;
+-- Now enforce NOT NULL (wrap in DO block in case already NOT NULL)
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'student' AND column_name = 'first_name' AND is_nullable = 'YES'
+  ) THEN
+    ALTER TABLE "student" ALTER COLUMN "first_name" SET NOT NULL;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'student' AND column_name = 'last_name' AND is_nullable = 'YES'
+  ) THEN
+    ALTER TABLE "student" ALTER COLUMN "last_name" SET NOT NULL;
+  END IF;
+END $$;

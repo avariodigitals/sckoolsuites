@@ -51,7 +51,7 @@ DO $$ BEGIN
 END $$;
 
 -- CreateTable
-CREATE TABLE "school" (
+CREATE TABLE IF NOT EXISTS "school" (
     "id" TEXT NOT NULL DEFAULT 'default',
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE "school" (
 );
 
 -- CreateTable
-CREATE TABLE "school_branding" (
+CREATE TABLE IF NOT EXISTS "school_branding" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL,
     "logo_url" TEXT,
@@ -93,7 +93,7 @@ CREATE TABLE "school_branding" (
 );
 
 -- CreateTable
-CREATE TABLE "role" (
+CREATE TABLE IF NOT EXISTS "role" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "label" TEXT,
@@ -104,7 +104,7 @@ CREATE TABLE "role" (
 );
 
 -- CreateTable
-CREATE TABLE "user" (
+CREATE TABLE IF NOT EXISTS "user" (
     "id" SERIAL NOT NULL,
     "role_id" INTEGER NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
@@ -122,7 +122,7 @@ CREATE TABLE "user" (
 );
 
 -- CreateTable
-CREATE TABLE "parent" (
+CREATE TABLE IF NOT EXISTS "parent" (
     "id" SERIAL NOT NULL,
     "user_id" INTEGER NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
@@ -142,7 +142,7 @@ CREATE TABLE "parent" (
 );
 
 -- CreateTable
-CREATE TABLE "teacher" (
+CREATE TABLE IF NOT EXISTS "teacher" (
     "id" SERIAL NOT NULL,
     "user_id" INTEGER NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
@@ -153,7 +153,7 @@ CREATE TABLE "teacher" (
 );
 
 -- CreateTable
-CREATE TABLE "student" (
+CREATE TABLE IF NOT EXISTS "student" (
     "id" SERIAL NOT NULL,
     "user_id" INTEGER NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
@@ -176,7 +176,7 @@ CREATE TABLE "student" (
 );
 
 -- CreateTable
-CREATE TABLE "student_guardian" (
+CREATE TABLE IF NOT EXISTS "student_guardian" (
     "id" SERIAL NOT NULL,
     "student_id" INTEGER NOT NULL,
     "parent_id" INTEGER NOT NULL,
@@ -189,7 +189,7 @@ CREATE TABLE "student_guardian" (
 );
 
 -- CreateTable
-CREATE TABLE "student_enrollment" (
+CREATE TABLE IF NOT EXISTS "student_enrollment" (
     "id" SERIAL NOT NULL,
     "student_id" INTEGER NOT NULL,
     "session_id" INTEGER NOT NULL,
@@ -203,7 +203,7 @@ CREATE TABLE "student_enrollment" (
 );
 
 -- CreateTable
-CREATE TABLE "class_group" (
+CREATE TABLE IF NOT EXISTS "class_group" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "name" TEXT NOT NULL,
@@ -214,7 +214,7 @@ CREATE TABLE "class_group" (
 );
 
 -- CreateTable
-CREATE TABLE "class" (
+CREATE TABLE IF NOT EXISTS "class" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "name" TEXT NOT NULL,
@@ -228,7 +228,7 @@ CREATE TABLE "class" (
 );
 
 -- CreateTable
-CREATE TABLE "class_arm" (
+CREATE TABLE IF NOT EXISTS "class_arm" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "class_id" INTEGER,
@@ -243,7 +243,7 @@ CREATE TABLE "class_arm" (
 );
 
 -- CreateTable
-CREATE TABLE "session" (
+CREATE TABLE IF NOT EXISTS "session" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "name" TEXT NOT NULL,
@@ -258,7 +258,7 @@ CREATE TABLE "session" (
 );
 
 -- CreateTable
-CREATE TABLE "term" (
+CREATE TABLE IF NOT EXISTS "term" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "session_id" INTEGER NOT NULL,
@@ -276,7 +276,7 @@ CREATE TABLE "term" (
 );
 
 -- CreateTable
-CREATE TABLE "subject" (
+CREATE TABLE IF NOT EXISTS "subject" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "name" TEXT NOT NULL,
@@ -292,7 +292,7 @@ CREATE TABLE "subject" (
 );
 
 -- CreateTable
-CREATE TABLE "fee_group" (
+CREATE TABLE IF NOT EXISTS "fee_group" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "name" TEXT NOT NULL,
@@ -306,7 +306,7 @@ CREATE TABLE "fee_group" (
 );
 
 -- CreateTable
-CREATE TABLE "fee_component" (
+CREATE TABLE IF NOT EXISTS "fee_component" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
@@ -318,7 +318,7 @@ CREATE TABLE "fee_component" (
 );
 
 -- CreateTable
-CREATE TABLE "fee_item" (
+CREATE TABLE IF NOT EXISTS "fee_item" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "fee_group_id" INTEGER NOT NULL,
@@ -341,7 +341,7 @@ CREATE TABLE "fee_item" (
 );
 
 -- CreateTable
-CREATE TABLE "fee_profile" (
+CREATE TABLE IF NOT EXISTS "fee_profile" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "fee_group_id" INTEGER NOT NULL,
@@ -357,7 +357,7 @@ CREATE TABLE "fee_profile" (
 );
 
 -- CreateTable
-CREATE TABLE "fee_profile_item" (
+CREATE TABLE IF NOT EXISTS "fee_profile_item" (
     "id" SERIAL NOT NULL,
     "fee_profile_id" INTEGER NOT NULL,
     "fee_component_id" INTEGER NOT NULL,
@@ -371,7 +371,7 @@ CREATE TABLE "fee_profile_item" (
 );
 
 -- CreateTable
-CREATE TABLE "fee_profile_class" (
+CREATE TABLE IF NOT EXISTS "fee_profile_class" (
     "id" SERIAL NOT NULL,
     "fee_profile_id" INTEGER NOT NULL,
     "class_id" INTEGER NOT NULL,
@@ -381,7 +381,7 @@ CREATE TABLE "fee_profile_class" (
 );
 
 -- CreateTable
-CREATE TABLE "fee_profile_arm" (
+CREATE TABLE IF NOT EXISTS "fee_profile_arm" (
     "id" SERIAL NOT NULL,
     "fee_profile_id" INTEGER NOT NULL,
     "arm_id" INTEGER NOT NULL,
@@ -391,7 +391,7 @@ CREATE TABLE "fee_profile_arm" (
 );
 
 -- CreateTable
-CREATE TABLE "invoice" (
+CREATE TABLE IF NOT EXISTS "invoice" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "student_id" INTEGER NOT NULL,
@@ -414,7 +414,7 @@ CREATE TABLE "invoice" (
 );
 
 -- CreateTable
-CREATE TABLE "invoice_item" (
+CREATE TABLE IF NOT EXISTS "invoice_item" (
     "id" SERIAL NOT NULL,
     "invoice_id" INTEGER NOT NULL,
     "fee_item_id" INTEGER NOT NULL,
@@ -425,7 +425,7 @@ CREATE TABLE "invoice_item" (
 );
 
 -- CreateTable
-CREATE TABLE "payment" (
+CREATE TABLE IF NOT EXISTS "payment" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "invoice_id" INTEGER NOT NULL,
@@ -442,7 +442,7 @@ CREATE TABLE "payment" (
 );
 
 -- CreateTable
-CREATE TABLE "payment_proof" (
+CREATE TABLE IF NOT EXISTS "payment_proof" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "payment_id" INTEGER NOT NULL,
@@ -461,7 +461,7 @@ CREATE TABLE "payment_proof" (
 );
 
 -- CreateTable
-CREATE TABLE "receipt" (
+CREATE TABLE IF NOT EXISTS "receipt" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "invoice_id" INTEGER NOT NULL,
@@ -479,7 +479,7 @@ CREATE TABLE "receipt" (
 );
 
 -- CreateTable
-CREATE TABLE "score" (
+CREATE TABLE IF NOT EXISTS "score" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "student_id" INTEGER NOT NULL,
@@ -499,7 +499,7 @@ CREATE TABLE "score" (
 );
 
 -- CreateTable
-CREATE TABLE "result" (
+CREATE TABLE IF NOT EXISTS "result" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "student_id" INTEGER NOT NULL,
@@ -534,7 +534,7 @@ CREATE TABLE "result" (
 );
 
 -- CreateTable
-CREATE TABLE "attendance" (
+CREATE TABLE IF NOT EXISTS "attendance" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "session_id" INTEGER NOT NULL,
@@ -552,7 +552,7 @@ CREATE TABLE "attendance" (
 );
 
 -- CreateTable
-CREATE TABLE "lesson" (
+CREATE TABLE IF NOT EXISTS "lesson" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "class_id" INTEGER,
@@ -566,7 +566,7 @@ CREATE TABLE "lesson" (
 );
 
 -- CreateTable
-CREATE TABLE "assignment" (
+CREATE TABLE IF NOT EXISTS "assignment" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "lesson_id" INTEGER,
@@ -585,7 +585,7 @@ CREATE TABLE "assignment" (
 );
 
 -- CreateTable
-CREATE TABLE "quiz" (
+CREATE TABLE IF NOT EXISTS "quiz" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "class_id" INTEGER,
@@ -602,7 +602,7 @@ CREATE TABLE "quiz" (
 );
 
 -- CreateTable
-CREATE TABLE "online_class" (
+CREATE TABLE IF NOT EXISTS "online_class" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "class_id" INTEGER,
@@ -620,7 +620,7 @@ CREATE TABLE "online_class" (
 );
 
 -- CreateTable
-CREATE TABLE "announcement" (
+CREATE TABLE IF NOT EXISTS "announcement" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "session_id" INTEGER,
@@ -636,7 +636,7 @@ CREATE TABLE "announcement" (
 );
 
 -- CreateTable
-CREATE TABLE "school_setting" (
+CREATE TABLE IF NOT EXISTS "school_setting" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL,
     "key" TEXT NOT NULL,
@@ -648,7 +648,7 @@ CREATE TABLE "school_setting" (
 );
 
 -- CreateTable
-CREATE TABLE "school_config_version" (
+CREATE TABLE IF NOT EXISTS "school_config_version" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL,
     "version" INTEGER NOT NULL,
@@ -663,7 +663,7 @@ CREATE TABLE "school_config_version" (
 );
 
 -- CreateTable
-CREATE TABLE "income_category" (
+CREATE TABLE IF NOT EXISTS "income_category" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -677,7 +677,7 @@ CREATE TABLE "income_category" (
 );
 
 -- CreateTable
-CREATE TABLE "expense_category" (
+CREATE TABLE IF NOT EXISTS "expense_category" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -690,7 +690,7 @@ CREATE TABLE "expense_category" (
 );
 
 -- CreateTable
-CREATE TABLE "income" (
+CREATE TABLE IF NOT EXISTS "income" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL,
     "category_id" INTEGER,
@@ -707,7 +707,7 @@ CREATE TABLE "income" (
 );
 
 -- CreateTable
-CREATE TABLE "expense" (
+CREATE TABLE IF NOT EXISTS "expense" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL,
     "category_id" INTEGER,
@@ -721,7 +721,7 @@ CREATE TABLE "expense" (
 );
 
 -- CreateTable
-CREATE TABLE "admission_application" (
+CREATE TABLE IF NOT EXISTS "admission_application" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "session_id" INTEGER,
@@ -763,7 +763,7 @@ CREATE TABLE "admission_application" (
 );
 
 -- CreateTable
-CREATE TABLE "admission_guardian" (
+CREATE TABLE IF NOT EXISTS "admission_guardian" (
     "id" SERIAL NOT NULL,
     "application_id" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
@@ -787,7 +787,7 @@ CREATE TABLE "admission_guardian" (
 );
 
 -- CreateTable
-CREATE TABLE "admission_document" (
+CREATE TABLE IF NOT EXISTS "admission_document" (
     "id" SERIAL NOT NULL,
     "application_id" INTEGER NOT NULL,
     "document_type" TEXT,
@@ -802,7 +802,7 @@ CREATE TABLE "admission_document" (
 );
 
 -- CreateTable
-CREATE TABLE "admission_qualification" (
+CREATE TABLE IF NOT EXISTS "admission_qualification" (
     "id" SERIAL NOT NULL,
     "application_id" INTEGER NOT NULL,
     "qualification_level" TEXT,
@@ -821,7 +821,7 @@ CREATE TABLE "admission_qualification" (
 );
 
 -- CreateTable
-CREATE TABLE "vehicle" (
+CREATE TABLE IF NOT EXISTS "vehicle" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "name" TEXT NOT NULL,
@@ -837,7 +837,7 @@ CREATE TABLE "vehicle" (
 );
 
 -- CreateTable
-CREATE TABLE "driver" (
+CREATE TABLE IF NOT EXISTS "driver" (
     "id" SERIAL NOT NULL,
     "user_id" INTEGER NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
@@ -852,7 +852,7 @@ CREATE TABLE "driver" (
 );
 
 -- CreateTable
-CREATE TABLE "route" (
+CREATE TABLE IF NOT EXISTS "route" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "name" TEXT NOT NULL,
@@ -867,7 +867,7 @@ CREATE TABLE "route" (
 );
 
 -- CreateTable
-CREATE TABLE "route_stop" (
+CREATE TABLE IF NOT EXISTS "route_stop" (
     "id" SERIAL NOT NULL,
     "route_id" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
@@ -880,7 +880,7 @@ CREATE TABLE "route_stop" (
 );
 
 -- CreateTable
-CREATE TABLE "visitor" (
+CREATE TABLE IF NOT EXISTS "visitor" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "name" TEXT NOT NULL,
@@ -900,7 +900,7 @@ CREATE TABLE "visitor" (
 );
 
 -- CreateTable
-CREATE TABLE "enquiry" (
+CREATE TABLE IF NOT EXISTS "enquiry" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "enquiry_number" TEXT NOT NULL,
@@ -920,7 +920,7 @@ CREATE TABLE "enquiry" (
 );
 
 -- CreateTable
-CREATE TABLE "gate_pass" (
+CREATE TABLE IF NOT EXISTS "gate_pass" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "pass_number" TEXT NOT NULL,
@@ -941,7 +941,7 @@ CREATE TABLE "gate_pass" (
 );
 
 -- CreateTable
-CREATE TABLE "reception_complaint" (
+CREATE TABLE IF NOT EXISTS "reception_complaint" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "complaint_number" TEXT NOT NULL,
@@ -963,7 +963,7 @@ CREATE TABLE "reception_complaint" (
 );
 
 -- CreateTable
-CREATE TABLE "call_log" (
+CREATE TABLE IF NOT EXISTS "call_log" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "call_number" TEXT NOT NULL,
@@ -981,7 +981,7 @@ CREATE TABLE "call_log" (
 );
 
 -- CreateTable
-CREATE TABLE "correspondence" (
+CREATE TABLE IF NOT EXISTS "correspondence" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "ref_number" TEXT NOT NULL,
@@ -1001,7 +1001,7 @@ CREATE TABLE "correspondence" (
 );
 
 -- CreateTable
-CREATE TABLE "query" (
+CREATE TABLE IF NOT EXISTS "query" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "query_number" TEXT NOT NULL,
@@ -1021,7 +1021,7 @@ CREATE TABLE "query" (
 );
 
 -- CreateTable
-CREATE TABLE "parent_message" (
+CREATE TABLE IF NOT EXISTS "parent_message" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "parent_id" INTEGER NOT NULL,
@@ -1036,7 +1036,7 @@ CREATE TABLE "parent_message" (
 );
 
 -- CreateTable
-CREATE TABLE "parent_complaint" (
+CREATE TABLE IF NOT EXISTS "parent_complaint" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "parent_id" INTEGER NOT NULL,
@@ -1053,7 +1053,7 @@ CREATE TABLE "parent_complaint" (
 );
 
 -- CreateTable
-CREATE TABLE "audit_log" (
+CREATE TABLE IF NOT EXISTS "audit_log" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "actor_user_id" INTEGER,
@@ -1067,7 +1067,7 @@ CREATE TABLE "audit_log" (
 );
 
 -- CreateTable
-CREATE TABLE "invoice_contest_audit" (
+CREATE TABLE IF NOT EXISTS "invoice_contest_audit" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "invoice_id" INTEGER NOT NULL,
@@ -1081,7 +1081,7 @@ CREATE TABLE "invoice_contest_audit" (
 );
 
 -- CreateTable
-CREATE TABLE "privilege" (
+CREATE TABLE IF NOT EXISTS "privilege" (
     "id" SERIAL NOT NULL,
     "code" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -1093,7 +1093,7 @@ CREATE TABLE "privilege" (
 );
 
 -- CreateTable
-CREATE TABLE "role_privilege" (
+CREATE TABLE IF NOT EXISTS "role_privilege" (
     "id" SERIAL NOT NULL,
     "role_id" INTEGER NOT NULL,
     "privilege_id" INTEGER NOT NULL,
@@ -1104,7 +1104,7 @@ CREATE TABLE "role_privilege" (
 );
 
 -- CreateTable
-CREATE TABLE "user_privilege" (
+CREATE TABLE IF NOT EXISTS "user_privilege" (
     "id" SERIAL NOT NULL,
     "user_id" INTEGER NOT NULL,
     "privilege_id" INTEGER NOT NULL,
@@ -1116,7 +1116,7 @@ CREATE TABLE "user_privilege" (
 );
 
 -- CreateTable
-CREATE TABLE "assessment" (
+CREATE TABLE IF NOT EXISTS "assessment" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL DEFAULT 'default',
     "name" TEXT NOT NULL,
@@ -1132,7 +1132,7 @@ CREATE TABLE "assessment" (
 );
 
 -- CreateTable
-CREATE TABLE "class_assessment" (
+CREATE TABLE IF NOT EXISTS "class_assessment" (
     "id" SERIAL NOT NULL,
     "class_id" INTEGER NOT NULL,
     "assessment_id" INTEGER NOT NULL,
@@ -1144,7 +1144,7 @@ CREATE TABLE "class_assessment" (
 );
 
 -- CreateTable
-CREATE TABLE "class_group_assessment" (
+CREATE TABLE IF NOT EXISTS "class_group_assessment" (
     "id" SERIAL NOT NULL,
     "class_group_id" INTEGER NOT NULL,
     "assessment_id" INTEGER NOT NULL,
@@ -1156,7 +1156,7 @@ CREATE TABLE "class_group_assessment" (
 );
 
 -- CreateTable
-CREATE TABLE "payment_method" (
+CREATE TABLE IF NOT EXISTS "payment_method" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -1170,7 +1170,7 @@ CREATE TABLE "payment_method" (
 );
 
 -- CreateTable
-CREATE TABLE "school_bank_account" (
+CREATE TABLE IF NOT EXISTS "school_bank_account" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL,
     "account_name" TEXT NOT NULL,
@@ -1187,7 +1187,7 @@ CREATE TABLE "school_bank_account" (
 );
 
 -- CreateTable
-CREATE TABLE "school_template" (
+CREATE TABLE IF NOT EXISTS "school_template" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -1204,580 +1204,580 @@ CREATE TABLE "school_template" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "school_branding_school_id_key" ON "school_branding"("school_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "school_branding_school_id_key" ON "school_branding"("school_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "role_name_key" ON "role"("name");
+CREATE UNIQUE INDEX IF NOT EXISTS "role_name_key" ON "role"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "user_email_key" ON "user"("email");
 
 -- CreateIndex
-CREATE INDEX "user_email_idx" ON "user"("email");
+CREATE INDEX IF NOT EXISTS "user_email_idx" ON "user"("email");
 
 -- CreateIndex
-CREATE INDEX "user_role_id_idx" ON "user"("role_id");
+CREATE INDEX IF NOT EXISTS "user_role_id_idx" ON "user"("role_id");
 
 -- CreateIndex
-CREATE INDEX "user_school_id_idx" ON "user"("school_id");
+CREATE INDEX IF NOT EXISTS "user_school_id_idx" ON "user"("school_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "parent_user_id_key" ON "parent"("user_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "parent_user_id_key" ON "parent"("user_id");
 
 -- CreateIndex
-CREATE INDEX "parent_user_id_idx" ON "parent"("user_id");
+CREATE INDEX IF NOT EXISTS "parent_user_id_idx" ON "parent"("user_id");
 
 -- CreateIndex
-CREATE INDEX "parent_school_id_idx" ON "parent"("school_id");
+CREATE INDEX IF NOT EXISTS "parent_school_id_idx" ON "parent"("school_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "teacher_user_id_key" ON "teacher"("user_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "teacher_user_id_key" ON "teacher"("user_id");
 
 -- CreateIndex
-CREATE INDEX "teacher_user_id_idx" ON "teacher"("user_id");
+CREATE INDEX IF NOT EXISTS "teacher_user_id_idx" ON "teacher"("user_id");
 
 -- CreateIndex
-CREATE INDEX "teacher_school_id_idx" ON "teacher"("school_id");
+CREATE INDEX IF NOT EXISTS "teacher_school_id_idx" ON "teacher"("school_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "student_user_id_key" ON "student"("user_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "student_user_id_key" ON "student"("user_id");
 
 -- CreateIndex
-CREATE INDEX "student_user_id_idx" ON "student"("user_id");
+CREATE INDEX IF NOT EXISTS "student_user_id_idx" ON "student"("user_id");
 
 -- CreateIndex
-CREATE INDEX "student_parent_id_idx" ON "student"("parent_id");
+CREATE INDEX IF NOT EXISTS "student_parent_id_idx" ON "student"("parent_id");
 
 -- CreateIndex
-CREATE INDEX "student_class_id_idx" ON "student"("class_id");
+CREATE INDEX IF NOT EXISTS "student_class_id_idx" ON "student"("class_id");
 
 -- CreateIndex
-CREATE INDEX "student_school_id_idx" ON "student"("school_id");
+CREATE INDEX IF NOT EXISTS "student_school_id_idx" ON "student"("school_id");
 
 -- CreateIndex
-CREATE INDEX "student_guardian_student_id_idx" ON "student_guardian"("student_id");
+CREATE INDEX IF NOT EXISTS "student_guardian_student_id_idx" ON "student_guardian"("student_id");
 
 -- CreateIndex
-CREATE INDEX "student_guardian_parent_id_idx" ON "student_guardian"("parent_id");
+CREATE INDEX IF NOT EXISTS "student_guardian_parent_id_idx" ON "student_guardian"("parent_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "student_guardian_student_id_parent_id_key" ON "student_guardian"("student_id", "parent_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "student_guardian_student_id_parent_id_key" ON "student_guardian"("student_id", "parent_id");
 
 -- CreateIndex
-CREATE INDEX "student_enrollment_student_id_idx" ON "student_enrollment"("student_id");
+CREATE INDEX IF NOT EXISTS "student_enrollment_student_id_idx" ON "student_enrollment"("student_id");
 
 -- CreateIndex
-CREATE INDEX "student_enrollment_session_id_idx" ON "student_enrollment"("session_id");
+CREATE INDEX IF NOT EXISTS "student_enrollment_session_id_idx" ON "student_enrollment"("session_id");
 
 -- CreateIndex
-CREATE INDEX "student_enrollment_term_id_idx" ON "student_enrollment"("term_id");
+CREATE INDEX IF NOT EXISTS "student_enrollment_term_id_idx" ON "student_enrollment"("term_id");
 
 -- CreateIndex
-CREATE INDEX "student_enrollment_class_id_idx" ON "student_enrollment"("class_id");
+CREATE INDEX IF NOT EXISTS "student_enrollment_class_id_idx" ON "student_enrollment"("class_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "student_enrollment_student_id_session_id_term_id_key" ON "student_enrollment"("student_id", "session_id", "term_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "student_enrollment_student_id_session_id_term_id_key" ON "student_enrollment"("student_id", "session_id", "term_id");
 
 -- CreateIndex
-CREATE INDEX "class_group_school_id_idx" ON "class_group"("school_id");
+CREATE INDEX IF NOT EXISTS "class_group_school_id_idx" ON "class_group"("school_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "class_group_school_id_name_key" ON "class_group"("school_id", "name");
+CREATE UNIQUE INDEX IF NOT EXISTS "class_group_school_id_name_key" ON "class_group"("school_id", "name");
 
 -- CreateIndex
-CREATE INDEX "class_school_id_idx" ON "class"("school_id");
+CREATE INDEX IF NOT EXISTS "class_school_id_idx" ON "class"("school_id");
 
 -- CreateIndex
-CREATE INDEX "class_class_group_id_idx" ON "class"("class_group_id");
+CREATE INDEX IF NOT EXISTS "class_class_group_id_idx" ON "class"("class_group_id");
 
 -- CreateIndex
-CREATE INDEX "class_teacher_id_idx" ON "class"("teacher_id");
+CREATE INDEX IF NOT EXISTS "class_teacher_id_idx" ON "class"("teacher_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "class_school_id_name_key" ON "class"("school_id", "name");
+CREATE UNIQUE INDEX IF NOT EXISTS "class_school_id_name_key" ON "class"("school_id", "name");
 
 -- CreateIndex
-CREATE INDEX "class_arm_school_id_idx" ON "class_arm"("school_id");
+CREATE INDEX IF NOT EXISTS "class_arm_school_id_idx" ON "class_arm"("school_id");
 
 -- CreateIndex
-CREATE INDEX "class_arm_class_id_idx" ON "class_arm"("class_id");
+CREATE INDEX IF NOT EXISTS "class_arm_class_id_idx" ON "class_arm"("class_id");
 
 -- CreateIndex
-CREATE INDEX "class_arm_teacher_id_idx" ON "class_arm"("teacher_id");
+CREATE INDEX IF NOT EXISTS "class_arm_teacher_id_idx" ON "class_arm"("teacher_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "class_arm_class_id_name_key" ON "class_arm"("class_id", "name");
+CREATE UNIQUE INDEX IF NOT EXISTS "class_arm_class_id_name_key" ON "class_arm"("class_id", "name");
 
 -- CreateIndex
-CREATE INDEX "session_school_id_idx" ON "session"("school_id");
+CREATE INDEX IF NOT EXISTS "session_school_id_idx" ON "session"("school_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "session_school_id_name_key" ON "session"("school_id", "name");
+CREATE UNIQUE INDEX IF NOT EXISTS "session_school_id_name_key" ON "session"("school_id", "name");
 
 -- CreateIndex
-CREATE INDEX "term_school_id_idx" ON "term"("school_id");
+CREATE INDEX IF NOT EXISTS "term_school_id_idx" ON "term"("school_id");
 
 -- CreateIndex
-CREATE INDEX "term_session_id_idx" ON "term"("session_id");
+CREATE INDEX IF NOT EXISTS "term_session_id_idx" ON "term"("session_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "term_session_id_name_key" ON "term"("session_id", "name");
+CREATE UNIQUE INDEX IF NOT EXISTS "term_session_id_name_key" ON "term"("session_id", "name");
 
 -- CreateIndex
-CREATE INDEX "subject_school_id_idx" ON "subject"("school_id");
+CREATE INDEX IF NOT EXISTS "subject_school_id_idx" ON "subject"("school_id");
 
 -- CreateIndex
-CREATE INDEX "subject_class_id_idx" ON "subject"("class_id");
+CREATE INDEX IF NOT EXISTS "subject_class_id_idx" ON "subject"("class_id");
 
 -- CreateIndex
-CREATE INDEX "subject_teacher_id_idx" ON "subject"("teacher_id");
+CREATE INDEX IF NOT EXISTS "subject_teacher_id_idx" ON "subject"("teacher_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "fee_group_code_key" ON "fee_group"("code");
+CREATE UNIQUE INDEX IF NOT EXISTS "fee_group_code_key" ON "fee_group"("code");
 
 -- CreateIndex
-CREATE INDEX "fee_group_school_id_idx" ON "fee_group"("school_id");
+CREATE INDEX IF NOT EXISTS "fee_group_school_id_idx" ON "fee_group"("school_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "fee_group_school_id_name_key" ON "fee_group"("school_id", "name");
+CREATE UNIQUE INDEX IF NOT EXISTS "fee_group_school_id_name_key" ON "fee_group"("school_id", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "fee_component_name_key" ON "fee_component"("name");
+CREATE UNIQUE INDEX IF NOT EXISTS "fee_component_name_key" ON "fee_component"("name");
 
 -- CreateIndex
-CREATE INDEX "fee_item_school_id_idx" ON "fee_item"("school_id");
+CREATE INDEX IF NOT EXISTS "fee_item_school_id_idx" ON "fee_item"("school_id");
 
 -- CreateIndex
-CREATE INDEX "fee_item_fee_group_id_idx" ON "fee_item"("fee_group_id");
+CREATE INDEX IF NOT EXISTS "fee_item_fee_group_id_idx" ON "fee_item"("fee_group_id");
 
 -- CreateIndex
-CREATE INDEX "fee_item_class_id_idx" ON "fee_item"("class_id");
+CREATE INDEX IF NOT EXISTS "fee_item_class_id_idx" ON "fee_item"("class_id");
 
 -- CreateIndex
-CREATE INDEX "fee_item_arm_id_idx" ON "fee_item"("arm_id");
+CREATE INDEX IF NOT EXISTS "fee_item_arm_id_idx" ON "fee_item"("arm_id");
 
 -- CreateIndex
-CREATE INDEX "fee_item_session_id_idx" ON "fee_item"("session_id");
+CREATE INDEX IF NOT EXISTS "fee_item_session_id_idx" ON "fee_item"("session_id");
 
 -- CreateIndex
-CREATE INDEX "fee_item_term_id_idx" ON "fee_item"("term_id");
+CREATE INDEX IF NOT EXISTS "fee_item_term_id_idx" ON "fee_item"("term_id");
 
 -- CreateIndex
-CREATE INDEX "fee_profile_school_id_idx" ON "fee_profile"("school_id");
+CREATE INDEX IF NOT EXISTS "fee_profile_school_id_idx" ON "fee_profile"("school_id");
 
 -- CreateIndex
-CREATE INDEX "fee_profile_fee_group_id_idx" ON "fee_profile"("fee_group_id");
+CREATE INDEX IF NOT EXISTS "fee_profile_fee_group_id_idx" ON "fee_profile"("fee_group_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "fee_profile_item_fee_profile_id_fee_component_id_key" ON "fee_profile_item"("fee_profile_id", "fee_component_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "fee_profile_item_fee_profile_id_fee_component_id_key" ON "fee_profile_item"("fee_profile_id", "fee_component_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "fee_profile_class_fee_profile_id_class_id_key" ON "fee_profile_class"("fee_profile_id", "class_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "fee_profile_class_fee_profile_id_class_id_key" ON "fee_profile_class"("fee_profile_id", "class_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "fee_profile_arm_fee_profile_id_arm_id_key" ON "fee_profile_arm"("fee_profile_id", "arm_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "fee_profile_arm_fee_profile_id_arm_id_key" ON "fee_profile_arm"("fee_profile_id", "arm_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "invoice_invoice_number_key" ON "invoice"("invoice_number");
+CREATE UNIQUE INDEX IF NOT EXISTS "invoice_invoice_number_key" ON "invoice"("invoice_number");
 
 -- CreateIndex
-CREATE INDEX "invoice_school_id_idx" ON "invoice"("school_id");
+CREATE INDEX IF NOT EXISTS "invoice_school_id_idx" ON "invoice"("school_id");
 
 -- CreateIndex
-CREATE INDEX "invoice_student_id_idx" ON "invoice"("student_id");
+CREATE INDEX IF NOT EXISTS "invoice_student_id_idx" ON "invoice"("student_id");
 
 -- CreateIndex
-CREATE INDEX "invoice_term_id_idx" ON "invoice"("term_id");
+CREATE INDEX IF NOT EXISTS "invoice_term_id_idx" ON "invoice"("term_id");
 
 -- CreateIndex
-CREATE INDEX "invoice_session_id_idx" ON "invoice"("session_id");
+CREATE INDEX IF NOT EXISTS "invoice_session_id_idx" ON "invoice"("session_id");
 
 -- CreateIndex
-CREATE INDEX "invoice_parent_id_idx" ON "invoice"("parent_id");
+CREATE INDEX IF NOT EXISTS "invoice_parent_id_idx" ON "invoice"("parent_id");
 
 -- CreateIndex
-CREATE INDEX "invoice_class_id_idx" ON "invoice"("class_id");
+CREATE INDEX IF NOT EXISTS "invoice_class_id_idx" ON "invoice"("class_id");
 
 -- CreateIndex
-CREATE INDEX "invoice_item_invoice_id_idx" ON "invoice_item"("invoice_id");
+CREATE INDEX IF NOT EXISTS "invoice_item_invoice_id_idx" ON "invoice_item"("invoice_id");
 
 -- CreateIndex
-CREATE INDEX "invoice_item_fee_item_id_idx" ON "invoice_item"("fee_item_id");
+CREATE INDEX IF NOT EXISTS "invoice_item_fee_item_id_idx" ON "invoice_item"("fee_item_id");
 
 -- CreateIndex
-CREATE INDEX "payment_school_id_idx" ON "payment"("school_id");
+CREATE INDEX IF NOT EXISTS "payment_school_id_idx" ON "payment"("school_id");
 
 -- CreateIndex
-CREATE INDEX "payment_invoice_id_idx" ON "payment"("invoice_id");
+CREATE INDEX IF NOT EXISTS "payment_invoice_id_idx" ON "payment"("invoice_id");
 
 -- CreateIndex
-CREATE INDEX "payment_student_id_idx" ON "payment"("student_id");
+CREATE INDEX IF NOT EXISTS "payment_student_id_idx" ON "payment"("student_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "payment_proof_payment_id_key" ON "payment_proof"("payment_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "payment_proof_payment_id_key" ON "payment_proof"("payment_id");
 
 -- CreateIndex
-CREATE INDEX "payment_proof_school_id_idx" ON "payment_proof"("school_id");
+CREATE INDEX IF NOT EXISTS "payment_proof_school_id_idx" ON "payment_proof"("school_id");
 
 -- CreateIndex
-CREATE INDEX "payment_proof_payment_id_idx" ON "payment_proof"("payment_id");
+CREATE INDEX IF NOT EXISTS "payment_proof_payment_id_idx" ON "payment_proof"("payment_id");
 
 -- CreateIndex
-CREATE INDEX "payment_proof_reviewed_by_id_idx" ON "payment_proof"("reviewed_by_id");
+CREATE INDEX IF NOT EXISTS "payment_proof_reviewed_by_id_idx" ON "payment_proof"("reviewed_by_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "receipt_invoice_id_key" ON "receipt"("invoice_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "receipt_invoice_id_key" ON "receipt"("invoice_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "receipt_receipt_number_key" ON "receipt"("receipt_number");
+CREATE UNIQUE INDEX IF NOT EXISTS "receipt_receipt_number_key" ON "receipt"("receipt_number");
 
 -- CreateIndex
-CREATE INDEX "receipt_school_id_idx" ON "receipt"("school_id");
+CREATE INDEX IF NOT EXISTS "receipt_school_id_idx" ON "receipt"("school_id");
 
 -- CreateIndex
-CREATE INDEX "receipt_invoice_id_idx" ON "receipt"("invoice_id");
+CREATE INDEX IF NOT EXISTS "receipt_invoice_id_idx" ON "receipt"("invoice_id");
 
 -- CreateIndex
-CREATE INDEX "receipt_student_id_idx" ON "receipt"("student_id");
+CREATE INDEX IF NOT EXISTS "receipt_student_id_idx" ON "receipt"("student_id");
 
 -- CreateIndex
-CREATE INDEX "score_school_id_idx" ON "score"("school_id");
+CREATE INDEX IF NOT EXISTS "score_school_id_idx" ON "score"("school_id");
 
 -- CreateIndex
-CREATE INDEX "score_student_id_idx" ON "score"("student_id");
+CREATE INDEX IF NOT EXISTS "score_student_id_idx" ON "score"("student_id");
 
 -- CreateIndex
-CREATE INDEX "score_subject_id_idx" ON "score"("subject_id");
+CREATE INDEX IF NOT EXISTS "score_subject_id_idx" ON "score"("subject_id");
 
 -- CreateIndex
-CREATE INDEX "score_term_id_idx" ON "score"("term_id");
+CREATE INDEX IF NOT EXISTS "score_term_id_idx" ON "score"("term_id");
 
 -- CreateIndex
-CREATE INDEX "score_session_id_idx" ON "score"("session_id");
+CREATE INDEX IF NOT EXISTS "score_session_id_idx" ON "score"("session_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "score_student_id_subject_id_term_id_session_id_key" ON "score"("student_id", "subject_id", "term_id", "session_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "score_student_id_subject_id_term_id_session_id_key" ON "score"("student_id", "subject_id", "term_id", "session_id");
 
 -- CreateIndex
-CREATE INDEX "result_school_id_idx" ON "result"("school_id");
+CREATE INDEX IF NOT EXISTS "result_school_id_idx" ON "result"("school_id");
 
 -- CreateIndex
-CREATE INDEX "result_student_id_idx" ON "result"("student_id");
+CREATE INDEX IF NOT EXISTS "result_student_id_idx" ON "result"("student_id");
 
 -- CreateIndex
-CREATE INDEX "result_term_id_idx" ON "result"("term_id");
+CREATE INDEX IF NOT EXISTS "result_term_id_idx" ON "result"("term_id");
 
 -- CreateIndex
-CREATE INDEX "result_session_id_idx" ON "result"("session_id");
+CREATE INDEX IF NOT EXISTS "result_session_id_idx" ON "result"("session_id");
 
 -- CreateIndex
-CREATE INDEX "result_uploaded_by_id_idx" ON "result"("uploaded_by_id");
+CREATE INDEX IF NOT EXISTS "result_uploaded_by_id_idx" ON "result"("uploaded_by_id");
 
 -- CreateIndex
-CREATE INDEX "result_approved_by_id_idx" ON "result"("approved_by_id");
+CREATE INDEX IF NOT EXISTS "result_approved_by_id_idx" ON "result"("approved_by_id");
 
 -- CreateIndex
-CREATE INDEX "result_published_by_id_idx" ON "result"("published_by_id");
+CREATE INDEX IF NOT EXISTS "result_published_by_id_idx" ON "result"("published_by_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "result_student_id_term_id_session_id_key" ON "result"("student_id", "term_id", "session_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "result_student_id_term_id_session_id_key" ON "result"("student_id", "term_id", "session_id");
 
 -- CreateIndex
-CREATE INDEX "attendance_school_id_idx" ON "attendance"("school_id");
+CREATE INDEX IF NOT EXISTS "attendance_school_id_idx" ON "attendance"("school_id");
 
 -- CreateIndex
-CREATE INDEX "attendance_session_id_idx" ON "attendance"("session_id");
+CREATE INDEX IF NOT EXISTS "attendance_session_id_idx" ON "attendance"("session_id");
 
 -- CreateIndex
-CREATE INDEX "attendance_term_id_idx" ON "attendance"("term_id");
+CREATE INDEX IF NOT EXISTS "attendance_term_id_idx" ON "attendance"("term_id");
 
 -- CreateIndex
-CREATE INDEX "attendance_student_id_idx" ON "attendance"("student_id");
+CREATE INDEX IF NOT EXISTS "attendance_student_id_idx" ON "attendance"("student_id");
 
 -- CreateIndex
-CREATE INDEX "attendance_class_id_idx" ON "attendance"("class_id");
+CREATE INDEX IF NOT EXISTS "attendance_class_id_idx" ON "attendance"("class_id");
 
 -- CreateIndex
-CREATE INDEX "attendance_teacher_id_idx" ON "attendance"("teacher_id");
+CREATE INDEX IF NOT EXISTS "attendance_teacher_id_idx" ON "attendance"("teacher_id");
 
 -- CreateIndex
-CREATE INDEX "attendance_date_idx" ON "attendance"("date");
+CREATE INDEX IF NOT EXISTS "attendance_date_idx" ON "attendance"("date");
 
 -- CreateIndex
-CREATE INDEX "lesson_school_id_idx" ON "lesson"("school_id");
+CREATE INDEX IF NOT EXISTS "lesson_school_id_idx" ON "lesson"("school_id");
 
 -- CreateIndex
-CREATE INDEX "lesson_subject_id_idx" ON "lesson"("subject_id");
+CREATE INDEX IF NOT EXISTS "lesson_subject_id_idx" ON "lesson"("subject_id");
 
 -- CreateIndex
-CREATE INDEX "lesson_teacher_id_idx" ON "lesson"("teacher_id");
+CREATE INDEX IF NOT EXISTS "lesson_teacher_id_idx" ON "lesson"("teacher_id");
 
 -- CreateIndex
-CREATE INDEX "assignment_school_id_idx" ON "assignment"("school_id");
+CREATE INDEX IF NOT EXISTS "assignment_school_id_idx" ON "assignment"("school_id");
 
 -- CreateIndex
-CREATE INDEX "assignment_teacher_id_idx" ON "assignment"("teacher_id");
+CREATE INDEX IF NOT EXISTS "assignment_teacher_id_idx" ON "assignment"("teacher_id");
 
 -- CreateIndex
-CREATE INDEX "assignment_student_id_idx" ON "assignment"("student_id");
+CREATE INDEX IF NOT EXISTS "assignment_student_id_idx" ON "assignment"("student_id");
 
 -- CreateIndex
-CREATE INDEX "quiz_school_id_idx" ON "quiz"("school_id");
+CREATE INDEX IF NOT EXISTS "quiz_school_id_idx" ON "quiz"("school_id");
 
 -- CreateIndex
-CREATE INDEX "quiz_teacher_id_idx" ON "quiz"("teacher_id");
+CREATE INDEX IF NOT EXISTS "quiz_teacher_id_idx" ON "quiz"("teacher_id");
 
 -- CreateIndex
-CREATE INDEX "online_class_school_id_idx" ON "online_class"("school_id");
+CREATE INDEX IF NOT EXISTS "online_class_school_id_idx" ON "online_class"("school_id");
 
 -- CreateIndex
-CREATE INDEX "online_class_teacher_id_idx" ON "online_class"("teacher_id");
+CREATE INDEX IF NOT EXISTS "online_class_teacher_id_idx" ON "online_class"("teacher_id");
 
 -- CreateIndex
-CREATE INDEX "announcement_school_id_idx" ON "announcement"("school_id");
+CREATE INDEX IF NOT EXISTS "announcement_school_id_idx" ON "announcement"("school_id");
 
 -- CreateIndex
-CREATE INDEX "announcement_session_id_idx" ON "announcement"("session_id");
+CREATE INDEX IF NOT EXISTS "announcement_session_id_idx" ON "announcement"("session_id");
 
 -- CreateIndex
-CREATE INDEX "announcement_term_id_idx" ON "announcement"("term_id");
+CREATE INDEX IF NOT EXISTS "announcement_term_id_idx" ON "announcement"("term_id");
 
 -- CreateIndex
-CREATE INDEX "school_setting_school_id_idx" ON "school_setting"("school_id");
+CREATE INDEX IF NOT EXISTS "school_setting_school_id_idx" ON "school_setting"("school_id");
 
 -- CreateIndex
-CREATE INDEX "school_setting_key_idx" ON "school_setting"("key");
+CREATE INDEX IF NOT EXISTS "school_setting_key_idx" ON "school_setting"("key");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "school_setting_school_id_key_key" ON "school_setting"("school_id", "key");
+CREATE UNIQUE INDEX IF NOT EXISTS "school_setting_school_id_key_key" ON "school_setting"("school_id", "key");
 
 -- CreateIndex
-CREATE INDEX "school_config_version_school_id_idx" ON "school_config_version"("school_id");
+CREATE INDEX IF NOT EXISTS "school_config_version_school_id_idx" ON "school_config_version"("school_id");
 
 -- CreateIndex
-CREATE INDEX "school_config_version_is_active_idx" ON "school_config_version"("is_active");
+CREATE INDEX IF NOT EXISTS "school_config_version_is_active_idx" ON "school_config_version"("is_active");
 
 -- CreateIndex
-CREATE INDEX "income_category_school_id_idx" ON "income_category"("school_id");
+CREATE INDEX IF NOT EXISTS "income_category_school_id_idx" ON "income_category"("school_id");
 
 -- CreateIndex
-CREATE INDEX "expense_category_school_id_idx" ON "expense_category"("school_id");
+CREATE INDEX IF NOT EXISTS "expense_category_school_id_idx" ON "expense_category"("school_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "income_payment_id_key" ON "income"("payment_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "income_payment_id_key" ON "income"("payment_id");
 
 -- CreateIndex
-CREATE INDEX "income_school_id_idx" ON "income"("school_id");
+CREATE INDEX IF NOT EXISTS "income_school_id_idx" ON "income"("school_id");
 
 -- CreateIndex
-CREATE INDEX "income_category_id_idx" ON "income"("category_id");
+CREATE INDEX IF NOT EXISTS "income_category_id_idx" ON "income"("category_id");
 
 -- CreateIndex
-CREATE INDEX "income_payment_id_idx" ON "income"("payment_id");
+CREATE INDEX IF NOT EXISTS "income_payment_id_idx" ON "income"("payment_id");
 
 -- CreateIndex
-CREATE INDEX "income_date_idx" ON "income"("date");
+CREATE INDEX IF NOT EXISTS "income_date_idx" ON "income"("date");
 
 -- CreateIndex
-CREATE INDEX "expense_school_id_idx" ON "expense"("school_id");
+CREATE INDEX IF NOT EXISTS "expense_school_id_idx" ON "expense"("school_id");
 
 -- CreateIndex
-CREATE INDEX "expense_category_id_idx" ON "expense"("category_id");
+CREATE INDEX IF NOT EXISTS "expense_category_id_idx" ON "expense"("category_id");
 
 -- CreateIndex
-CREATE INDEX "expense_date_idx" ON "expense"("date");
+CREATE INDEX IF NOT EXISTS "expense_date_idx" ON "expense"("date");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "admission_application_applicant_number_key" ON "admission_application"("applicant_number");
+CREATE UNIQUE INDEX IF NOT EXISTS "admission_application_applicant_number_key" ON "admission_application"("applicant_number");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "admission_application_converted_student_id_key" ON "admission_application"("converted_student_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "admission_application_converted_student_id_key" ON "admission_application"("converted_student_id");
 
 -- CreateIndex
-CREATE INDEX "admission_application_school_id_idx" ON "admission_application"("school_id");
+CREATE INDEX IF NOT EXISTS "admission_application_school_id_idx" ON "admission_application"("school_id");
 
 -- CreateIndex
-CREATE INDEX "admission_application_status_idx" ON "admission_application"("status");
+CREATE INDEX IF NOT EXISTS "admission_application_status_idx" ON "admission_application"("status");
 
 -- CreateIndex
-CREATE INDEX "admission_application_session_id_idx" ON "admission_application"("session_id");
+CREATE INDEX IF NOT EXISTS "admission_application_session_id_idx" ON "admission_application"("session_id");
 
 -- CreateIndex
-CREATE INDEX "admission_guardian_application_id_idx" ON "admission_guardian"("application_id");
+CREATE INDEX IF NOT EXISTS "admission_guardian_application_id_idx" ON "admission_guardian"("application_id");
 
 -- CreateIndex
-CREATE INDEX "admission_document_application_id_idx" ON "admission_document"("application_id");
+CREATE INDEX IF NOT EXISTS "admission_document_application_id_idx" ON "admission_document"("application_id");
 
 -- CreateIndex
-CREATE INDEX "admission_qualification_application_id_idx" ON "admission_qualification"("application_id");
+CREATE INDEX IF NOT EXISTS "admission_qualification_application_id_idx" ON "admission_qualification"("application_id");
 
 -- CreateIndex
-CREATE INDEX "vehicle_school_id_idx" ON "vehicle"("school_id");
+CREATE INDEX IF NOT EXISTS "vehicle_school_id_idx" ON "vehicle"("school_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "driver_user_id_key" ON "driver"("user_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "driver_user_id_key" ON "driver"("user_id");
 
 -- CreateIndex
-CREATE INDEX "driver_user_id_idx" ON "driver"("user_id");
+CREATE INDEX IF NOT EXISTS "driver_user_id_idx" ON "driver"("user_id");
 
 -- CreateIndex
-CREATE INDEX "driver_school_id_idx" ON "driver"("school_id");
+CREATE INDEX IF NOT EXISTS "driver_school_id_idx" ON "driver"("school_id");
 
 -- CreateIndex
-CREATE INDEX "route_school_id_idx" ON "route"("school_id");
+CREATE INDEX IF NOT EXISTS "route_school_id_idx" ON "route"("school_id");
 
 -- CreateIndex
-CREATE INDEX "route_vehicle_id_idx" ON "route"("vehicle_id");
+CREATE INDEX IF NOT EXISTS "route_vehicle_id_idx" ON "route"("vehicle_id");
 
 -- CreateIndex
-CREATE INDEX "route_stop_route_id_idx" ON "route_stop"("route_id");
+CREATE INDEX IF NOT EXISTS "route_stop_route_id_idx" ON "route_stop"("route_id");
 
 -- CreateIndex
-CREATE INDEX "visitor_school_id_idx" ON "visitor"("school_id");
+CREATE INDEX IF NOT EXISTS "visitor_school_id_idx" ON "visitor"("school_id");
 
 -- CreateIndex
-CREATE INDEX "visitor_status_idx" ON "visitor"("status");
+CREATE INDEX IF NOT EXISTS "visitor_status_idx" ON "visitor"("status");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "enquiry_enquiry_number_key" ON "enquiry"("enquiry_number");
+CREATE UNIQUE INDEX IF NOT EXISTS "enquiry_enquiry_number_key" ON "enquiry"("enquiry_number");
 
 -- CreateIndex
-CREATE INDEX "enquiry_school_id_idx" ON "enquiry"("school_id");
+CREATE INDEX IF NOT EXISTS "enquiry_school_id_idx" ON "enquiry"("school_id");
 
 -- CreateIndex
-CREATE INDEX "enquiry_stage_idx" ON "enquiry"("stage");
+CREATE INDEX IF NOT EXISTS "enquiry_stage_idx" ON "enquiry"("stage");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "gate_pass_pass_number_key" ON "gate_pass"("pass_number");
+CREATE UNIQUE INDEX IF NOT EXISTS "gate_pass_pass_number_key" ON "gate_pass"("pass_number");
 
 -- CreateIndex
-CREATE INDEX "gate_pass_school_id_idx" ON "gate_pass"("school_id");
+CREATE INDEX IF NOT EXISTS "gate_pass_school_id_idx" ON "gate_pass"("school_id");
 
 -- CreateIndex
-CREATE INDEX "gate_pass_issued_by_id_idx" ON "gate_pass"("issued_by_id");
+CREATE INDEX IF NOT EXISTS "gate_pass_issued_by_id_idx" ON "gate_pass"("issued_by_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "reception_complaint_complaint_number_key" ON "reception_complaint"("complaint_number");
+CREATE UNIQUE INDEX IF NOT EXISTS "reception_complaint_complaint_number_key" ON "reception_complaint"("complaint_number");
 
 -- CreateIndex
-CREATE INDEX "reception_complaint_school_id_idx" ON "reception_complaint"("school_id");
+CREATE INDEX IF NOT EXISTS "reception_complaint_school_id_idx" ON "reception_complaint"("school_id");
 
 -- CreateIndex
-CREATE INDEX "reception_complaint_resolved_by_id_idx" ON "reception_complaint"("resolved_by_id");
+CREATE INDEX IF NOT EXISTS "reception_complaint_resolved_by_id_idx" ON "reception_complaint"("resolved_by_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "call_log_call_number_key" ON "call_log"("call_number");
+CREATE UNIQUE INDEX IF NOT EXISTS "call_log_call_number_key" ON "call_log"("call_number");
 
 -- CreateIndex
-CREATE INDEX "call_log_school_id_idx" ON "call_log"("school_id");
+CREATE INDEX IF NOT EXISTS "call_log_school_id_idx" ON "call_log"("school_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "correspondence_ref_number_key" ON "correspondence"("ref_number");
+CREATE UNIQUE INDEX IF NOT EXISTS "correspondence_ref_number_key" ON "correspondence"("ref_number");
 
 -- CreateIndex
-CREATE INDEX "correspondence_school_id_idx" ON "correspondence"("school_id");
+CREATE INDEX IF NOT EXISTS "correspondence_school_id_idx" ON "correspondence"("school_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "query_query_number_key" ON "query"("query_number");
+CREATE UNIQUE INDEX IF NOT EXISTS "query_query_number_key" ON "query"("query_number");
 
 -- CreateIndex
-CREATE INDEX "query_school_id_idx" ON "query"("school_id");
+CREATE INDEX IF NOT EXISTS "query_school_id_idx" ON "query"("school_id");
 
 -- CreateIndex
-CREATE INDEX "query_responded_by_id_idx" ON "query"("responded_by_id");
+CREATE INDEX IF NOT EXISTS "query_responded_by_id_idx" ON "query"("responded_by_id");
 
 -- CreateIndex
-CREATE INDEX "parent_message_school_id_idx" ON "parent_message"("school_id");
+CREATE INDEX IF NOT EXISTS "parent_message_school_id_idx" ON "parent_message"("school_id");
 
 -- CreateIndex
-CREATE INDEX "parent_message_parent_id_idx" ON "parent_message"("parent_id");
+CREATE INDEX IF NOT EXISTS "parent_message_parent_id_idx" ON "parent_message"("parent_id");
 
 -- CreateIndex
-CREATE INDEX "parent_complaint_school_id_idx" ON "parent_complaint"("school_id");
+CREATE INDEX IF NOT EXISTS "parent_complaint_school_id_idx" ON "parent_complaint"("school_id");
 
 -- CreateIndex
-CREATE INDEX "parent_complaint_parent_id_idx" ON "parent_complaint"("parent_id");
+CREATE INDEX IF NOT EXISTS "parent_complaint_parent_id_idx" ON "parent_complaint"("parent_id");
 
 -- CreateIndex
-CREATE INDEX "parent_complaint_reviewed_by_id_idx" ON "parent_complaint"("reviewed_by_id");
+CREATE INDEX IF NOT EXISTS "parent_complaint_reviewed_by_id_idx" ON "parent_complaint"("reviewed_by_id");
 
 -- CreateIndex
-CREATE INDEX "audit_log_school_id_idx" ON "audit_log"("school_id");
+CREATE INDEX IF NOT EXISTS "audit_log_school_id_idx" ON "audit_log"("school_id");
 
 -- CreateIndex
-CREATE INDEX "audit_log_actor_user_id_idx" ON "audit_log"("actor_user_id");
+CREATE INDEX IF NOT EXISTS "audit_log_actor_user_id_idx" ON "audit_log"("actor_user_id");
 
 -- CreateIndex
-CREATE INDEX "audit_log_created_at_idx" ON "audit_log"("created_at");
+CREATE INDEX IF NOT EXISTS "audit_log_created_at_idx" ON "audit_log"("created_at");
 
 -- CreateIndex
-CREATE INDEX "invoice_contest_audit_school_id_idx" ON "invoice_contest_audit"("school_id");
+CREATE INDEX IF NOT EXISTS "invoice_contest_audit_school_id_idx" ON "invoice_contest_audit"("school_id");
 
 -- CreateIndex
-CREATE INDEX "invoice_contest_audit_invoice_id_idx" ON "invoice_contest_audit"("invoice_id");
+CREATE INDEX IF NOT EXISTS "invoice_contest_audit_invoice_id_idx" ON "invoice_contest_audit"("invoice_id");
 
 -- CreateIndex
-CREATE INDEX "invoice_contest_audit_actor_user_id_idx" ON "invoice_contest_audit"("actor_user_id");
+CREATE INDEX IF NOT EXISTS "invoice_contest_audit_actor_user_id_idx" ON "invoice_contest_audit"("actor_user_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "privilege_code_key" ON "privilege"("code");
+CREATE UNIQUE INDEX IF NOT EXISTS "privilege_code_key" ON "privilege"("code");
 
 -- CreateIndex
-CREATE INDEX "privilege_code_idx" ON "privilege"("code");
+CREATE INDEX IF NOT EXISTS "privilege_code_idx" ON "privilege"("code");
 
 -- CreateIndex
-CREATE INDEX "privilege_category_idx" ON "privilege"("category");
+CREATE INDEX IF NOT EXISTS "privilege_category_idx" ON "privilege"("category");
 
 -- CreateIndex
-CREATE INDEX "role_privilege_role_id_idx" ON "role_privilege"("role_id");
+CREATE INDEX IF NOT EXISTS "role_privilege_role_id_idx" ON "role_privilege"("role_id");
 
 -- CreateIndex
-CREATE INDEX "role_privilege_privilege_id_idx" ON "role_privilege"("privilege_id");
+CREATE INDEX IF NOT EXISTS "role_privilege_privilege_id_idx" ON "role_privilege"("privilege_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "role_privilege_role_id_privilege_id_key" ON "role_privilege"("role_id", "privilege_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "role_privilege_role_id_privilege_id_key" ON "role_privilege"("role_id", "privilege_id");
 
 -- CreateIndex
-CREATE INDEX "user_privilege_user_id_idx" ON "user_privilege"("user_id");
+CREATE INDEX IF NOT EXISTS "user_privilege_user_id_idx" ON "user_privilege"("user_id");
 
 -- CreateIndex
-CREATE INDEX "user_privilege_privilege_id_idx" ON "user_privilege"("privilege_id");
+CREATE INDEX IF NOT EXISTS "user_privilege_privilege_id_idx" ON "user_privilege"("privilege_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "user_privilege_user_id_privilege_id_key" ON "user_privilege"("user_id", "privilege_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "user_privilege_user_id_privilege_id_key" ON "user_privilege"("user_id", "privilege_id");
 
 -- CreateIndex
-CREATE INDEX "assessment_school_id_idx" ON "assessment"("school_id");
+CREATE INDEX IF NOT EXISTS "assessment_school_id_idx" ON "assessment"("school_id");
 
 -- CreateIndex
-CREATE INDEX "class_assessment_class_id_idx" ON "class_assessment"("class_id");
+CREATE INDEX IF NOT EXISTS "class_assessment_class_id_idx" ON "class_assessment"("class_id");
 
 -- CreateIndex
-CREATE INDEX "class_assessment_assessment_id_idx" ON "class_assessment"("assessment_id");
+CREATE INDEX IF NOT EXISTS "class_assessment_assessment_id_idx" ON "class_assessment"("assessment_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "class_assessment_class_id_assessment_id_key" ON "class_assessment"("class_id", "assessment_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "class_assessment_class_id_assessment_id_key" ON "class_assessment"("class_id", "assessment_id");
 
 -- CreateIndex
-CREATE INDEX "class_group_assessment_class_group_id_idx" ON "class_group_assessment"("class_group_id");
+CREATE INDEX IF NOT EXISTS "class_group_assessment_class_group_id_idx" ON "class_group_assessment"("class_group_id");
 
 -- CreateIndex
-CREATE INDEX "class_group_assessment_assessment_id_idx" ON "class_group_assessment"("assessment_id");
+CREATE INDEX IF NOT EXISTS "class_group_assessment_assessment_id_idx" ON "class_group_assessment"("assessment_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "class_group_assessment_class_group_id_assessment_id_key" ON "class_group_assessment"("class_group_id", "assessment_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "class_group_assessment_class_group_id_assessment_id_key" ON "class_group_assessment"("class_group_id", "assessment_id");
 
 -- CreateIndex
-CREATE INDEX "payment_method_school_id_idx" ON "payment_method"("school_id");
+CREATE INDEX IF NOT EXISTS "payment_method_school_id_idx" ON "payment_method"("school_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "payment_method_school_id_code_key" ON "payment_method"("school_id", "code");
+CREATE UNIQUE INDEX IF NOT EXISTS "payment_method_school_id_code_key" ON "payment_method"("school_id", "code");
 
 -- CreateIndex
-CREATE INDEX "school_bank_account_school_id_idx" ON "school_bank_account"("school_id");
+CREATE INDEX IF NOT EXISTS "school_bank_account_school_id_idx" ON "school_bank_account"("school_id");
 
 -- CreateIndex
-CREATE INDEX "school_template_school_id_idx" ON "school_template"("school_id");
+CREATE INDEX IF NOT EXISTS "school_template_school_id_idx" ON "school_template"("school_id");
 
 -- AddForeignKey
 ALTER TABLE "school_branding" ADD CONSTRAINT "school_branding_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "school"("id") ON DELETE CASCADE ON UPDATE CASCADE;
