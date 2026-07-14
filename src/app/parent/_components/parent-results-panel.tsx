@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { getCloudinaryInlineUrl } from "@/lib/utils";
 
 type SubjectScore = {
   id: string;
@@ -110,7 +111,7 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
                     <div className="overflow-hidden rounded-xl border border-slate-200">
                       <div className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">Document Preview</div>
                       <iframe
-                        src={item.fileUrl!.includes("cloudinary") ? item.fileUrl!.replace("/upload/", "/upload/fl_inline/") : item.fileUrl!}
+                        src={getCloudinaryInlineUrl(item.fileUrl!)}
                         title={`${item.studentName} result preview`}
                         className="h-[600px] w-full bg-white"
                       />

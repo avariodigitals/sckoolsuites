@@ -18,6 +18,7 @@ import { AnnouncementManager } from "./announcement-manager";
 import { MessageManager } from "./message-manager";
 import { ComplaintManager } from "./complaint-manager";
 import { EventManager } from "./event-manager";
+import { SurveyManager } from "./survey-manager";
 import { TransportManager } from "./transport-manager";
 import { ReceptionManager } from "./reception-manager";
 import { FeeProfileManager } from "./fee-profile-manager";
@@ -63,6 +64,7 @@ const allowed = [
   "complaints",
   "transport",
   "school-calendar",
+  "surveys",
   "settings",
   "users",
   "roles",
@@ -235,6 +237,12 @@ const blueprints: Record<AllowedSection, AdminSectionBlueprint> = {
     subtitle: "Manage school events, holidays, and key dates visible to parents and staff.",
     metrics: [],
     actionChips: ["Add Event", "Holidays", "Term Dates", "Publish"],
+  },
+  surveys: {
+    title: "Surveys",
+    subtitle: "Create and manage feedback surveys for parents and staff.",
+    metrics: [],
+    actionChips: ["New Survey", "Publish", "View Responses", "Close"],
   },
   settings: {
     title: "System Settings",
@@ -506,6 +514,12 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
       { label: "Events", value: "-", helper: "School events" },
       { label: "Holidays", value: "-", helper: "Scheduled holidays" },
     ],
+    surveys: [
+      { label: "Surveys", value: "-", helper: "Total surveys" },
+      { label: "Published", value: "-", helper: "Active surveys" },
+      { label: "Responses", value: "-", helper: "Total responses" },
+      { label: "Draft", value: "-", helper: "Unpublished" },
+    ],
     settings: [
       { label: "Config Versions", value: String(activeConfig.version), helper: activeConfig.source },
       { label: "Branding", value: profile.school.branding ? "Configured" : "None", helper: "Logo and colors" },
@@ -644,6 +658,8 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
             <EventManager />
           </div>
         ) : null}
+
+        {section === "surveys" ? <SurveyManager /> : null}
 
         {section === "classes" ? <ClassManager /> : null}
 

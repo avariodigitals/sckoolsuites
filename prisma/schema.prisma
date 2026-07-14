@@ -124,6 +124,7 @@ model School {
   schoolBankAccounts    SchoolBankAccount[]
   schoolTemplates       SchoolTemplate[]
   schoolEvents          SchoolEvent[]
+  surveys               Survey[]
 
   @@map("school")
 }
@@ -202,6 +203,9 @@ model User {
   notifications            NotificationRecord[]
   authoredNotifications    NotificationRecord[]  @relation("NotificationActor")
   schoolEvents             SchoolEvent[]         @relation("SchoolEventCreator")
+  announcementReactions    AnnouncementReaction[]
+  surveyResponses          SurveyResponse[]
+  createdSurveys           Survey[]              @relation("SurveyCreator")
 
   @@index([email])
   @@index([roleId])
@@ -1024,6 +1028,7 @@ model Announcement {
   school  School   @relation(fields: [schoolId], references: [id])
   session Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   term    Term?    @relation(fields: [termId], references: [id], onDelete: Cascade)
+  reactions AnnouncementReaction[]
 
   @@index([schoolId])
   @@index([sessionId])
@@ -1779,4 +1784,86 @@ model SchoolEvent {
   @@index([startDate])
   @@index([eventType])
   @@map("school_event")
+}
+
+model AnnouncementReaction {
+  id             Int      @id @default(autoincrement())
+  announcementId Int      @map("announcement_id")
+  userId         Int      @map("user_id")
+  emoji          String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId, emoji])
+  @@index([announcementId])
+  @@map("announcement_reaction")
+}
+
+model Survey {
+  id          Int      @id @default(autoincrement())
+  schoolId    String   @default("default") @map("school_id")
+  title       String
+  description String?
+  status      String   @default("DRAFT")
+  createdBy   Int      @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school    School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  creator   User             @relation("SurveyCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  questions SurveyQuestion[]
+  responses SurveyResponse[]
+
+  @@index([schoolId])
+  @@index([status])
+  @@map("survey")
+}
+
+model SurveyQuestion {
+  id         Int     @id @default(autoincrement())
+  surveyId   Int     @map("survey_id")
+  text       String
+  type       String  @default("text")
+  options    String?
+  order      Int     @default(0)
+  required   Boolean @default(true)
+
+  survey   Survey        @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  answers  SurveyAnswer[]
+
+  @@index([surveyId])
+  @@map("survey_question")
+}
+
+model SurveyResponse {
+  id        Int      @id @default(autoincrement())
+  surveyId  Int      @map("survey_id")
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  survey  Survey        @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers SurveyAnswer[]
+
+  @@unique([surveyId, userId])
+  @@index([surveyId])
+  @@map("survey_response")
+}
+
+model SurveyAnswer {
+  id           Int      @id @default(autoincrement())
+  responseId   Int      @map("response_id")
+  questionId   Int      @map("question_id")
+  answerText   String?  @map("answer_text")
+  answerValue  String?  @map("answer_value")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  response SurveyResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  question SurveyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([responseId])
+  @@index([questionId])
+  @@map("survey_answer")
 }

@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireRole } from "@/lib/auth-guards";
 import { getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
 import { isOptionalFeeItem } from "@/lib/bill-contest";
-import { formatDate, humanizeEnum, naira } from "@/lib/utils";
+import { formatDate, humanizeEnum, naira, getCloudinaryInlineUrl } from "@/lib/utils";
 import { ParentBillHub } from "@/app/parent/_components/parent-bill-hub";
 import { ParentMessagesPanel } from "@/app/parent/_components/parent-messages-panel";
 import { ParentComplaintsPanel } from "@/app/parent/_components/parent-complaints-panel";
@@ -28,11 +28,13 @@ import { SchoolCalendarView } from "@/app/parent/_components/school-calendar-vie
 import { ParentResultsPanel } from "@/app/parent/_components/parent-results-panel";
 import { ParentLmsPanel } from "@/app/parent/_components/parent-lms-panel";
 import { ParentAttendanceNotify } from "@/app/parent/_components/parent-attendance-notify";
+import { ParentAttendanceDashboard } from "@/app/parent/_components/parent-attendance-dashboard";
+import { ParentSurveyPanel } from "@/app/parent/_components/parent-survey-panel";
 import { AnnouncementListWithModal } from "@/components/announcement-list-with-modal";
 import { calculateGradeFromBands } from "@/lib/grades";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 
-const allowed = ["profile", "children", "fees", "payments", "attendance", "results", "report-cards", "school-calendar", "messages", "complaints", "announcements", "lms"] as const;
+const allowed = ["profile", "children", "fees", "payments", "attendance", "results", "report-cards", "school-calendar", "messages", "complaints", "announcements", "surveys", "lms"] as const;
 type AllowedSection = (typeof allowed)[number];
 
 const tabs: Record<AllowedSection, { title: string; description: string; icon: React.ReactNode }> = {
@@ -47,6 +49,7 @@ const tabs: Record<AllowedSection, { title: string; description: string; icon: R
   messages: { title: "Messages", description: "Send tracked messages to school/admin/teacher and monitor status.", icon: <Megaphone className="h-4 w-4" /> },
   complaints: { title: "Complaints", description: "Submit and track complaints to school management and support desks.", icon: <Megaphone className="h-4 w-4" /> },
   announcements: { title: "Announcements", description: "Official school announcements by audience and date.", icon: <Megaphone className="h-4 w-4" /> },
+  surveys: { title: "Surveys", description: "Share feedback through school-administered surveys.", icon: <Megaphone className="h-4 w-4" /> },
   lms: { title: "LMS Monitoring", description: "Lessons, assignments, teacher notes, and progress indicators.", icon: <BookOpen className="h-4 w-4" /> },
 };
 
@@ -68,16 +71,18 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
 
   const context = await getUserAcademicContext(profile.schoolId, user.id);
   const schoolId = profile.schoolId;
-  const core = await getCoreSchoolDataByContext(profile.schoolId, {
-    sessionId: context.session?.id,
-    termId: context.term?.id,
-  });
 
-  const schoolEvents = await prisma.schoolEvent.findMany({
-    where: { schoolId },
-    orderBy: { startDate: "asc" },
-    take: 100,
-  });
+  const [core, schoolEvents] = await Promise.all([
+    getCoreSchoolDataByContext(profile.schoolId, {
+      sessionId: context.session?.id,
+      termId: context.term?.id,
+    }),
+    prisma.schoolEvent.findMany({
+      where: { schoolId },
+      orderBy: { startDate: "asc" },
+      take: 100,
+    }),
+  ]);
 
   const parentProfile = core.parents.find((parent: any) => parent.userId === user.id);
   if (!parentProfile) {
@@ -563,7 +568,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                           <summary className="cursor-pointer rounded-md border border-slate-300 bg-white px-3 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 list-none">Cancel Preview</summary>
                         </div>
                       </div>
-                      <iframe src={latest.fileUrl.includes("cloudinary") ? latest.fileUrl.replace("/upload/", "/upload/fl_inline/") : latest.fileUrl} title={`${child.user.name} report preview`} className="h-[500px] w-full bg-white" />
+                      <iframe src={getCloudinaryInlineUrl(latest.fileUrl)} title={`${child.user.name} report preview`} className="h-[500px] w-full bg-white" />
                     </details>
                   )}
 
@@ -598,152 +603,23 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
       ) : null}
 
       {sectionKey === "attendance" ? (() => {
-        const presentCount = attendance.filter((item: any) => item.status === "PRESENT").length;
-        const absentCount = attendance.filter((item: any) => item.status === "ABSENT").length;
-        const lateCount = attendance.filter((item: any) => item.status === "LATE").length;
-        const totalCount = attendance.length;
         const attendanceChildren = children.map((child: any) => ({ id: child.id, name: child.user.name, className: child.class?.name ?? "Not assigned" }));
-
-        function dateKey(value: Date) {
-          return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
-        }
-
-        const statusByDay = new Map<string, "PRESENT" | "LATE" | "ABSENT" | "EXCUSED">();
-        for (const row of attendance) {
-          const key = dateKey(new Date(row.date));
-          const current = statusByDay.get(key);
-          if (!current) {
-            statusByDay.set(key, row.status);
-            continue;
-          }
-          if (row.status === "ABSENT" || (row.status === "LATE" && current === "PRESENT")) {
-            statusByDay.set(key, row.status);
-          }
-        }
-
-        const trendDays = Array.from({ length: 14 }, (_, index) => {
-          const d = new Date();
-          d.setHours(0, 0, 0, 0);
-          d.setDate(d.getDate() - (13 - index));
-          const key = dateKey(d);
-          return { key, label: d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }), status: statusByDay.get(key) ?? "NONE" };
-        });
+        const attendanceRows = attendance.map((item: any) => ({
+          id: item.id,
+          studentId: String(item.studentId),
+          studentName: [item.student?.firstName, item.student?.middleName, item.student?.lastName].filter(Boolean).join(" ") || item.student?.user?.name || "Student",
+          className: item.class?.name ?? "Class",
+          date: item.date instanceof Date ? item.date.toISOString() : String(item.date),
+          status: item.status as "PRESENT" | "ABSENT" | "LATE" | "EXCUSED",
+        }));
 
         return (
-          <section className="space-y-6">
-            <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--brand-primary)] via-[#1a3a6e] to-[var(--brand-secondary)] p-6 text-white shadow-lg">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-white/70">Attendance Dashboard</p>
-                  <h2 className="mt-1 text-2xl font-bold">Attendance Calendar / List</h2>
-                  <p className="text-sm text-white/85">Real-time attendance visibility for your linked children.</p>
-                </div>
-                <div className="flex flex-col items-end gap-3">
-                  <div className="rounded-xl border border-white/30 bg-white/10 px-4 py-3 text-center backdrop-blur-sm">
-                    <p className="text-3xl font-extrabold">{attendancePercent.toFixed(1)}%</p>
-                    <p className="text-xs text-white/80">attendance rate</p>
-                  </div>
-                  <ParentAttendanceNotify childOptions={attendanceChildren} />
-                </div>
-              </div>
+          <div className="space-y-6">
+            <div className="flex justify-end">
+              <ParentAttendanceNotify childOptions={attendanceChildren} />
             </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">Present Days</p>
-                <p className="mt-1 text-2xl font-extrabold text-slate-900">{presentCount}</p>
-              </div>
-              <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-700">Absent Days</p>
-                <p className="mt-1 text-2xl font-extrabold text-slate-900">{absentCount}</p>
-              </div>
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">Late Days</p>
-                <p className="mt-1 text-2xl font-extrabold text-slate-900">{lateCount}</p>
-              </div>
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Punctuality</p>
-                <p className="mt-1 text-xl font-extrabold text-slate-900">{punctualityRating}</p>
-              </div>
-              <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-700">Records</p>
-                <p className="mt-1 text-2xl font-extrabold text-slate-900">{totalCount}</p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm font-semibold text-slate-800">Last 14 Days Activity</p>
-                <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                  <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Present</span>
-                  <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" /> Late</span>
-                  <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500" /> Absent</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-7 gap-3 sm:grid-cols-14">
-                {trendDays.map((day) => (
-                  <div key={day.key} className="rounded-lg border border-slate-200 p-2 text-center">
-                    <div
-                      className={`mx-auto mb-1 h-3.5 w-3.5 rounded-full ${
-                        day.status === "PRESENT"
-                          ? "bg-emerald-500"
-                          : day.status === "LATE"
-                            ? "bg-amber-500"
-                            : day.status === "ABSENT"
-                              ? "bg-rose-500"
-                              : "bg-slate-300"
-                      }`}
-                    />
-                    <p className="text-[10px] font-medium text-slate-600">{day.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-200 bg-slate-50 px-5 py-3">
-                <h3 className="text-sm font-semibold text-slate-800">Attendance Records</h3>
-              </div>
-              {attendance.length ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="bg-slate-100 text-left text-[11px] uppercase tracking-wide text-slate-600">
-                        <th className="px-4 py-2">Student</th>
-                        <th className="px-4 py-2">Class</th>
-                        <th className="px-4 py-2">Date</th>
-                        <th className="px-4 py-2">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {attendance.slice(0, 25).map((item: any, idx: any) => (
-                        <tr key={item.id} className={idx % 2 ? "bg-white" : "bg-slate-50/70"}>
-                          <td className="px-4 py-2 font-medium text-slate-900">{[item.student.firstName, item.student.middleName, item.student.lastName].filter(Boolean).join(" ") || item.student.user.name}</td>
-                          <td className="px-4 py-2 text-slate-600">{item.class?.name ?? "Class"}</td>
-                          <td className="px-4 py-2 text-slate-600">{formatDate(item.date)}</td>
-                          <td className="px-4 py-2">
-                            <span
-                              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                                item.status === "PRESENT"
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : item.status === "LATE"
-                                    ? "bg-amber-100 text-amber-700"
-                                    : "bg-rose-100 text-rose-700"
-                              }`}
-                            >
-                              {humanizeEnum(item.status)}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="p-6 text-center text-sm text-slate-500">No attendance records found for this term.</div>
-              )}
-            </div>
-          </section>
+            <ParentAttendanceDashboard attendance={attendanceRows} childOptions={attendanceChildren} />
+          </div>
         );
       })() : null}
 
@@ -770,6 +646,12 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
 
       {sectionKey === "messages" ? <ParentMessagesPanel initialMessages={parentMessages} /> : null}
       {sectionKey === "complaints" ? <ParentComplaintsPanel initialComplaints={parentComplaints} /> : null}
+      {sectionKey === "surveys" ? (
+        <Card className="glass-panel">
+          <CardHeader><CardTitle>Surveys</CardTitle></CardHeader>
+          <CardContent><ParentSurveyPanel /></CardContent>
+        </Card>
+      ) : null}
       {sectionKey === "profile" ? (
         <section className="space-y-4">
           <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">

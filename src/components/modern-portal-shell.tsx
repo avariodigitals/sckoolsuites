@@ -115,7 +115,7 @@ export function ModernPortalShell({
     [displaySchoolName]
   );
 
-  // Fetch notifications from both persistent records and legacy API
+  // Fetch notifications from persistent records only (responses/updates)
   // Smart polling: 60s interval, only when tab is visible
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -123,17 +123,10 @@ export function ModernPortalShell({
     const fetchNotifications = async () => {
       if (document.visibilityState === "hidden") return;
       try {
-        const [recordsRes, legacyRes] = await Promise.all([
-          fetch("/api/notifications/records", { cache: "no-store" }),
-          fetch("/api/notifications/latest", { cache: "no-store" }),
-        ]);
+        const recordsRes = await fetch("/api/notifications/records", { cache: "no-store" });
         const recordsData = recordsRes.ok ? await recordsRes.json() : { notifications: [] };
-        const legacyData = legacyRes.ok ? await legacyRes.json() : { notifications: [] };
         const recordNotifs = recordsData.notifications || [];
-        const legacyNotifs = legacyData.notifications || [];
-        const seenIds = new Set(recordNotifs.map((n: Notification) => n.id));
-        const merged = [...recordNotifs, ...legacyNotifs.filter((n: Notification) => !seenIds.has(n.id))];
-        setNotifications(merged);
+        setNotifications(recordNotifs);
       } catch {
         // Silently fail
       }
@@ -180,7 +173,7 @@ export function ModernPortalShell({
         body: JSON.stringify({ recordIds: [notif.recordId] }),
       }).catch(() => {});
     }
-    setNotifications((prev) => prev.map((n) => n.id === notif.id ? { ...n, isRead: true } : n));
+    setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
     setNotificationsOpen(false);
     if (notif.link) {
       router.push(notif.link);
@@ -420,7 +413,12 @@ export function ModernPortalShell({
                 
                 {/* Notification Dropdown */}
                 {notificationsOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-lg border border-slate-200 z-50 overflow-hidden">
+                  <>
+                    <div
+                      className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm"
+                      onClick={() => setNotificationsOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
                       <h3 className="font-semibold text-slate-900">Notifications</h3>
                       {hasUnread && (
@@ -428,14 +426,14 @@ export function ModernPortalShell({
                           {unreadNotifications.length} new
                         </span>
                       )}
-                      <button 
+                      <button
                         onClick={() => setNotificationsOpen(false)}
                         className="text-slate-400 hover:text-slate-600"
                       >
                         <X className="h-4 w-4" />
                       </button>
                     </div>
-                    
+
                     <div className="max-h-80 overflow-y-auto">
                       {unreadNotifications.length === 0 ? (
                         <div className="px-4 py-8 text-center">
@@ -446,7 +444,7 @@ export function ModernPortalShell({
                         </div>
                       ) : (
                         unreadNotifications.map((notif) => {
-                          const Icon = notif.type === "announcement" ? Megaphone : 
+                          const Icon = notif.type === "announcement" ? Megaphone :
                                        notif.type === "message" ? MessageSquare : AlertTriangle;
                           const iconColor = notif.type === "announcement" ? "bg-blue-100 text-blue-600" :
                                            notif.type === "message" ? "bg-emerald-100 text-emerald-600" :
@@ -472,7 +470,7 @@ export function ModernPortalShell({
                         })
                       )}
                     </div>
-                    
+
                     {unreadNotifications.length > 0 && (
                       <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
                         <button
@@ -495,8 +493,8 @@ export function ModernPortalShell({
                         >
                           Mark all read
                         </button>
-                        <Link 
-                          href="/admin/announcements" 
+                        <Link
+                          href="/parent/announcements"
                           className="flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700"
                           onClick={() => setNotificationsOpen(false)}
                         >
@@ -505,7 +503,8 @@ export function ModernPortalShell({
                         </Link>
                       </div>
                     )}
-                  </div>
+                    </div>
+                  </>
                 )}
               </div>
 

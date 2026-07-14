@@ -32,3 +32,13 @@ export function humanizeEnum(value: string | null | undefined) {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 }
+
+export function getCloudinaryInlineUrl(url: string): string {
+  if (!url) return url;
+  if (!url.includes("cloudinary.com")) return url;
+  if (url.includes("/raw/upload/")) return url;
+  if (url.includes("/image/upload/") && !url.includes("fl_inline")) {
+    return url.replace("/image/upload/", "/image/upload/fl_inline/");
+  }
+  return url;
+}

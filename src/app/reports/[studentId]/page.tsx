@@ -8,7 +8,7 @@ import { prisma } from "@/lib/db";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 import { resolveReportTemplate } from "@/lib/report-templates";
 import { APP_POWERED_BY } from "@/lib/constants";
-import { formatDate, naira } from "@/lib/utils";
+import { formatDate, naira, getCloudinaryInlineUrl } from "@/lib/utils";
 import { PrintButton } from "@/components/print-button";
 
 export default async function ReportCardPage({ params }: { params: Promise<{ studentId: string }> }) {
@@ -171,9 +171,7 @@ export default async function ReportCardPage({ params }: { params: Promise<{ stu
   } as React.CSSProperties;
 
   if (result?.fileUrl) {
-    const previewUrl = result.fileUrl.includes("cloudinary")
-      ? result.fileUrl.replace("/upload/", "/upload/fl_inline/")
-      : result.fileUrl;
+    const previewUrl = getCloudinaryInlineUrl(result.fileUrl);
     return (
       <div className="p-4" style={reportStyle}>
         <div className="no-print mx-auto mb-3 flex max-w-[210mm] items-center justify-between">

@@ -32,7 +32,7 @@ export async function uploadToCloudinary(
         folder: folderPath,
         public_id: options.publicId,
         overwrite: options.overwrite ?? true,
-        resource_type: mimeType.startsWith("image/") ? "image" : "auto",
+        resource_type: mimeType.startsWith("image/") ? "image" : "raw",
       },
       (error, result) => {
         if (error || !result) {

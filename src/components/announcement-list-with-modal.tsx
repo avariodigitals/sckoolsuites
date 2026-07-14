@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AnnouncementViewModal, type AnnouncementData } from "@/components/ui/announcement-view-modal";
+import { AnnouncementReactions } from "@/components/announcement-reactions";
 
 type AnnouncementItem = {
   id: string | number;
@@ -63,6 +64,7 @@ export function AnnouncementListWithModal({
                     })}
                   </p>
                 )}
+                <AnnouncementReactions announcementId={item.id} />
               </div>
               <button
                 type="button"
