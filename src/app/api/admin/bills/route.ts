@@ -141,6 +141,7 @@ export async function GET(request: Request) {
       (inv: any) =>
         inv.invoiceNumber.toLowerCase().includes(query) ||
         inv.student.user.name.toLowerCase().includes(query) ||
+        [inv.student.firstName, inv.student.middleName, inv.student.lastName].filter(Boolean).join(" ").toLowerCase().includes(query) ||
         inv.student.user.email?.toLowerCase().includes(query)
     );
   }
@@ -150,7 +151,7 @@ export async function GET(request: Request) {
       id: inv.id,
       invoiceNumber: inv.invoiceNumber,
       studentId: inv.studentId,
-      studentName: inv.student.user.name,
+      studentName: [inv.student.firstName, inv.student.middleName, inv.student.lastName].filter(Boolean).join(" ") || inv.student.user.name,
       studentEmail: inv.student.user.email,
       classId: inv.classId,
       className: inv.class?.name ?? null,

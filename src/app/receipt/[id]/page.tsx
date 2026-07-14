@@ -64,7 +64,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-3">
             <div className="rounded-xl border border-slate-200 p-3">
               <p className="text-xs uppercase tracking-wide text-slate-500">Student</p>
-              <p className="font-semibold text-slate-900">{receipt.student.user.name}</p>
+              <p className="font-semibold text-slate-900">{[receipt.student.firstName, receipt.student.middleName, receipt.student.lastName].filter(Boolean).join(" ") || receipt.student.user.name}</p>
             </div>
             <div className="rounded-xl border border-slate-200 p-3">
               <p className="text-xs uppercase tracking-wide text-slate-500">Parent</p>

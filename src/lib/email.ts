@@ -66,14 +66,26 @@ export async function sendWorkflowEmail({
         content: att.content ? Buffer.from(att.content).toString("base64") : undefined,
       }));
 
-      await resend.emails.send({
-        from: await getFromEmail(schoolId),
+      const fromEmail = await getFromEmail(schoolId);
+      console.log(`[email] Sending from: ${fromEmail} to: ${to} subject: ${subject}`);
+
+      const { data, error: sendError } = await resend.emails.send({
+        from: fromEmail,
         to,
         subject,
         text,
         html,
         attachments: attachmentParts as any,
       });
+
+      if (sendError) {
+        const msg = typeof sendError === "string" ? sendError : (sendError as any).message || JSON.stringify(sendError);
+        console.error("[email] Resend returned error:", msg);
+        deliveryStatus = "resend_failed";
+        return { ok: false, deliveryStatus, error: msg };
+      }
+
+      console.log("[email] Resend send success, id:", data?.id);
       deliveryStatus = "sent";
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

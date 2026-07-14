@@ -142,7 +142,7 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
               <CardTitle>My Profile</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <p>Name: {student.user.name}</p>
+              <p>Name: {[student.firstName, student.middleName, student.lastName].filter(Boolean).join(" ") || student.user.name}</p>
               <p>Email: {student.user.email}</p>
               <p>Class: {student.class?.name ?? "Not assigned"}</p>
               <p>Current Session: {context.session?.name ?? "-"}</p>

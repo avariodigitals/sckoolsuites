@@ -127,16 +127,7 @@ export async function GET(request: Request) {
     attendance: attendanceRecords.map((a: any) => ({
       id: a.id,
       studentId: a.studentId,
-      studentName: a.student.user.name,
-      studentClass: a.student.class?.name ?? a.class?.name ?? null,
-      classId: a.classId,
-      className: a.class?.name ?? null,
-      date: a.date.toISOString().split("T")[0],
-      status: a.status,
-      teacherId: a.teacherId,
-      teacherName: a.teacher?.user.name ?? null,
-      sessionId: a.sessionId,
-      sessionName: a.session?.name ?? null,
+      studentName: [a.student.firstName, a.student.middleName, a.student.lastName].filter(Boolean).join(" ") || a.student.user.name,
       termId: a.termId,
       termName: a.term?.name ?? null,
       createdAt: a.createdAt.toISOString(),
@@ -294,7 +285,7 @@ export async function POST(request: Request) {
       attendance: {
         id: attendance.id,
         studentId: attendance.studentId,
-        studentName: attendance.student.user.name,
+        studentName: [attendance.student.firstName, attendance.student.middleName, attendance.student.lastName].filter(Boolean).join(" ") || attendance.student.user.name,
         studentClass: attendance.student.class?.name ?? attendance.class?.name ?? null,
         classId: attendance.classId,
         className: attendance.class?.name ?? null,
@@ -408,7 +399,7 @@ async function handleBulkAttendance(
       results.push({
         id: attendance.id,
         studentId: attendance.studentId,
-        studentName: attendance.student.user.name,
+        studentName: [attendance.student.firstName, attendance.student.middleName, attendance.student.lastName].filter(Boolean).join(" ") || attendance.student.user.name,
         status: attendance.status,
       });
     }

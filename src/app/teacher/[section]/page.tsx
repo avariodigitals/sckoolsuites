@@ -296,7 +296,7 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
             <CardContent className="space-y-2 text-sm">
               {myScores.slice(0, 25).map((item: any) => (
                 <div key={item.id} className="glass-soft rounded-xl p-3">
-                  <p className="font-medium">{item.student.user.name}</p>
+                  <p className="font-medium">{[item.student.firstName, item.student.middleName, item.student.lastName].filter(Boolean).join(" ") || item.student.user.name}</p>
                   <p>{item.subject.name} • Grade: {item.grade} • GPA: {item.gpa.toFixed(2)}</p>
                 </div>
               ))}

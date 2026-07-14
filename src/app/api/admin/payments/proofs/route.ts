@@ -86,7 +86,7 @@ export async function GET(request: Request) {
       },
       student: {
         id: proof.payment.student.id,
-        name: proof.payment.student.user.name,
+        name: [proof.payment.student.firstName, proof.payment.student.middleName, proof.payment.student.lastName].filter(Boolean).join(" ") || proof.payment.student.user.name,
       },
       parent: proof.payment.invoice.parent
         ? {

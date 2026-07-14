@@ -1,5 +1,11 @@
 // Database Types - replaces @prisma/client imports
 
+export function studentFullName(student: { firstName?: string | null; middleName?: string | null; lastName?: string | null; user?: { name?: string | null } | null }): string {
+  const parts = [student.firstName, student.middleName, student.lastName].filter(Boolean);
+  if (parts.length > 0) return parts.join(" ");
+  return student.user?.name ?? "";
+}
+
 export enum RoleType {
   SUPER_ADMIN = "SUPER_ADMIN",
   SCHOOL_ADMIN = "SCHOOL_ADMIN",

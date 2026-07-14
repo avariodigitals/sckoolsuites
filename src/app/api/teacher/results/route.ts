@@ -70,7 +70,7 @@ export async function GET(request: Request) {
         reviewNote: result.reviewNote,
         student: {
           id: result.student.id,
-          name: result.student.user.name,
+          name: [result.student.firstName, result.student.middleName, result.student.lastName].filter(Boolean).join(" ") || result.student.user.name,
           className: result.student.class?.name ?? "-",
         },
         term: { id: result.term.id, name: result.term.name },

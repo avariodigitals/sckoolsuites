@@ -223,7 +223,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
     id: bill.id,
     invoiceNumber: bill.invoiceNumber,
     studentId: bill.studentId,
-    studentName: bill.student.user.name,
+    studentName: [bill.student.firstName, bill.student.middleName, bill.student.lastName].filter(Boolean).join(" ") || bill.student.user.name,
     className: bill.class?.name,
     termName: bill.term.name,
     sessionName: bill.session.name,
@@ -459,7 +459,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
             {receipts.length ? receipts.map((receipt: any) => (
               <div key={receipt.id} className="glass-soft rounded-xl p-3">
                 <p className="font-medium">{receipt.receiptNumber}</p>
-                <p>{receipt.student.user.name} • {naira(receipt.amount)} • {receipt.paymentMethod}</p>
+                <p>{[receipt.student.firstName, receipt.student.middleName, receipt.student.lastName].filter(Boolean).join(" ") || receipt.student.user.name} • {naira(receipt.amount)} • {receipt.paymentMethod}</p>
                 <p>Date: {formatDate(receipt.paymentDate)} • Balance: {naira(receipt.balance)}</p>
                 <Link href={`/receipt/${receipt.id}`} className="text-[var(--brand-primary)] underline">Open Receipt</Link>
               </div>
@@ -689,7 +689,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                     <tbody>
                       {attendance.slice(0, 25).map((item: any, idx: any) => (
                         <tr key={item.id} className={idx % 2 ? "bg-white" : "bg-slate-50/70"}>
-                          <td className="px-4 py-2 font-medium text-slate-900">{item.student.user.name}</td>
+                          <td className="px-4 py-2 font-medium text-slate-900">{[item.student.firstName, item.student.middleName, item.student.lastName].filter(Boolean).join(" ") || item.student.user.name}</td>
                           <td className="px-4 py-2 text-slate-600">{item.class?.name ?? "Class"}</td>
                           <td className="px-4 py-2 text-slate-600">{formatDate(item.date)}</td>
                           <td className="px-4 py-2">

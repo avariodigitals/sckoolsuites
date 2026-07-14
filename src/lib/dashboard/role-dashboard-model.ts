@@ -151,7 +151,7 @@ export function buildSchoolRoleModel(roleScope: Exclude<RoleScope, "superadmin">
           { label: "Unpaid", value: Math.round((totalInvoiceAmount - totalPaidAmount) || 0) },
         ],
       },
-      activities: students.slice(0, 6).map((student) => ({ id: student.id, title: student.user.name, detail: "New registration", time: formatDate(student.createdAt) })),
+      activities: students.slice(0, 6).map((student) => ({ id: student.id, title: [student.firstName, student.middleName, student.lastName].filter(Boolean).join(" ") || student.user.name, detail: "New registration", time: formatDate(student.createdAt) })),
       tasks: [
         { id: "res", title: "Pending results", detail: `${Math.max(0, studentCount - scores.length)} students pending score rows`, time: "Today" },
         { id: "fees", title: "Follow up unpaid invoices", detail: `${invoices.filter((item: any) => (item.balance || 0) > 0).length} invoices open`, time: "This week" },
@@ -317,14 +317,14 @@ export function buildSchoolRoleModel(roleScope: Exclude<RoleScope, "superadmin">
           { label: "Incomplete", value: students.filter((student: any) => !student.classId).length },
         ],
       },
-      activities: students.slice(0, 6).map((student) => ({ id: student.id, title: student.user.name, detail: student.class?.name ?? "Awaiting class", time: formatDate(student.createdAt) })),
+      activities: students.slice(0, 6).map((student) => ({ id: student.id, title: [student.firstName, student.middleName, student.lastName].filter(Boolean).join(" ") || student.user.name, detail: student.class?.name ?? "Awaiting class", time: formatDate(student.createdAt) })),
       tasks: [
         { id: "place", title: "Complete class placements", detail: `${students.filter((student: any) => !student.classId).length} students pending`, time: "Urgent" },
         { id: "docs", title: "Verify submitted documents", detail: "Review admission uploads", time: "Today" },
       ],
       announcements: mapAnnouncements(announcements),
       tableTitle: "Recent Admissions",
-      tableRows: students.slice(0, 20).map((student) => ({ id: student.id, primary: student.user.name, secondary: student.class?.name ?? "No class yet", status: student.classId ? "ADMITTED" : "PENDING", date: formatDate(student.createdAt) })),
+      tableRows: students.slice(0, 20).map((student) => ({ id: student.id, primary: [student.firstName, student.middleName, student.lastName].filter(Boolean).join(" ") || student.user.name, secondary: student.class?.name ?? "No class yet", status: student.classId ? "ADMITTED" : "PENDING", date: formatDate(student.createdAt) })),
     },
   };
 

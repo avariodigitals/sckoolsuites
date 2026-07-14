@@ -138,7 +138,7 @@ export async function submitInvoiceContest({
   const record: InvoiceContestRecord = {
     invoiceId: invoice.id,
     invoiceNumber: invoice.invoiceNumber,
-    studentName: invoice.student.user.name,
+    studentName: [invoice.student.firstName, invoice.student.middleName, invoice.student.lastName].filter(Boolean).join(" ") || invoice.student.user.name,
     parentId: parent.id,
     parentUserId,
     status: "SUBMITTED",
@@ -182,7 +182,7 @@ export async function submitInvoiceContest({
   await notifyContestToStaffBell({
     schoolId,
     title: `New Bill Contest: ${invoice.invoiceNumber}`,
-    message: `${invoice.student.user.name}'s parent submitted a bill contest. ${parentComment.trim()}`,
+    message: `${[invoice.student.firstName, invoice.student.middleName, invoice.student.lastName].filter(Boolean).join(" ") || invoice.student.user.name}'s parent submitted a bill contest. ${parentComment.trim()}`,
   });
 
   const adminUsers = await prisma.user.findMany({
@@ -204,7 +204,7 @@ export async function submitInvoiceContest({
           templateKey: "bill_contest_submitted",
           vars: {
             invoiceNumber: invoice.invoiceNumber,
-            studentName: invoice.student.user.name,
+            studentName: [invoice.student.firstName, invoice.student.middleName, invoice.student.lastName].filter(Boolean).join(" ") || invoice.student.user.name,
           },
         })
       )

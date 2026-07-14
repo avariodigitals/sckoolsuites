@@ -99,7 +99,7 @@ export default async function AccountantSectionPage({ params }: { params: Promis
                   {core.bills.slice(0, 30).map((item: BillRow) => (
                   <div key={item.id} className="glass-soft rounded-xl p-3">
                     <p className="font-medium">{item.invoiceNumber}</p>
-                    <p>{item.student.user.name} • Total: {naira(item.totalAmount)} • Balance: {naira(item.balance)}</p>
+                    <p>{[item.student.firstName, item.student.middleName, item.student.lastName].filter(Boolean).join(" ") || item.student.user.name} • Total: {naira(item.totalAmount)} • Balance: {naira(item.balance)}</p>
                     <p>Status: {statusLabel(item.status)} • Due: {formatDate(item.dueDate)}</p>
                   </div>
                 ))}
@@ -132,7 +132,7 @@ export default async function AccountantSectionPage({ params }: { params: Promis
                 {core.bills.filter((item: BillRow) => item.receipt).slice(0, 30).map((item: BillRow) => (
                 <div key={item.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">{item.invoiceNumber}</p>
-                  <p>Student: {item.student.user.name} • Paid: {naira(item.amountPaid)}</p>
+                  <p>Student: {[item.student.firstName, item.student.middleName, item.student.lastName].filter(Boolean).join(" ") || item.student.user.name} • Paid: {naira(item.amountPaid)}</p>
                   <p>Receipt issued</p>
                 </div>
               ))}
@@ -147,7 +147,7 @@ export default async function AccountantSectionPage({ params }: { params: Promis
             <CardContent className="space-y-2 text-sm">
                 {debtors.slice(0, 30).map((item: BillRow) => (
                 <div key={item.id} className="glass-soft rounded-xl p-3">
-                  <p className="font-medium">{item.student.user.name}</p>
+                  <p className="font-medium">{[item.student.firstName, item.student.middleName, item.student.lastName].filter(Boolean).join(" ") || item.student.user.name}</p>
                   <p>Bill: {item.invoiceNumber} • Outstanding: {naira(item.balance)}</p>
                 </div>
               ))}

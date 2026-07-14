@@ -63,7 +63,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
       : `/${invoice.student.passportUrl}`
     : null;
 
-  const studentInitials = invoice.student.user.name
+  const studentInitials = ([invoice.student.firstName, invoice.student.middleName, invoice.student.lastName].filter(Boolean).join(" ") || invoice.student.user.name)
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -111,13 +111,13 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         <div className="grid grid-cols-1 gap-3 border-b border-slate-200 px-6 py-5 text-sm md:grid-cols-2">
           <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
             {studentAvatar ? (
-              <Image src={studentAvatar} alt={`${invoice.student.user.name} avatar`} width={56} height={56} unoptimized className="h-14 w-14 rounded-full border border-slate-200 object-cover" />
+              <Image src={studentAvatar} alt={`${[invoice.student.firstName, invoice.student.middleName, invoice.student.lastName].filter(Boolean).join(" ") || invoice.student.user.name} avatar`} width={56} height={56} unoptimized className="h-14 w-14 rounded-full border border-slate-200 object-cover" />
             ) : (
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">{studentInitials || "ST"}</div>
             )}
             <div>
               <p className="text-xs uppercase tracking-wide text-slate-500">Student</p>
-              <p className="font-semibold text-slate-900">{invoice.student.user.name}</p>
+              <p className="font-semibold text-slate-900">{[invoice.student.firstName, invoice.student.middleName, invoice.student.lastName].filter(Boolean).join(" ") || invoice.student.user.name}</p>
               <p className="text-slate-600">{invoice.student.class?.name ?? "-"}</p>
             </div>
           </div>

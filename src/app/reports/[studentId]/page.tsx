@@ -147,7 +147,7 @@ export default async function ReportCardPage({ params }: { params: Promise<{ stu
       ? student.passportUrl
       : `/${student.passportUrl}`
     : undefined;
-  const fallbackPassport = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.user.name)}&background=0B1F4D&color=FFFFFF&size=160&bold=true`;
+  const fallbackPassport = `https://ui-avatars.com/api/?name=${encodeURIComponent([student.firstName, student.middleName, student.lastName].filter(Boolean).join(" ") || student.user.name)}&background=0B1F4D&color=FFFFFF&size=160&bold=true`;
   const headerTemplate = student.school.branding?.reportHeaderText?.trim() || "{term} Report - {session}";
   const resolvedHeaderText = headerTemplate
     .replaceAll("{term}", result?.term.name ?? "Current Term")
@@ -226,7 +226,7 @@ export default async function ReportCardPage({ params }: { params: Promise<{ stu
           <div className="rounded-lg border border-slate-300 bg-white p-1">
             <Image
               src={normalizedPassportUrl ?? fallbackPassport}
-              alt={`${student.user.name} passport`}
+              alt={`${[student.firstName, student.middleName, student.lastName].filter(Boolean).join(" ") || student.user.name} passport`}
               width={320}
               height={380}
               unoptimized
@@ -236,7 +236,7 @@ export default async function ReportCardPage({ params }: { params: Promise<{ stu
 
           <div className="rounded-lg border border-slate-200 bg-white p-3">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Student Profile</p>
-            <p className="text-base font-semibold text-slate-900">{student.user.name}</p>
+            <p className="text-base font-semibold text-slate-900">{[student.firstName, student.middleName, student.lastName].filter(Boolean).join(" ") || student.user.name}</p>
             <p>Class: <strong>{student.class?.name ?? "-"}</strong></p>
             <p>Group: <strong>{student.class?.classGroup?.name ?? "-"}</strong></p>
             <p>Gender: <strong>{student.gender}</strong> • Age: <strong>{student.age}</strong></p>

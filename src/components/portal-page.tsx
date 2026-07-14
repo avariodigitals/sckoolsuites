@@ -104,7 +104,7 @@ export async function PortalPage({
           headers={["No", "Student", "Total", "Paid", "Balance", "Status"]}
           rows={core.bills.slice(0, 6).map((bill: any) => [
             bill.invoiceNumber,
-            bill.student.user.name,
+            [bill.student.firstName, bill.student.middleName, bill.student.lastName].filter(Boolean).join(" ") || bill.student.user.name,
             naira(bill.totalAmount),
             naira(bill.amountPaid),
             naira(bill.balance),
