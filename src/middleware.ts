@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { roleDefaultRoute } from "@/lib/constants";
 
@@ -12,8 +12,8 @@ const routeRoleMap: { pattern: RegExp; roles: string[] }[] = [
   { pattern: /^\/student(\/|$)/, roles: ["STUDENT"] },
 ];
 
-export async function middleware(request: Request) {
-  const { pathname } = new URL(request.url);
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
   // Skip auth/login/setup/public/api/static/_next routes
   if (
@@ -30,7 +30,10 @@ export async function middleware(request: Request) {
     return NextResponse.next();
   }
 
-  const token = await getToken({ req: request as any });
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+  });
 
   // Not authenticated — redirect to login
   if (!token) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,6 +20,8 @@ type FormValues = z.infer<typeof schema>;
 export function LoginForm() {
   const [pending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
+  const searchParams = useSearchParams();
+  const timedOut = searchParams.get("reason") === "inactivity";
   const {
     register,
     handleSubmit,
@@ -43,6 +46,11 @@ export function LoginForm() {
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+      {timedOut && (
+        <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-700">
+          Your session expired due to inactivity. Please sign in again.
+        </div>
+      )}
       <div className="space-y-2">
         <label className="text-sm font-medium text-slate-700">Email address</label>
         <div className="relative">
