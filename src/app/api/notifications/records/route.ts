@@ -12,7 +12,10 @@ export async function GET() {
 
   try {
     const records = await prisma.notificationRecord.findMany({
-      where: { userId: user.id },
+      where: {
+        userId: user.id,
+        actorUserId: { not: user.id },
+      },
       orderBy: { createdAt: "desc" },
       take: 30,
       select: {

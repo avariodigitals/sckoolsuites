@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useRef, createContext, useContext } from "react";
 import {
   Bell,
@@ -84,6 +84,7 @@ export function ModernPortalShell({
   const isNested = useContext(IsInsideShell);
   const currentPathname = usePathname() ?? "";
   const pathname = pathnameProp ?? currentPathname;
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -170,6 +171,21 @@ export function ModernPortalShell({
 
   const unreadNotifications = notifications.filter((n) => !n.isRead);
   const hasUnread = unreadNotifications.length > 0;
+
+  const handleNotificationClick = (notif: Notification) => {
+    if (notif.recordId) {
+      fetch("/api/notifications/read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recordIds: [notif.recordId] }),
+      }).catch(() => {});
+    }
+    setNotifications((prev) => prev.map((n) => n.id === notif.id ? { ...n, isRead: true } : n));
+    setNotificationsOpen(false);
+    if (notif.link) {
+      router.push(notif.link);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/login" });
@@ -436,9 +452,10 @@ export function ModernPortalShell({
                                            notif.type === "message" ? "bg-emerald-100 text-emerald-600" :
                                            "bg-rose-100 text-rose-600";
                           return (
-                            <div 
+                            <button
                               key={notif.id}
-                              className="flex items-start gap-3 px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors"
+                              onClick={() => handleNotificationClick(notif)}
+                              className="flex w-full items-start gap-3 px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors text-left cursor-pointer"
                             >
                               <div className={cn("rounded-lg p-2 shrink-0", iconColor)}>
                                 <Icon className="h-4 w-4" />
@@ -450,7 +467,7 @@ export function ModernPortalShell({
                                   {new Date(notif.createdAt).toLocaleDateString()}
                                 </p>
                               </div>
-                            </div>
+                            </button>
                           );
                         })
                       )}
@@ -514,7 +531,7 @@ export function ModernPortalShell({
         </header>
 
         {/* Page Content */}
-        <main className="p-4 lg:p-6">
+        <main className="space-y-6 p-4 lg:p-6">
           {children}
         </main>
       </div>

@@ -49,11 +49,11 @@ export function ConfirmDialogProvider({ children }: { children: React.ReactNode 
     setResolver(null);
   };
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setOpen(false);
     resolver?.(false);
     setResolver(null);
-  };
+  }, [resolver]);
 
   useEffect(() => {
     if (!open) return;
@@ -62,7 +62,7 @@ export function ConfirmDialogProvider({ children }: { children: React.ReactNode 
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, handleCancel]);
 
   const variant = options?.variant ?? "default";
   const cfg = variantConfig[variant];

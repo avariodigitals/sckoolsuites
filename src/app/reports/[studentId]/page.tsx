@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@/auth";
 import { getClassGroupGradingProfiles, parseNumericAssessmentScore, resolveClassGroupProfile } from "@/lib/class-group-grading";
@@ -170,6 +171,9 @@ export default async function ReportCardPage({ params }: { params: Promise<{ stu
   } as React.CSSProperties;
 
   if (result?.fileUrl) {
+    const previewUrl = result.fileUrl.includes("cloudinary")
+      ? result.fileUrl.replace("/upload/", "/upload/fl_inline/")
+      : result.fileUrl;
     return (
       <div className="p-4" style={reportStyle}>
         <div className="no-print mx-auto mb-3 flex max-w-[210mm] items-center justify-between">
@@ -184,10 +188,16 @@ export default async function ReportCardPage({ params }: { params: Promise<{ stu
             >
               Download PDF
             </a>
+            <Link
+              href="/parent/children"
+              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Cancel Preview
+            </Link>
           </div>
         </div>
         <div className="mx-auto max-w-[210mm] overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
-          <iframe title="Uploaded result report" src={result.fileUrl} className="h-[90vh] w-full" />
+          <iframe title="Uploaded result report" src={previewUrl} className="h-[90vh] w-full" />
         </div>
       </div>
     );

@@ -62,6 +62,7 @@ const allowed = [
   "messages",
   "complaints",
   "transport",
+  "school-calendar",
   "settings",
   "users",
   "roles",
@@ -228,6 +229,12 @@ const blueprints: Record<AllowedSection, AdminSectionBlueprint> = {
     subtitle: "Bus routes, drivers, pickup planning, and transport readiness.",
     metrics: [],
     actionChips: ["Driver List", "Routes", "Pickup Stops", "Fleet Setup"],
+  },
+  "school-calendar": {
+    title: "School Calendar",
+    subtitle: "Manage school events, holidays, and key dates visible to parents and staff.",
+    metrics: [],
+    actionChips: ["Add Event", "Holidays", "Term Dates", "Publish"],
   },
   settings: {
     title: "System Settings",
@@ -493,6 +500,12 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
       { label: "Vehicles", value: String(transportCounts[2]), helper: "School vehicles" },
       { label: "Students", value: String(overview.students), helper: "Transport eligible" },
     ],
+    "school-calendar": [
+      { label: "Sessions", value: String(academic.sessions.length), helper: "Academic sessions" },
+      { label: "Terms", value: String(academic.terms.length), helper: "Active terms" },
+      { label: "Events", value: "-", helper: "School events" },
+      { label: "Holidays", value: "-", helper: "Scheduled holidays" },
+    ],
     settings: [
       { label: "Config Versions", value: String(activeConfig.version), helper: activeConfig.source },
       { label: "Branding", value: profile.school.branding ? "Configured" : "None", helper: "Logo and colors" },
@@ -621,6 +634,12 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
         {section === "teachers" ? <TeacherManager /> : null}
 
         {section === "academics" ? (
+          <div className="space-y-6">
+            <EventManager />
+          </div>
+        ) : null}
+
+        {section === "school-calendar" ? (
           <div className="space-y-6">
             <EventManager />
           </div>

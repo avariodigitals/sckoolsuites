@@ -118,31 +118,35 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
             <h2 className="mt-1 text-xl font-semibold text-slate-900">{child.user.name}</h2>
             <p className="text-sm text-slate-600">{child.class?.name ?? "Not assigned"} • {child.gender} • Age {child.age}</p>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-3 text-xs">
             <ChildWorkspaceSwitcher
               childOptions={linkedChildren.map((item: any) => ({ id: item.id, name: item.user.name }))}
               currentChildId={String(child.id)}
             />
-            <Link href="/parent/children" className="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-white">Back to children</Link>
-            <Link href="#lessons" className="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-white">Lessons</Link>
-            <Link href="#attendance" className="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-white">Attendance</Link>
-            <Link href="#fees" className="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-white">Fees</Link>
-            <Link href="#results" className="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-white">Results</Link>
+            <Link href="/parent/children" className="rounded-md border border-slate-300 px-4 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">Back to children</Link>
+            <span className="h-8 w-px bg-slate-200" />
+            <Link href="#lessons" className="rounded-md border border-slate-300 px-4 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">Lessons</Link>
+            <span className="h-8 w-px bg-slate-200" />
+            <Link href="#attendance" className="rounded-md border border-slate-300 px-4 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">Attendance</Link>
+            <span className="h-8 w-px bg-slate-200" />
+            <Link href="#fees" className="rounded-md border border-slate-300 px-4 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">Fees</Link>
+            <span className="h-8 w-px bg-slate-200" />
+            <Link href="#results" className="rounded-md border border-slate-300 px-4 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">Results</Link>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card className="glass-panel"><CardContent className="p-4"><p className="text-xs text-slate-500">Outstanding Fees</p><p className="text-2xl font-semibold text-slate-900">{naira(totalOutstanding)}</p></CardContent></Card>
         <Card className="glass-panel"><CardContent className="p-4"><p className="text-xs text-slate-500">Attendance %</p><p className="text-2xl font-semibold text-slate-900">{attendancePercent.toFixed(1)}%</p></CardContent></Card>
         <Card className="glass-panel"><CardContent className="p-4"><p className="text-xs text-slate-500">Term Grade</p><p className="text-2xl font-semibold text-slate-900">{latestResult?.termGrade ?? "-"}</p></CardContent></Card>
         <Card className="glass-panel"><CardContent className="p-4"><p className="text-xs text-slate-500">Assignments</p><p className="text-2xl font-semibold text-slate-900">{submittedAssignments}/{childAssignments.length}</p></CardContent></Card>
       </section>
 
-      <section id="lessons" className="scroll-mt-24">
+      <section id="lessons" className="scroll-mt-24 space-y-4">
         <Card className="glass-panel">
           <CardHeader><CardTitle>Lessons</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
+          <CardContent className="space-y-3 text-sm">
             {childLessons.length ? childLessons.slice(0, 20).map((lesson: any) => (
               <div key={lesson.id} className="rounded-xl border border-slate-200 bg-white/70 p-3">
                 <p className="font-medium text-slate-900">{lesson.title}</p>
@@ -153,10 +157,10 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
         </Card>
       </section>
 
-      <section id="attendance" className="scroll-mt-24">
+      <section id="attendance" className="scroll-mt-24 space-y-4">
         <Card className="glass-panel">
           <CardHeader><CardTitle>Attendance</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
+          <CardContent className="space-y-3 text-sm">
             {childAttendance.length ? childAttendance.slice(0, 30).map((row: any) => (
               <div key={row.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white/70 p-3">
                 <p className="text-slate-700">{formatDate(row.date)}</p>
@@ -167,10 +171,10 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
         </Card>
       </section>
 
-      <section id="fees" className="scroll-mt-24">
+      <section id="fees" className="scroll-mt-24 space-y-4">
         <Card className="glass-panel">
-          <CardHeader><CardTitle>Fees & Bills</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
+          <CardHeader><CardTitle>Fees &amp; Bills</CardTitle></CardHeader>
+          <CardContent className="space-y-3 text-sm">
             {childInvoices.length ? childInvoices.map((invoice: any) => (
               <div key={invoice.id} className="rounded-xl border border-slate-200 bg-white/70 p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -187,20 +191,33 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
         </Card>
       </section>
 
-      <section id="results" className="scroll-mt-24">
+      <section id="results" className="scroll-mt-24 space-y-4">
         <Card className="glass-panel">
-          <CardHeader><CardTitle>Results & Reports</CardTitle></CardHeader>
-          <CardContent className="space-y-3 text-sm">
+          <CardHeader><CardTitle>Results &amp; Reports</CardTitle></CardHeader>
+          <CardContent className="space-y-4 text-sm">
             {latestResult ? (
-              <div className="rounded-xl border border-slate-200 bg-white/70 p-3">
-                <p className="font-medium text-slate-900">Latest Result Snapshot</p>
-                <p className="text-slate-600">{latestResult.term.name} / {latestResult.session.name}</p>
-                <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                  <div className="rounded-lg border border-slate-200 bg-white p-2"><p className="text-[11px] text-slate-500">Percentage</p><p className="font-semibold text-slate-900">{latestResult.termPercentage !== null ? `${latestResult.termPercentage.toFixed(1)}%` : "-"}</p></div>
-                  <div className="rounded-lg border border-slate-200 bg-white p-2"><p className="text-[11px] text-slate-500">Grade</p><p className="font-semibold text-slate-900">{latestResult.termGrade ?? "-"}</p></div>
-                  <div className="rounded-lg border border-slate-200 bg-white p-2"><p className="text-[11px] text-slate-500">GPA</p><p className="font-semibold text-slate-900">{latestResult.termGpa !== null ? latestResult.termGpa.toFixed(2) : "-"}</p></div>
+              <div className="space-y-3 rounded-xl border border-slate-200 bg-white/70 p-4">
+                <div>
+                  <p className="font-medium text-slate-900">Latest Result Snapshot</p>
+                  <p className="text-slate-600">{latestResult.term.name} / {latestResult.session.name}</p>
                 </div>
-                <p className="mt-2 text-xs text-slate-600">Class teacher: {latestResult.classTeacherComment ?? "No comment yet."}</p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-lg border border-slate-200 bg-white p-3"><p className="text-[11px] text-slate-500">Percentage</p><p className="font-semibold text-slate-900">{latestResult.termPercentage !== null ? `${latestResult.termPercentage.toFixed(1)}%` : "-"}</p></div>
+                  <div className="rounded-lg border border-slate-200 bg-white p-3"><p className="text-[11px] text-slate-500">Grade</p><p className="font-semibold text-slate-900">{latestResult.termGrade ?? "-"}</p></div>
+                  <div className="rounded-lg border border-slate-200 bg-white p-3"><p className="text-[11px] text-slate-500">GPA</p><p className="font-semibold text-slate-900">{latestResult.termGpa !== null ? latestResult.termGpa.toFixed(2) : "-"}</p></div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-lg border border-slate-200 bg-white p-3"><p className="text-[11px] text-slate-500">Average</p><p className="font-semibold text-slate-900">{latestResult.average !== null && latestResult.average !== undefined ? `${latestResult.average.toFixed(1)}%` : "-"}</p></div>
+                  <div className="rounded-lg border border-slate-200 bg-white p-3"><p className="text-[11px] text-slate-500">Term Grade</p><p className="font-semibold text-slate-900">{latestResult.termGrade ?? "-"}</p></div>
+                </div>
+                <p className="text-xs text-slate-600">Class teacher: {latestResult.classTeacherComment ?? "No comment yet."}</p>
+                <p className="text-xs text-slate-600">Principal: {latestResult.principalComment ?? "No comment yet."}</p>
+                {latestResult.fileUrl && (
+                  <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-3">
+                    <a href={latestResult.fileUrl} download target="_blank" rel="noopener noreferrer" className="rounded-md bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-slate-800">Download PDF</a>
+                    <a href={latestResult.fileUrl} target="_blank" rel="noopener noreferrer" className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">Open in New Tab</a>
+                  </div>
+                )}
               </div>
             ) : <p className="text-slate-500">No published result for selected term.</p>}
 

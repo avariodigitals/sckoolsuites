@@ -107,6 +107,7 @@ export const navByRole: Record<string, NavItem[]> = {
         { label: "Attendance", href: "/admin/attendance", icon: CalendarCheck, isSubmenu: true },
         { label: "Results", href: "/admin/results", icon: FileBarChart, isSubmenu: true },
         { label: "LMS", href: "/admin/lms", icon: BookOpen, isSubmenu: true },
+        { label: "School Calendar", href: "/admin/school-calendar", icon: CalendarDays, isSubmenu: true },
       ],
     },
     {
@@ -208,6 +209,7 @@ export const navByRole: Record<string, NavItem[]> = {
         { label: "Attendance", href: "/admin/attendance", icon: CalendarCheck, isSubmenu: true },
         { label: "Results", href: "/admin/results", icon: FileBarChart, isSubmenu: true },
         { label: "LMS", href: "/admin/lms", icon: BookOpen, isSubmenu: true },
+        { label: "School Calendar", href: "/admin/school-calendar", icon: CalendarDays, isSubmenu: true },
       ],
     },
     {
@@ -309,6 +311,7 @@ export const navByRole: Record<string, NavItem[]> = {
         { label: "Attendance", href: "/admin/attendance", icon: CalendarCheck, isSubmenu: true },
         { label: "Results", href: "/admin/results", icon: FileBarChart, isSubmenu: true },
         { label: "LMS", href: "/admin/lms", icon: BookOpen, isSubmenu: true },
+        { label: "School Calendar", href: "/admin/school-calendar", icon: CalendarDays, isSubmenu: true },
       ],
     },
     {
@@ -410,6 +413,7 @@ export const navByRole: Record<string, NavItem[]> = {
         { label: "Attendance", href: "/admin/attendance", icon: CalendarCheck, isSubmenu: true },
         { label: "Results", href: "/admin/results", icon: FileBarChart, isSubmenu: true },
         { label: "LMS", href: "/admin/lms", icon: BookOpen, isSubmenu: true },
+        { label: "School Calendar", href: "/admin/school-calendar", icon: CalendarDays, isSubmenu: true },
       ],
     },
     {

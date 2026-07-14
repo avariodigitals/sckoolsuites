@@ -385,7 +385,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
       </section>
 
       {sectionKey === "children" ? (
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card className="glass-panel"><CardContent className="p-4"><p className="text-xs text-slate-500">Linked Children</p><p className="text-2xl font-semibold text-slate-900">{children.length}</p></CardContent></Card>
         <Card className="glass-panel"><CardContent className="p-4"><p className="text-xs text-slate-500">Outstanding Fees</p><p className="text-2xl font-semibold text-slate-900">{naira(outstandingTotal)}</p></CardContent></Card>
         <Card className="glass-panel"><CardContent className="p-4"><p className="text-xs text-slate-500">Attendance %</p><p className="text-2xl font-semibold text-slate-900">{attendancePercent.toFixed(1)}%</p></CardContent></Card>
@@ -394,7 +394,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
       ) : null}
 
       {sectionKey === "children" ? (
-        <section className="grid gap-3 xl:grid-cols-2">
+        <section className="grid gap-5 xl:grid-cols-2">
           {children.length ? children.map((child: any) => {
             const summary = childCard(child.id);
             return (
@@ -402,7 +402,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                 <CardHeader className="bg-gradient-to-r from-slate-900 to-slate-700 text-white">
                   <CardTitle className="text-base">Child Profile</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2 p-4 text-sm">
+                <CardContent className="space-y-4 p-5 text-sm">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] text-sm font-semibold text-white">
@@ -419,11 +419,11 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                     </Link>
                   </div>
 
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <div className="rounded-lg border border-slate-200 bg-white/70 p-2"><p className="text-[11px] text-slate-500">Attendance</p><p className="font-medium text-slate-900">{summary.attendanceSummary}</p></div>
-                    <div className="rounded-lg border border-slate-200 bg-white/70 p-2"><p className="text-[11px] text-slate-500">Fees</p><p className="font-medium text-slate-900">{summary.feeSummary}</p></div>
-                    <div className="rounded-lg border border-slate-200 bg-white/70 p-2"><p className="text-[11px] text-slate-500">Results</p><p className="font-medium text-slate-900">{summary.resultSummary}</p></div>
-                    <div className="rounded-lg border border-slate-200 bg-white/70 p-2"><p className="text-[11px] text-slate-500">LMS</p><p className="font-medium text-slate-900">{summary.lmsActivity}</p></div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg border border-slate-200 bg-white/70 p-3"><p className="text-[11px] text-slate-500">Attendance</p><p className="font-medium text-slate-900">{summary.attendanceSummary}</p></div>
+                    <div className="rounded-lg border border-slate-200 bg-white/70 p-3"><p className="text-[11px] text-slate-500">Fees</p><p className="font-medium text-slate-900">{summary.feeSummary}</p></div>
+                    <div className="rounded-lg border border-slate-200 bg-white/70 p-3"><p className="text-[11px] text-slate-500">Results</p><p className="font-medium text-slate-900">{summary.resultSummary}</p></div>
+                    <div className="rounded-lg border border-slate-200 bg-white/70 p-3"><p className="text-[11px] text-slate-500">LMS</p><p className="font-medium text-slate-900">{summary.lmsActivity}</p></div>
                   </div>
 
                   <details className="rounded-lg border border-slate-200 bg-white/60 p-3">
@@ -432,11 +432,14 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                     <p><strong>Teacher Comment:</strong> {summary.teacherComment}</p>
                   </details>
 
-                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                    <Link href={`/parent/children/${child.id}#results`} className="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-white">View Report</Link>
-                    <Link href={`/parent/children/${child.id}#fees`} className="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-white">View Fees</Link>
-                    <Link href={`/parent/children/${child.id}#lessons`} className="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-white">View Lessons</Link>
-                    <Link href={`/parent/children/${child.id}#attendance`} className="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-white">View Attendance</Link>
+                  <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-3 text-xs">
+                    <Link href={`/parent/children/${child.id}#results`} className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">View Report</Link>
+                    <span className="h-8 w-px bg-slate-200" />
+                    <Link href={`/parent/children/${child.id}#fees`} className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">View Fees</Link>
+                    <span className="h-8 w-px bg-slate-200" />
+                    <Link href={`/parent/children/${child.id}#lessons`} className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">View Lessons</Link>
+                    <span className="h-8 w-px bg-slate-200" />
+                    <Link href={`/parent/children/${child.id}#attendance`} className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">View Attendance</Link>
                   </div>
                 </CardContent>
               </Card>
@@ -552,13 +555,16 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                   </div>
 
                   {isUploadedPdf && latest?.fileUrl && (
-                    <div className="overflow-hidden rounded-xl border border-slate-200">
+                    <details className="overflow-hidden rounded-xl border border-slate-200" open>
                       <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Report Preview</p>
-                        <a href={latest.fileUrl} download target="_blank" rel="noopener noreferrer" className="rounded-md bg-slate-900 px-3 py-1 text-[11px] font-medium text-white hover:bg-slate-800">Download</a>
+                        <div className="flex items-center gap-2">
+                          <a href={latest.fileUrl} download target="_blank" rel="noopener noreferrer" className="rounded-md bg-slate-900 px-3 py-1 text-[11px] font-medium text-white hover:bg-slate-800">Download</a>
+                          <summary className="cursor-pointer rounded-md border border-slate-300 bg-white px-3 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 list-none">Cancel Preview</summary>
+                        </div>
                       </div>
-                      <iframe src={latest.fileUrl} title={`${child.user.name} report preview`} className="h-[500px] w-full bg-white" />
-                    </div>
+                      <iframe src={latest.fileUrl.includes("cloudinary") ? latest.fileUrl.replace("/upload/", "/upload/fl_inline/") : latest.fileUrl} title={`${child.user.name} report preview`} className="h-[500px] w-full bg-white" />
+                    </details>
                   )}
 
                   <div className="flex flex-wrap justify-end gap-3">
