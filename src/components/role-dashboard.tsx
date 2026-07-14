@@ -214,62 +214,88 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
     termId: context.term?.id ?? undefined,
   });
 
-  // Fetch reception data for admin dashboard
-  const [enquiryCount, visitorCount, gatePassCount, complaintCount] = await Promise.all([
-    prisma.enquiry.count({ where: { schoolId: profile.schoolId } }),
-    prisma.visitor.count({ where: { schoolId: profile.schoolId, status: "CHECKED_IN" } }),
-    prisma.gatePass.count({ where: { schoolId: profile.schoolId, status: "ACTIVE" } }),
-    prisma.receptionComplaint.count({ where: { schoolId: profile.schoolId, status: "OPEN" } }),
-  ]);
+  // Fetch reception data for admin dashboard only
+  let enquiryCount = 0;
+  let visitorCount = 0;
+  let gatePassCount = 0;
+  let complaintCount = 0;
 
-  // Fetch real income/expense data for current month
+  if (roleScope === "admin" || superAdminWithSchool) {
+    [enquiryCount, visitorCount, gatePassCount, complaintCount] = await Promise.all([
+      prisma.enquiry.count({ where: { schoolId: profile.schoolId } }),
+      prisma.visitor.count({ where: { schoolId: profile.schoolId, status: "CHECKED_IN" } }),
+      prisma.gatePass.count({ where: { schoolId: profile.schoolId, status: "ACTIVE" } }),
+      prisma.receptionComplaint.count({ where: { schoolId: profile.schoolId, status: "OPEN" } }),
+    ]);
+  }
+
+  // Fetch real income/expense data for current month (admin only)
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-  const [incomeRecords, expenseRecords, feeItems] = await Promise.all([
-    prisma.income.findMany({
-      where: { schoolId: profile.schoolId, date: { gte: startOfMonth, lte: endOfMonth } },
-      orderBy: { date: "asc" },
-    }),
-    prisma.expense.findMany({
-      where: { schoolId: profile.schoolId, date: { gte: startOfMonth, lte: endOfMonth } },
-      orderBy: { date: "asc" },
-    }),
-    prisma.feeItem.findMany({ where: { schoolId: profile.schoolId } }),
-  ]);
+  let incomeData: Array<{ date: string; income: number; expenses: number }> = [];
+  let feeComponents: Array<{ name: string; value: number }> = [];
 
-  // Group income/expense by date for chart
-  const dateKey = (d: Date) => `${d.getDate()}`;
-  const incomeByDate = new Map<string, number>();
-  const expensesByDate = new Map<string, number>();
+  if (roleScope === "admin" || superAdminWithSchool) {
+    const [incomeRecords, expenseRecords, feeItems] = await Promise.all([
+      prisma.income.findMany({
+        where: { schoolId: profile.schoolId, date: { gte: startOfMonth, lte: endOfMonth } },
+        orderBy: { date: "asc" },
+      }),
+      prisma.expense.findMany({
+        where: { schoolId: profile.schoolId, date: { gte: startOfMonth, lte: endOfMonth } },
+        orderBy: { date: "asc" },
+      }),
+      prisma.feeItem.findMany({ where: { schoolId: profile.schoolId } }),
+    ]);
 
-  for (let i = 1; i <= endOfMonth.getDate(); i++) {
-    incomeByDate.set(String(i), 0);
-    expensesByDate.set(String(i), 0);
+    // Group income/expense by date for chart
+    const dateKey = (d: Date) => `${d.getDate()}`;
+    const incomeByDate = new Map<string, number>();
+    const expensesByDate = new Map<string, number>();
+
+    for (let i = 1; i <= endOfMonth.getDate(); i++) {
+      incomeByDate.set(String(i), 0);
+      expensesByDate.set(String(i), 0);
+    }
+
+    incomeRecords.forEach((r: any) => {
+      const k = dateKey(new Date(r.date));
+      incomeByDate.set(k, (incomeByDate.get(k) || 0) + Number(r.amount));
+    });
+    expenseRecords.forEach((r: any) => {
+      const k = dateKey(new Date(r.date));
+      expensesByDate.set(k, (expensesByDate.get(k) || 0) + Number(r.amount));
+    });
+
+    incomeData = Array.from(incomeByDate.entries())
+      .map(([date, income]) => ({ date, income, expenses: expensesByDate.get(date) || 0 }))
+      .filter((d) => d.income > 0 || d.expenses > 0);
+
+    feeComponents = feeItems.length > 0
+      ? feeItems.map((item: any) => ({ name: item.name, value: Number(item.amount) })).sort((a: any, b: any) => b.value - a.value)
+      : [];
   }
-
-  incomeRecords.forEach((r: any) => {
-    const k = dateKey(new Date(r.date));
-    incomeByDate.set(k, (incomeByDate.get(k) || 0) + Number(r.amount));
-  });
-  expenseRecords.forEach((r: any) => {
-    const k = dateKey(new Date(r.date));
-    expensesByDate.set(k, (expensesByDate.get(k) || 0) + Number(r.amount));
-  });
-
-  const incomeData = Array.from(incomeByDate.entries())
-    .map(([date, income]) => ({ date, income, expenses: expensesByDate.get(date) || 0 }))
-    .filter((d) => d.income > 0 || d.expenses > 0);
-
-  const feeComponents = feeItems.length > 0
-    ? feeItems.map((item: any) => ({ name: item.name, value: Number(item.amount) })).sort((a: any, b: any) => b.value - a.value)
-    : [];
 
   // If Super Admin has school, treat as admin for dashboard model
   const effectiveRole = superAdminWithSchool ? "admin" : roleScope;
   const model = buildSchoolRoleModel(effectiveRole as Exclude<RoleScope, "superadmin">, core);
   const setup = (roleScope === "admin" || superAdminWithSchool) ? await getSetupWizardState(profile.schoolId) : null;
+
+  // Personalize title for parent role with time-based greeting
+  if (roleScope === "parent" && model) {
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : hour < 21 ? "Good Evening" : "Good Night";
+    const parentName = user.name?.trim() ?? "there";
+    const parentRecord = await prisma.parent.findFirst({
+      where: { userId: user.id, schoolId: profile.schoolId },
+      select: { title: true },
+    });
+    const titlePrefix = parentRecord?.title?.trim() ? parentRecord.title.trim() : "Parent";
+    model.title = `${greeting}, ${titlePrefix} ${parentName}`;
+    model.subtitle = "Track child performance, fee balances, and school communication.";
+  }
 
   // Ensure model has required fields
   if (!model || !model.title) {

@@ -13,7 +13,7 @@ import {
   Clock3,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { PortalShell } from "@/components/portal-shell";
+import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireRole } from "@/lib/auth-guards";
@@ -351,19 +351,13 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
   const childrenWithPublishedResults = children.filter((child: any) => results.some((item: any) => item.studentId === child.id));
 
   return (
-    <PortalShell
+    <ModernPortalShell
       role={user.role}
       schoolName={core.school?.name}
       schoolLogoUrl={core.school?.branding?.logoUrl ?? undefined}
       userName={user.name ?? "Parent"}
       avatarUrl={dbUser?.avatarUrl ?? undefined}
       pathname={`/parent/${section}`}
-      currentSessionName={context.session?.name}
-      currentTermName={context.term?.name}
-      sessions={core.sessions.map((item: any) => ({ id: item.id, name: item.name }))}
-      terms={core.terms.map((item: any) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
-      selectedSessionId={context.session?.id != null ? String(context.session.id) : undefined}
-      selectedTermId={context.term?.id != null ? String(context.term.id) : undefined}
       primaryColor={core.school?.branding?.primaryColor}
       secondaryColor={core.school?.branding?.secondaryColor}
     >
@@ -726,8 +720,16 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
               <div key={item.id} className="glass-soft rounded-xl p-3">
                 <p className="font-medium">{item.title}</p>
                 <p className="text-xs text-slate-500">Date: {formatDate(item.createdAt)} • Audience: {humanizeEnum(item.audience)}</p>
-                <p>{item.body}</p>
-                <p className="text-xs text-slate-500">Attachment: Not provided</p>
+                {item.isHtml ? (
+                  <div className="prose prose-sm max-w-none text-slate-700 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline" dangerouslySetInnerHTML={{ __html: item.body }} />
+                ) : (
+                  <p>{item.body}</p>
+                )}
+                {item.attachmentUrl ? (
+                  <a href={item.attachmentUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-blue-600 hover:text-blue-700">
+                    📎 {item.attachmentName ?? "Download attachment"}
+                  </a>
+                ) : null}
               </div>
             )) : <p className="text-slate-500">No announcements published yet.</p>}
           </CardContent>
@@ -751,6 +753,10 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
+                  <p className="text-[11px] text-slate-500">Title</p>
+                  <p className="font-medium text-slate-900">{parentProfile.title ?? "Not set"}</p>
+                </div>
                 <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
                   <p className="text-[11px] text-slate-500">Full Name</p>
                   <p className="font-medium text-slate-900">{parentProfile.user?.name}</p>
@@ -958,7 +964,16 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                         <p className="text-sm font-medium text-slate-900">{item.title}</p>
                         <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">{humanizeEnum(item.audience)}</span>
                       </div>
-                      <p className="mt-1 text-xs text-slate-600 line-clamp-2">{item.body}</p>
+                      {item.isHtml ? (
+                        <div className="prose prose-sm max-w-none text-slate-600 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline line-clamp-2" dangerouslySetInnerHTML={{ __html: item.body }} />
+                      ) : (
+                        <p className="mt-1 text-xs text-slate-600 line-clamp-2">{item.body}</p>
+                      )}
+                      {item.attachmentUrl && (
+                        <a href={item.attachmentUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700">
+                          📎 {item.attachmentName ?? "Attachment"}
+                        </a>
+                      )}
                       <p className="mt-1 text-[11px] text-slate-400">{formatDate(item.createdAt)}</p>
                     </div>
                   ))}
@@ -968,6 +983,6 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
           </section>
         );
       })() : null}
-    </PortalShell>
+    </ModernPortalShell>
   );
 }

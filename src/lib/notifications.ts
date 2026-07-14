@@ -8,6 +8,9 @@ export type DashboardNotification = {
   description: string;
   audience: string;
   createdAt: string;
+  isHtml?: boolean;
+  attachmentUrl?: string | null;
+  attachmentName?: string | null;
 };
 
 export type NotificationRole =
@@ -152,6 +155,9 @@ export async function getLatestNotifications({
       description: item.body,
       audience: normalizeAudience(item.audience),
       createdAt: item.createdAt.toISOString(),
+      isHtml: item.isHtml ?? false,
+      attachmentUrl: item.attachmentUrl ?? null,
+      attachmentName: item.attachmentName ?? null,
     }));
 
   const staffContestItems = staffContestRows

@@ -50,6 +50,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ActiveSessionProvider, useActiveSession } from "@/components/active-session-provider";
 import { signOut } from "next-auth/react";
+import { navByRole, type NavItem as RoleNavItem } from "@/lib/navigation";
 
 type Notification = {
   id: string;
@@ -64,100 +65,26 @@ type NavItem = {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  children?: { label: string; href: string; icon: React.ComponentType<{ className?: string }> }[];
+  group?: string;
+  children?: NavItem[];
 };
 
 const IsInsideShell = createContext(false);
 
-const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  {
-    label: "Reception",
-    href: "/admin/reception",
-    icon: Headset,
-    children: [
-      { label: "Overview", href: "/admin/reception/dashboard", icon: Activity },
-      { label: "Enquiry", href: "/admin/reception/enquiry", icon: FileText },
-      { label: "Visitor Log", href: "/admin/reception", icon: Users },
-      { label: "Gate Pass", href: "/admin/reception/gate-pass", icon: ClipboardList },
-      { label: "Complaint", href: "/admin/reception/complaint", icon: AlertTriangle },
-      { label: "Call Log", href: "/admin/reception/call-log", icon: Phone },
-      { label: "Correspondence", href: "/admin/reception/correspondence", icon: Mail },
-      { label: "Query", href: "/admin/reception/query", icon: HelpCircle },
-    ],
-  },
-  {
-    label: "Academics",
-    href: "/admin/classes",
-    icon: School,
-    children: [
-      { label: "Classes", href: "/admin/classes", icon: School },
-      { label: "Arms", href: "/admin/arms", icon: UsersRound },
-      { label: "Subjects", href: "/admin/subjects", icon: BookMarked },
-      { label: "Assessments", href: "/admin/assessments", icon: ClipboardList },
-      { label: "Attendance", href: "/admin/attendance", icon: ClipboardList },
-      { label: "Results", href: "/admin/results", icon: FileText },
-    ],
-  },
-  {
-    label: "Students",
-    href: "/admin/students",
-    icon: GraduationCap,
-    children: [
-      { label: "All Students", href: "/admin/students", icon: GraduationCap },
-      { label: "Admissions", href: "/admin/students/admissions", icon: FileText },
-      { label: "Transfers", href: "/admin/students/transfers", icon: ArrowRightLeft },
-      { label: "Student Settings", href: "/admin/settings/students", icon: Settings },
-    ],
-  },
-  {
-    label: "Finance",
-    href: "/admin/fees",
-    icon: CreditCard,
-    children: [
-      { label: "Fee Setup", href: "/admin/fees", icon: FileText },
-      { label: "Bills", href: "/admin/bills", icon: Receipt },
-      { label: "Payments", href: "/admin/payments", icon: CreditCard },
-      { label: "Income", href: "/admin/income", icon: TrendingUp },
-      { label: "Expenses", href: "/admin/expenses", icon: TrendingDown },
-      { label: "Debtors", href: "/admin/debtors", icon: Receipt },
-      { label: "Ledger", href: "/admin/ledger", icon: BookOpen },
-      { label: "Revenue", href: "/admin/revenue", icon: BarChart3 },
-    ],
-  },
-  { label: "Employees", href: "/admin/teachers", icon: Users },
-  { label: "Parents", href: "/admin/parents", icon: Users },
-  { label: "LMS", href: "/admin/lms", icon: BookOpen },
-  { label: "Announcements", href: "/admin/announcements", icon: Bell },
-  { label: "Transport", href: "/admin/transport", icon: Calendar },
-  {
-    label: "User Management",
-    href: "/admin/users",
-    icon: UserCog,
-    children: [
-      { label: "Users", href: "/admin/users", icon: User },
-      { label: "Roles", href: "/admin/roles", icon: Award },
-      { label: "Privileges", href: "/admin/privileges", icon: Shield },
-    ],
-  },
-  {
-    label: "Settings",
-    href: "/admin/settings",
-    icon: Settings,
-    children: [
-      { label: "Branding", href: "/admin/settings", icon: Palette },
-      { label: "Templates", href: "/admin/settings/templates", icon: LayoutTemplate },
-      { label: "Payment Methods", href: "/admin/settings/payment-methods", icon: CreditCard },
-      { label: "Master Data", href: "/admin/settings/master-data", icon: Database },
-      { label: "Student Settings", href: "/admin/settings/students", icon: GraduationCap },
-      { label: "Reception Settings", href: "/admin/settings/reception", icon: Headset },
-      { label: "Grading & Assessment", href: "/admin/settings/grading", icon: Award },
-      { label: "Configuration Engine", href: "/admin/settings/config-engine", icon: Settings },
-      { label: "Academic Calendar", href: "/admin/settings/academic-calendar", icon: Calendar },
-    ],
-  },
-  { label: "My Profile", href: "/admin/profile", icon: User },
-];
+function getNavItems(role: string): NavItem[] {
+  const items = navByRole[role] ?? [];
+  return items.map((item: RoleNavItem) => ({
+    label: item.label,
+    href: item.href,
+    icon: item.icon as React.ComponentType<{ className?: string }>,
+    group: item.group,
+    children: item.children?.map((child) => ({
+      label: child.label,
+      href: child.href,
+      icon: child.icon as React.ComponentType<{ className?: string }>,
+    })),
+  }));
+}
 
 export function ModernPortalShell({
   role,
@@ -290,13 +217,13 @@ export function ModernPortalShell({
           )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-slate-900 truncate">{displaySchoolName}</p>
-            <p className="text-xs text-slate-500">Admin Portal</p>
+            <p className="text-xs text-slate-500">{role.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())} Portal</p>
           </div>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-          {navItems.map((item) => {
+          {getNavItems(role).map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
             const hasChildren = item.children && item.children.length > 0;

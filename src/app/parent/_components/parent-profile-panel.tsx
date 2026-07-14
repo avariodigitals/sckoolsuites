@@ -8,6 +8,7 @@ type ProfilePayload = {
   phone: string;
   address: string;
   emergencyContact: string;
+  title: string;
 };
 
 export function ParentProfilePanel() {
@@ -19,6 +20,7 @@ export function ParentProfilePanel() {
     phone: "",
     address: "",
     emergencyContact: "",
+    title: "",
   });
 
   useEffect(() => {
@@ -50,6 +52,21 @@ export function ParentProfilePanel() {
         <h3 className="mb-3 text-base font-semibold text-slate-900">Parent Profile Settings</h3>
         {loading ? <p className="text-sm text-slate-500">Loading...</p> : (
           <div className="grid gap-2 text-sm md:grid-cols-2">
+            <select className="rounded-md border border-slate-300 px-3 py-2" value={profile.title} onChange={(e) => setProfile((s) => ({ ...s, title: e.target.value }))}>
+              <option value="">Select Title</option>
+              <option value="Mr">Mr</option>
+              <option value="Mrs">Mrs</option>
+              <option value="Ms">Ms</option>
+              <option value="Dr">Dr</option>
+              <option value="Prof">Prof</option>
+              <option value="Chief">Chief</option>
+              <option value="Alhaji">Alhaji</option>
+              <option value="Alhaja">Alhaja</option>
+              <option value="Barr">Barr</option>
+              <option value="Rev">Rev</option>
+              <option value="Pastor">Pastor</option>
+              <option value="Engr">Engr</option>
+            </select>
             <input className="rounded-md border border-slate-300 px-3 py-2" placeholder="Name" value={profile.name} onChange={(e) => setProfile((s) => ({ ...s, name: e.target.value }))} />
             <input className="rounded-md border border-slate-300 px-3 py-2" placeholder="Email" value={profile.email} onChange={(e) => setProfile((s) => ({ ...s, email: e.target.value }))} />
             <input className="rounded-md border border-slate-300 px-3 py-2" placeholder="Phone" value={profile.phone} onChange={(e) => setProfile((s) => ({ ...s, phone: e.target.value }))} />

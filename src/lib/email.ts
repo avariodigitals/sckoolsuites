@@ -62,10 +62,32 @@ export async function sendWorkflowEmail({
   const resend = await getResendClient(schoolId);
   if (resend) {
     try {
-      const attachmentParts = attachments?.map((att) => ({
-        filename: att.filename,
-        content: att.content ? Buffer.from(att.content).toString("base64") : undefined,
-      }));
+      let attachmentParts: any[] | undefined;
+      if (attachments?.length) {
+        const parts = [];
+        for (const att of attachments) {
+          if (att.content) {
+            parts.push({
+              filename: att.filename,
+              content: Buffer.from(att.content).toString("base64"),
+            });
+          } else if (att.path) {
+            try {
+              const resp = await fetch(att.path);
+              if (resp.ok) {
+                const buf = Buffer.from(await resp.arrayBuffer());
+                parts.push({
+                  filename: att.filename,
+                  content: buf.toString("base64"),
+                });
+              }
+            } catch (fetchErr) {
+              console.error("[email] Failed to fetch attachment:", att.path, fetchErr);
+            }
+          }
+        }
+        attachmentParts = parts.length > 0 ? parts : undefined;
+      }
 
       const fromEmail = await getFromEmail(schoolId);
       console.log(`[email] Sending from: ${fromEmail} to: ${to} subject: ${subject}`);

@@ -209,6 +209,7 @@ model Parent {
   id               Int      @id @default(autoincrement())
   userId           Int      @unique @map("user_id")
   schoolId         String   @default("default") @map("school_id")
+  title            String?
   occupation       String?
   employerName     String?  @map("employer_name")
   workAddress      String?  @map("work_address")
@@ -992,16 +993,20 @@ model OnlineClass {
 }
 
 model Announcement {
-  id          Int      @id @default(autoincrement())
-  schoolId    String   @default("default") @map("school_id")
-  sessionId   Int?     @map("session_id")
-  termId      Int?     @map("term_id")
-  title       String
-  body        String
-  audience    String
-  targetRoles String?  @map("target_roles")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+  id             Int      @id @default(autoincrement())
+  schoolId       String   @default("default") @map("school_id")
+  sessionId      Int?     @map("session_id")
+  termId         Int?     @map("term_id")
+  title          String
+  body           String
+  audience       String
+  targetRoles    String?  @map("target_roles")
+  isHtml         Boolean  @default(false) @map("is_html")
+  sendEmail      Boolean  @default(false) @map("send_email")
+  attachmentUrl  String?  @map("attachment_url")
+  attachmentName String?  @map("attachment_name")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
 
   school  School   @relation(fields: [schoolId], references: [id])
   session Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)

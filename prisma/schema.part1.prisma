@@ -208,6 +208,7 @@ model Parent {
   id               Int      @id @default(autoincrement())
   userId           Int      @unique @map("user_id")
   schoolId         String   @default("default") @map("school_id")
+  title            String?
   occupation       String?
   employerName     String?  @map("employer_name")
   workAddress      String?  @map("work_address")

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PortalShell } from "@/components/portal-shell";
+import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { requireRole } from "@/lib/auth-guards";
 import { getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
@@ -89,19 +89,13 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
   const submittedAssignments = childAssignments.filter((item: any) => Boolean(item.submittedAt)).length;
 
   return (
-    <PortalShell
+    <ModernPortalShell
       role={user.role}
       schoolName={core.school?.name}
       schoolLogoUrl={core.school?.branding?.logoUrl ?? undefined}
       userName={user.name ?? "Parent"}
       avatarUrl={dbUser?.avatarUrl ?? undefined}
       pathname="/parent/children"
-      currentSessionName={context.session?.name}
-      currentTermName={context.term?.name}
-      sessions={core.sessions.map((item: any) => ({ id: item.id, name: item.name }))}
-      terms={core.terms.map((item: any) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
-      selectedSessionId={context.session?.id != null ? String(context.session.id) : undefined}
-      selectedTermId={context.term?.id != null ? String(context.term.id) : undefined}
       primaryColor={core.school?.branding?.primaryColor}
       secondaryColor={core.school?.branding?.secondaryColor}
     >
@@ -220,6 +214,6 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
           </CardContent>
         </Card>
       </section>
-    </PortalShell>
+    </ModernPortalShell>
   );
 }

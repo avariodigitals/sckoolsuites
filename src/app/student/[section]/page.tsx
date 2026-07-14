@@ -349,8 +349,17 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
               {core.announcements.slice(0, 20).map((item: any) => (
                 <div key={item.id} className="glass-soft rounded-xl p-3">
                   <p className="font-medium">{item.title}</p>
-                  <p className="text-slate-600">{item.body.slice(0, 180)}</p>
-                  <p className="text-xs text-slate-500">{formatDate(item.createdAt)}</p>
+                  {item.isHtml ? (
+                    <div className="prose prose-sm max-w-none text-slate-600 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline" dangerouslySetInnerHTML={{ __html: item.body }} />
+                  ) : (
+                    <p className="text-slate-600">{item.body.slice(0, 180)}</p>
+                  )}
+                  {item.attachmentUrl && (
+                    <a href={item.attachmentUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-blue-600 hover:text-blue-700">
+                      📎 {item.attachmentName ?? "Download attachment"}
+                    </a>
+                  )}
+                  <p className="text-xs text-slate-500 mt-1">{formatDate(item.createdAt)}</p>
                 </div>
               ))}
               {!core.announcements.length ? <p className="text-slate-500">No announcements available.</p> : null}

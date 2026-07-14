@@ -4,12 +4,75 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
+import { sendWorkflowEmail } from "@/lib/email";
 
 const createSchema = z.object({
   title: z.string().min(1).max(200),
-  body: z.string().min(1).max(10000),
+  body: z.string().min(1).max(50000),
   audience: z.string().min(1).max(100),
+  isHtml: z.boolean().optional().default(false),
+  sendEmail: z.boolean().optional().default(false),
+  attachmentUrl: z.string().url().optional().nullable(),
+  attachmentName: z.string().max(255).optional().nullable(),
 });
+
+const audienceRoleMap: Record<string, string[]> = {
+  ALL: ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "ACCOUNTANT", "REGISTRAR", "TEACHER", "PARENT", "STUDENT", "RECEPTIONIST", "DRIVER"],
+  STUDENTS: ["STUDENT"],
+  PARENTS: ["PARENT"],
+  TEACHERS: ["TEACHER"],
+  STAFF: ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "ACCOUNTANT", "REGISTRAR", "RECEPTIONIST"],
+  "STUDENTS,PARENTS": ["STUDENT", "PARENT"],
+  "TEACHERS,STAFF": ["TEACHER", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "ACCOUNTANT", "REGISTRAR", "RECEPTIONIST"],
+};
+
+async function getRecipientEmails(schoolId: string, audience: string): Promise<string[]> {
+  const roles = audienceRoleMap[audience] ?? audienceRoleMap.ALL;
+  const users = await prisma.user.findMany({
+    where: { schoolId, isActive: true, role: { name: { in: roles } } },
+    select: { email: true },
+  });
+  return users.map((u: { email: string }) => u.email).filter(Boolean);
+}
+
+async function sendAnnouncementEmails(
+  schoolId: string,
+  title: string,
+  body: string,
+  isHtml: boolean,
+  audience: string,
+  attachmentUrl?: string | null,
+  attachmentName?: string | null
+): Promise<{ sent: number; failed: number }> {
+  const emails = await getRecipientEmails(schoolId, audience);
+  const school = await prisma.school.findUnique({ where: { id: schoolId } });
+  const schoolName = school?.name ?? "Sckool Suite";
+  const subject = `${title} — ${schoolName}`;
+  const textBody = isHtml ? body.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() : body;
+  const htmlBody = isHtml ? body : `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1e293b;">${body.replace(/\n/g, "<br/>")}</div>`;
+
+  let sent = 0;
+  let failed = 0;
+
+  const attachments = attachmentUrl
+    ? [{ filename: attachmentName ?? "attachment", path: attachmentUrl }]
+    : undefined;
+
+  for (const email of emails) {
+    const result = await sendWorkflowEmail({
+      schoolId,
+      to: email,
+      subject,
+      text: textBody,
+      html: htmlBody,
+      attachments,
+    });
+    if (result.ok) sent++;
+    else failed++;
+  }
+
+  return { sent, failed };
+}
 
 function isAuthorized(role?: string) {
   return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
@@ -40,14 +103,19 @@ export async function GET(request: Request) {
   });
 
   return NextResponse.json({
-    announcements: announcements.map((a: { id: number; title: string; body: string | null; audience: string | null; sessionId: number | null; termId: number | null; createdAt: Date }) => ({
+    announcements: announcements.map((a: any) => ({
       id: a.id,
       title: a.title,
       body: a.body,
       audience: a.audience,
+      isHtml: a.isHtml ?? false,
+      sendEmail: a.sendEmail ?? false,
+      attachmentUrl: a.attachmentUrl ?? null,
+      attachmentName: a.attachmentName ?? null,
       sessionId: a.sessionId ?? null,
       termId: a.termId ?? null,
       createdAt: a.createdAt.toISOString(),
+      updatedAt: a.updatedAt.toISOString(),
     })),
   });
 }
@@ -82,8 +150,12 @@ export async function POST(request: Request) {
       data: {
         schoolId,
         title: data.title.trim(),
-        body: data.body.trim(),
+        body: data.body,
         audience: data.audience.trim(),
+        isHtml: data.isHtml,
+        sendEmail: data.sendEmail,
+        attachmentUrl: data.attachmentUrl ?? null,
+        attachmentName: data.attachmentName ?? null,
         sessionId: currentSession?.id ?? null,
         termId: currentTerm?.id ?? null,
       },
@@ -99,10 +171,26 @@ export async function POST(request: Request) {
         announcementId: announcement.id,
         title: data.title,
         audience: data.audience,
+        isHtml: data.isHtml,
+        sendEmail: data.sendEmail,
+        hasAttachment: !!data.attachmentUrl,
         sessionId: currentSession?.id,
         termId: currentTerm?.id,
       },
     });
+
+    let emailResult: { sent: number; failed: number } | null = null;
+    if (data.sendEmail) {
+      emailResult = await sendAnnouncementEmails(
+        schoolId,
+        data.title,
+        data.body,
+        data.isHtml,
+        data.audience,
+        data.attachmentUrl,
+        data.attachmentName
+      );
+    }
 
     return NextResponse.json(
       {
@@ -111,10 +199,16 @@ export async function POST(request: Request) {
           title: announcement.title,
           body: announcement.body,
           audience: announcement.audience,
+          isHtml: announcement.isHtml,
+          sendEmail: announcement.sendEmail,
+          attachmentUrl: announcement.attachmentUrl,
+          attachmentName: announcement.attachmentName,
           sessionId: announcement.sessionId ?? null,
           termId: announcement.termId ?? null,
           createdAt: announcement.createdAt.toISOString(),
+          updatedAt: announcement.updatedAt.toISOString(),
         },
+        emailResult,
       },
       { status: 201 }
     );

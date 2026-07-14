@@ -9,6 +9,7 @@ const schema = z.object({
   phone: z.string().optional().default(""),
   address: z.string().optional().default(""),
   emergencyContact: z.string().optional().default(""),
+  title: z.string().optional().default(""),
 });
 
 async function getParentContext() {
@@ -49,6 +50,7 @@ export async function GET() {
     phone: map.get(keys.phone) ?? "",
     address: map.get(keys.address) ?? "",
     emergencyContact: map.get(keys.emergencyContact) ?? "",
+    title: context.parent.title ?? "",
   });
 }
 
@@ -66,6 +68,13 @@ export async function POST(request: Request) {
     data: {
       name: parsed.data.name,
       email: parsed.data.email,
+    },
+  });
+
+  await prisma.parent.update({
+    where: { id: context.parent.id },
+    data: {
+      title: parsed.data.title || null,
     },
   });
 
