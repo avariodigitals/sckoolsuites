@@ -236,8 +236,8 @@ export async function POST(request: Request) {
     ]);
 
     // Track guardian info for post-transaction email notifications
-    let guardianEmailInfo = null as { email: string; password: string; name: string; isNew: boolean } | null;
-    let createdGuardian = false;
+    const guardianInfo = { email: "", password: "", name: "", isNew: false };
+    const guardianState = { created: false };
 
     // Create user and student in transaction
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -297,12 +297,11 @@ export async function POST(request: Request) {
 
         parentId = parent.id;
         createdGuardian = true;
-        guardianEmailInfo = {
-          email: guardianUser.email!,
-          password,
-          name: data.guardian.name.trim(),
-          isNew: true,
-        };
+        guardianState.created = true;
+        guardianInfo.email = guardianUser.email!;
+        guardianInfo.password = password;
+        guardianInfo.name = data.guardian.name.trim();
+        guardianInfo.isNew = true;
       }
 
       const student = await tx.student.create({
@@ -393,21 +392,21 @@ export async function POST(request: Request) {
 
     // Send welcome email to new guardian or notify existing guardian about child access
     let guardianEmailStatus: { sent: boolean; error?: string } | null = null;
-    if (guardianEmailInfo?.isNew && guardianEmailInfo.email) {
+    if (guardianInfo.isNew && guardianInfo.email) {
       try {
         const guardianResult = await sendWelcomeEmail({
           schoolId,
-          to: guardianEmailInfo.email,
-          userName: guardianEmailInfo.name,
-          email: guardianEmailInfo.email,
-          password: guardianEmailInfo.password,
+          to: guardianInfo.email,
+          userName: guardianInfo.name,
+          email: guardianInfo.email,
+          password: guardianInfo.password,
           role: "Parent",
         });
         guardianEmailStatus = { sent: guardianResult.ok, error: guardianResult.ok ? undefined : (guardianResult as any).error ?? "Email delivery failed" };
       } catch (error) {
         guardianEmailStatus = { sent: false, error: error instanceof Error ? error.message : "Email delivery failed" };
       }
-    } else if (data.parentId && !createdGuardian) {
+    } else if (data.parentId && !guardianState.created) {
       // Notify existing parent about new child access
       try {
         const existingParent = await prisma.parent.findFirst({

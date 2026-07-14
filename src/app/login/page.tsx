@@ -38,7 +38,7 @@ export default async function LoginPage() {
         <div className="text-center">
           <div className="mx-auto flex items-center justify-center">
             <Image
-              src="/sckoolsuite-logo.svg"
+              src="/sckoolsuite-logo.png"
               alt="Sckool Suite"
               width={200}
               height={54}
