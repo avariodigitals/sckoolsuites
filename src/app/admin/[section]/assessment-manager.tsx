@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type Assessment = {
   id: string;
@@ -24,6 +25,7 @@ type Assessment = {
 };
 
 export function AssessmentManager() {
+  const confirm = useConfirm();
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
@@ -138,7 +140,12 @@ export function AssessmentManager() {
   }
 
   async function handleDeactivate(id: string) {
-    if (!window.confirm("Deactivate this assessment?")) return;
+    if (!(await confirm({
+      title: "Deactivate Assessment",
+      message: "Deactivate this assessment?",
+      confirmLabel: "Deactivate",
+      variant: "danger",
+    }))) return;
     setStatus("");
     try {
       const response = await fetch(`/api/admin/assessments/${id}`, {

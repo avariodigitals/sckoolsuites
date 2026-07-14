@@ -96,7 +96,7 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
     termId: context.term?.id,
   });
 
-  const teacher = core.teachers.find((item: any) => item.userId === user.id);
+  const teacher = core.teachers.find((item: any) => item.userId === user.id) as any;
   if (!teacher) {
     return (
       <SetupRequiredScreen

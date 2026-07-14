@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 // Module scope workflows based on screenshot
 type WorkflowModule = {
@@ -92,6 +93,7 @@ const emptyVisitor = {
 };
 
 export function ReceptionManager() {
+  const confirm = useConfirm();
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [stats, setStats] = useState<Stats>({ checkedIn: 0, checkedOut: 0, today: 0 });
   const [loading, setLoading] = useState(true);
@@ -220,7 +222,12 @@ export function ReceptionManager() {
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!window.confirm(`Delete visitor record for "${name}"? This cannot be undone.`)) {
+    if (!(await confirm({
+      title: "Delete Visitor Record",
+      message: `Delete visitor record for "${name}"? This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+    }))) {
       return;
     }
 

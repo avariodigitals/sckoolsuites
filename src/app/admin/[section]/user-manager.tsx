@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { humanizeEnum } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type User = {
   id: string;
@@ -22,6 +23,7 @@ type Role = {
 };
 
 export function UserManager() {
+  const confirm = useConfirm();
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,7 +100,12 @@ export function UserManager() {
   }
 
   async function handleResend(id: string, name: string) {
-    if (!window.confirm(`Resend welcome email with a new temporary password to ${name}?`)) return;
+    if (!(await confirm({
+      title: "Resend Welcome Email",
+      message: `Resend welcome email with a new temporary password to ${name}?`,
+      confirmLabel: "Resend",
+      variant: "info",
+    }))) return;
     setStatus("");
     try {
       const response = await fetch(`/api/admin/users/${id}`, { method: "POST" });
@@ -114,7 +121,12 @@ export function UserManager() {
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!window.confirm(`Deactivate ${name}? They will no longer be able to log in.`)) return;
+    if (!(await confirm({
+      title: "Deactivate User",
+      message: `Deactivate ${name}? They will no longer be able to log in.`,
+      confirmLabel: "Deactivate",
+      variant: "danger",
+    }))) return;
     setStatus("");
     try {
       const response = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });

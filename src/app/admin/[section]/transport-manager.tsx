@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type TabType = "vehicles" | "drivers" | "routes";
 
@@ -61,6 +62,7 @@ const emptyForms: Record<TabType, Record<string, string>> = {
 };
 
 export function TransportManager() {
+  const confirm = useConfirm();
   const [activeTab, setActiveTab] = useState<TabType>("vehicles");
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -233,7 +235,12 @@ export function TransportManager() {
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) {
+    if (!(await confirm({
+      title: "Delete Record",
+      message: `Delete "${name}"? This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+    }))) {
       return;
     }
 
@@ -264,7 +271,12 @@ export function TransportManager() {
   }
 
   async function handleDeleteStop(stopId: string, stopName: string) {
-    if (!window.confirm(`Delete stop "${stopName}"? This cannot be undone.`)) {
+    if (!(await confirm({
+      title: "Delete Stop",
+      message: `Delete stop "${stopName}"? This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+    }))) {
       return;
     }
 

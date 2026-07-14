@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type AttendanceRecord = {
   id: string;
@@ -55,6 +56,7 @@ const statusLabels: Record<AttendanceStatus, string> = {
 };
 
 export function AttendanceManager() {
+  const confirm = useConfirm();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [students, setStudents] = useState<StudentOption[]>([]);
@@ -193,7 +195,12 @@ export function AttendanceManager() {
       return;
     }
 
-    if (!window.confirm(`Mark all ${studentsToMark.length} students as ${statusLabels[status]}?`)) {
+    if (!(await confirm({
+      title: "Bulk Mark Attendance",
+      message: `Mark all ${studentsToMark.length} students as ${statusLabels[status]}?`,
+      confirmLabel: "Mark All",
+      variant: "info",
+    }))) {
       return;
     }
 

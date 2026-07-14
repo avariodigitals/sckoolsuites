@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Sora } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { InactivityTimer } from "@/components/inactivity-timer";
+import { ConfirmDialogProvider } from "@/components/ui/confirm-dialog";
 import "./globals.css";
 
 const sora = Sora({
@@ -36,8 +37,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <SessionProvider>
-          {children}
-          <InactivityTimer />
+          <ConfirmDialogProvider>
+            {children}
+            <InactivityTimer />
+          </ConfirmDialogProvider>
         </SessionProvider>
       </body>
     </html>

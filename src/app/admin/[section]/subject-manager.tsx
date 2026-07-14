@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type Subject = {
   id: string;
@@ -26,6 +27,7 @@ const emptySubject = {
 };
 
 export function SubjectManager() {
+  const confirm = useConfirm();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [classes, setClasses] = useState<Option[]>([]);
   const [classGroups, setClassGroups] = useState<Option[]>([]);
@@ -118,7 +120,12 @@ export function SubjectManager() {
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!window.confirm(`Delete subject "${name}"? This cannot be undone.`)) {
+    if (!(await confirm({
+      title: "Delete Subject",
+      message: `Delete subject "${name}"? This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+    }))) {
       return;
     }
 

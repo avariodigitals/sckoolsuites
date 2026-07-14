@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ParentDetailModal } from "./parent-detail-modal";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type Parent = {
   id: string;
@@ -24,6 +25,7 @@ const emptyParent = {
 };
 
 export function ParentManager() {
+  const confirm = useConfirm();
   const [parents, setParents] = useState<Parent[]>([]);
   const [unlinkedStudents, setUnlinkedStudents] = useState<StudentOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,7 +133,12 @@ export function ParentManager() {
   }
 
   async function handleUnlinkStudent(parentId: string, studentId: string) {
-    if (!window.confirm("Unlink this student from the parent?")) return;
+    if (!(await confirm({
+      title: "Unlink Student",
+      message: "Unlink this student from the parent?",
+      confirmLabel: "Unlink",
+      variant: "warning",
+    }))) return;
 
     setStatus("");
     setUnlinkingStudentId(studentId);
@@ -159,7 +166,12 @@ export function ParentManager() {
   }
 
   async function handleResend(id: string, name: string) {
-    if (!window.confirm(`Resend welcome email with a new temporary password to ${name}?`)) return;
+    if (!(await confirm({
+      title: "Resend Welcome Email",
+      message: `Resend welcome email with a new temporary password to ${name}?`,
+      confirmLabel: "Resend",
+      variant: "info",
+    }))) return;
     setStatus("");
     try {
       const response = await fetch(`/api/admin/parents/${id}/resend`, { method: "POST" });
@@ -175,7 +187,12 @@ export function ParentManager() {
   }
 
   async function handleDeactivate(id: string, name: string) {
-    if (!window.confirm(`Deactivate ${name}? They will no longer be able to log in.`)) {
+    if (!(await confirm({
+      title: "Deactivate Parent",
+      message: `Deactivate ${name}? They will no longer be able to log in.`,
+      confirmLabel: "Deactivate",
+      variant: "danger",
+    }))) {
       return;
     }
 
@@ -197,7 +214,12 @@ export function ParentManager() {
   }
 
   async function handleHardDelete(id: string, name: string) {
-    if (!window.confirm(`Permanently DELETE ${name}? This will remove the parent and their user account. This cannot be undone.`)) {
+    if (!(await confirm({
+      title: "Permanently Delete Parent",
+      message: `Permanently DELETE ${name}? This will remove the parent and their user account. This cannot be undone.`,
+      confirmLabel: "Delete Permanently",
+      variant: "danger",
+    }))) {
       return;
     }
 

@@ -67,16 +67,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Required SCHOOL_ADMIN role must exist. If missing, auto-seed system data.
+    // 2. Required SUPER_ADMIN role must exist. If missing, auto-seed system data.
+    // The first user created during setup is the super admin with full access.
     let adminRole = await prisma.role.findUnique({
-      where: { name: "SCHOOL_ADMIN" },
+      where: { name: "SUPER_ADMIN" },
     });
     if (!adminRole) {
       await seedRoles();
       await seedPrivileges();
       await seedRolePrivileges();
       adminRole = await prisma.role.findUnique({
-        where: { name: "SCHOOL_ADMIN" },
+        where: { name: "SUPER_ADMIN" },
       });
     }
     if (!adminRole) {

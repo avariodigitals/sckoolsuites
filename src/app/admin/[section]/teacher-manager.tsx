@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TeacherDetailModal } from "./teacher-detail-modal";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type Teacher = {
   id: string;
@@ -33,6 +34,7 @@ const emptyTeacher = {
 };
 
 export function TeacherManager() {
+  const confirm = useConfirm();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [unassignedClasses, setUnassignedClasses] = useState<Option[]>([]);
   const [unassignedSubjects, setUnassignedSubjects] = useState<Option[]>([]);
@@ -157,7 +159,12 @@ export function TeacherManager() {
   }
 
   async function handleUnassignClass(teacherId: string, classId: string) {
-    if (!window.confirm("Unassign this class from the teacher?")) return;
+    if (!(await confirm({
+      title: "Unassign Class",
+      message: "Unassign this class from the teacher?",
+      confirmLabel: "Unassign",
+      variant: "warning",
+    }))) return;
 
     setStatus("");
     setUnassigningClassId(classId);
@@ -208,7 +215,12 @@ export function TeacherManager() {
   }
 
   async function handleUnassignSubject(teacherId: string, subjectId: string) {
-    if (!window.confirm("Unassign this subject from the teacher?")) return;
+    if (!(await confirm({
+      title: "Unassign Subject",
+      message: "Unassign this subject from the teacher?",
+      confirmLabel: "Unassign",
+      variant: "warning",
+    }))) return;
 
     setStatus("");
     setUnassigningSubjectId(subjectId);
@@ -236,7 +248,12 @@ export function TeacherManager() {
   }
 
   async function handleResend(id: string, name: string) {
-    if (!window.confirm(`Resend welcome email with a new temporary password to ${name}?`)) return;
+    if (!(await confirm({
+      title: "Resend Welcome Email",
+      message: `Resend welcome email with a new temporary password to ${name}?`,
+      confirmLabel: "Resend",
+      variant: "info",
+    }))) return;
     setStatus("");
     try {
       const response = await fetch(`/api/admin/teachers/${id}/resend`, { method: "POST" });
@@ -252,7 +269,12 @@ export function TeacherManager() {
   }
 
   async function handleDeactivate(id: string, name: string) {
-    if (!window.confirm(`Deactivate ${name}? They will no longer be able to log in.`)) {
+    if (!(await confirm({
+      title: "Deactivate Teacher",
+      message: `Deactivate ${name}? They will no longer be able to log in.`,
+      confirmLabel: "Deactivate",
+      variant: "danger",
+    }))) {
       return;
     }
 

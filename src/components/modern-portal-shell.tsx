@@ -87,8 +87,22 @@ export function ModernPortalShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(["/admin/classes"]);
+  const [manualExpanded, setManualExpanded] = useState<string[]>([]);
   const displaySchoolName = schoolName?.trim() || "School";
+
+  // Auto-expand parent menu when current route matches a child
+  const autoExpanded = useMemo(() => {
+    const items = navByRole[role] ?? [];
+    return items
+      .filter((item) => item.children?.some((child) => pathname.startsWith(child.href)))
+      .map((item) => item.href);
+  }, [pathname, role]);
+
+  const expandedMenus = useMemo(() => {
+    const merged = new Set(autoExpanded);
+    manualExpanded.forEach((h) => merged.add(h));
+    return Array.from(merged);
+  }, [autoExpanded, manualExpanded]);
 
   const schoolInitials = useMemo(() =>
     displaySchoolName
@@ -138,7 +152,7 @@ export function ModernPortalShell({
   }
 
   const toggleMenu = (href: string) => {
-    setExpandedMenus((prev) =>
+    setManualExpanded((prev) =>
       prev.includes(href) ? prev.filter((h) => h !== href) : [...prev, href]
     );
   };

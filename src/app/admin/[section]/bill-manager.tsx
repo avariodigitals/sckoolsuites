@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type BillStatus = "UNPAID" | "PART_PAYMENT" | "PAID" | "PENDING";
 
@@ -88,6 +89,7 @@ const statusConfig: Record<BillStatus, { label: string; color: string; bg: strin
 const paymentMethods = ["Cash", "Bank Transfer", "Card", "Mobile Money", "Cheque", "Other"];
 
 export function BillManager() {
+  const confirm = useConfirm();
   const [bills, setBills] = useState<Bill[]>([]);
   const [stats, setStats] = useState<Stats>({ totalBills: 0, totalPaid: 0, totalOutstanding: 0, totalOverdue: 0 });
   const [students, setStudents] = useState<Student[]>([]);
@@ -321,7 +323,12 @@ export function BillManager() {
   }
 
   async function handleDelete(bill: Bill) {
-    if (!window.confirm(`Delete bill ${bill.invoiceNumber} for ${bill.studentName}? This cannot be undone.`)) {
+    if (!(await confirm({
+      title: "Delete Bill",
+      message: `Delete bill ${bill.invoiceNumber} for ${bill.studentName}? This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+    }))) {
       return;
     }
 

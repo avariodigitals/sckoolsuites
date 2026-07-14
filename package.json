@@ -16,12 +16,14 @@
     "db:seed": "prisma db seed",
     "db:setup": "prisma generate && prisma migrate deploy && prisma db seed",
     "db:init": "echo 'DEPRECATED: db:init has been replaced by db:setup. Run npm run db:setup instead.' && exit 1",
-    "vercel-build": "prisma generate && (prisma migrate resolve --rolled-back 20260710225000_add_result_file_fields || true) && prisma migrate deploy && (prisma db seed || echo 'seed skipped — runtime will handle it') && next build",
+    "vercel-build": "prisma generate && (prisma migrate resolve --rolled-back 20260710225000_add_result_file_fields || true) && prisma migrate deploy && (prisma db seed || echo 'seed skipped — runtime will handle it') && (tsx scripts/upgrade-first-admin-to-super-admin.ts || echo 'admin upgrade skipped — will handle at runtime') && next build",
     "deploy:vercel": "vercel --prod"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "7.8.0",
+    "prisma": "^7.8.0",
     "@radix-ui/react-label": "^2.1.9",
     "@types/nodemailer": "^8.0.0",
     "bcryptjs": "^3.0.3",
@@ -44,7 +46,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
-    "@prisma/client": "7.8.0",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
@@ -53,7 +54,6 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
-    "prisma": "^7.8.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.0",
     "typescript": "^5"

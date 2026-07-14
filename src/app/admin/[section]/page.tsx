@@ -15,6 +15,7 @@ import { AssessmentManager } from "./assessment-manager";
 import { AttendanceManager } from "./attendance-manager";
 import { LMSManager } from "./lms-manager";
 import { AnnouncementManager } from "./announcement-manager";
+import { MessageManager } from "./message-manager";
 import { TransportManager } from "./transport-manager";
 import { ReceptionManager } from "./reception-manager";
 import { FeeProfileManager } from "./fee-profile-manager";
@@ -56,6 +57,7 @@ const allowed = [
   "lms",
   "attendance",
   "announcements",
+  "messages",
   "transport",
   "settings",
   "users",
@@ -205,6 +207,12 @@ const blueprints: Record<AllowedSection, AdminSectionBlueprint> = {
     subtitle: "Announcements, broadcasts, events, and parent messages.",
     metrics: [],
     actionChips: ["Broadcast", "Event Notice", "Parent Message", "SMS/Email"],
+  },
+  messages: {
+    title: "Parent Messages",
+    subtitle: "View and manage messages sent by parents to the school.",
+    metrics: [],
+    actionChips: ["View Messages", "Reply", "Filter by Status"],
   },
   transport: {
     title: "Transport & Driver",
@@ -438,6 +446,12 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
       { label: "Teachers", value: String(overview.teachers), helper: "Staff recipients" },
       { label: "Students", value: String(overview.students), helper: "Learner recipients" },
     ],
+    messages: [
+      { label: "Messages", value: "—", helper: "Parent messages" },
+      { label: "Unread", value: "—", helper: "Awaiting review" },
+      { label: "Parents", value: String(overview.parents), helper: "Active parent accounts" },
+      { label: "Announcements", value: String(overview.announcements), helper: "Broadcast posts" },
+    ],
     transport: [
       { label: "Routes", value: "—", helper: "No routes configured" },
       { label: "Drivers", value: "—", helper: "No drivers configured" },
@@ -583,6 +597,8 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
 
         {section === "announcements" ? <AnnouncementManager /> : null}
 
+        {section === "messages" ? <MessageManager /> : null}
+
         {section === "transport" ? <TransportManager /> : null}
 
         {section === "reception" ? <ReceptionManager /> : null}
@@ -615,7 +631,7 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
 
 
         {/* Module Scope - Hidden for all sections with functional managers */}
-        {!["dashboard", "students", "reception", "classes", "parents", "teachers", "subjects", "assessments", "attendance", "lms", "announcements", "transport", "fees", "finance", "income", "expenses", "debtors", "ledger", "revenue", "invoices", "payments", "bills", "results", "settings", "users", "roles", "privileges", "profile"].includes(section) && (
+        {!["dashboard", "students", "reception", "classes", "parents", "teachers", "subjects", "assessments", "attendance", "lms", "announcements", "messages", "transport", "fees", "finance", "income", "expenses", "debtors", "ledger", "revenue", "invoices", "payments", "bills", "results", "settings", "users", "roles", "privileges", "profile"].includes(section) && (
           <SectionCard title={`${moduleScope.module} Module Scope`}>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">

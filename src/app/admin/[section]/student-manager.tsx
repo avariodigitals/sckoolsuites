@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StudentDetailModal } from "./student-detail-modal";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import Image from "next/image";
 
 type Student = {
@@ -142,6 +143,7 @@ function calcDetailedAge(dob: string): string {
 }
 
 export function StudentManager({ sessionId, termId }: { sessionId?: string | null; termId?: string | null }) {
+  const confirm = useConfirm();
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [parents, setParents] = useState<ParentOption[]>([]);
@@ -280,7 +282,12 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
   }
 
   async function handleResend(id: string, name: string) {
-    if (!window.confirm(`Resend welcome email with a new temporary password to ${name}?`)) return;
+    if (!(await confirm({
+      title: "Resend Welcome Email",
+      message: `Resend welcome email with a new temporary password to ${name}?`,
+      confirmLabel: "Resend",
+      variant: "info",
+    }))) return;
     setStatus("");
     try {
       const response = await fetch(`/api/admin/students/${id}/resend`, { method: "POST" });
@@ -296,7 +303,12 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
   }
 
   async function handleHardDelete(id: string) {
-    if (!window.confirm("PERMANENTLY delete this student? This action cannot be undone. All related data (enrollments, fees, results) will be lost.")) {
+    if (!(await confirm({
+      title: "Permanently Delete Student",
+      message: "PERMANENTLY delete this student? This action cannot be undone. All related data (enrollments, fees, results) will be lost.",
+      confirmLabel: "Delete Permanently",
+      variant: "danger",
+    }))) {
       return;
     }
     setDeletingId(id);
@@ -318,7 +330,12 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
   }
 
   async function handleDeactivate(id: string) {
-    if (!window.confirm("Deactivate this student? They will no longer be able to log in.")) {
+    if (!(await confirm({
+      title: "Deactivate Student",
+      message: "Deactivate this student? They will no longer be able to log in.",
+      confirmLabel: "Deactivate",
+      variant: "danger",
+    }))) {
       return;
     }
 

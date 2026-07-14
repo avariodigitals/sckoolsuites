@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type ClassItem = {
   id: string;
@@ -29,6 +30,7 @@ const emptyClass = {
 };
 
 export function ClassManager() {
+  const confirm = useConfirm();
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [classGroups, setClassGroups] = useState<Option[]>([]);
   const [teachers, setTeachers] = useState<Option[]>([]);
@@ -158,7 +160,12 @@ export function ClassManager() {
   }
 
   async function handleRemoveSubject(classId: string, subjectId: string) {
-    if (!window.confirm("Remove this subject from the class?")) return;
+    if (!(await confirm({
+      title: "Remove Subject",
+      message: "Remove this subject from the class?",
+      confirmLabel: "Remove",
+      variant: "warning",
+    }))) return;
 
     setStatus("");
     try {
@@ -229,7 +236,12 @@ export function ClassManager() {
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!window.confirm(`Delete class "${name}"? This cannot be undone.`)) {
+    if (!(await confirm({
+      title: "Delete Class",
+      message: `Delete class "${name}"? This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+    }))) {
       return;
     }
 

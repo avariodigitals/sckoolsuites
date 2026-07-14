@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type FeeGroup = { id: string; name: string; code: string };
 type FeeComponent = { id: string; name: string; description?: string | null };
@@ -36,6 +37,7 @@ type FeeProfile = {
 };
 
 export function FeeProfileManager() {
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
 
@@ -254,7 +256,12 @@ export function FeeProfileManager() {
   }
 
   async function deleteProfile(id: string) {
-    if (!window.confirm("Delete this fee profile?")) return;
+    if (!(await confirm({
+      title: "Delete Fee Profile",
+      message: "Delete this fee profile?",
+      confirmLabel: "Delete",
+      variant: "danger",
+    }))) return;
     try {
       const res = await fetch(`/api/admin/finance/fee-profiles?id=${id}`, { method: "DELETE" });
       if (res.ok) {

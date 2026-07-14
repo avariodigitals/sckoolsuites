@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type ClassArm = {
   id: string;
@@ -24,6 +25,7 @@ type ClassArm = {
 };
 
 export function ArmsManager() {
+  const confirm = useConfirm();
   const [arms, setArms] = useState<ClassArm[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
@@ -115,7 +117,12 @@ export function ArmsManager() {
   }
 
   async function handleDeactivate(id: string) {
-    if (!window.confirm("Deactivate this arm?")) return;
+    if (!(await confirm({
+      title: "Deactivate Arm",
+      message: "Deactivate this arm?",
+      confirmLabel: "Deactivate",
+      variant: "danger",
+    }))) return;
     setStatus("");
     try {
       const response = await fetch(`/api/admin/class-arms/${id}`, {
@@ -174,7 +181,12 @@ export function ArmsManager() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm("Delete this arm? This cannot be undone.")) return;
+    if (!(await confirm({
+      title: "Delete Arm",
+      message: "Delete this arm? This cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    }))) return;
     setStatus("");
     try {
       const response = await fetch(`/api/admin/class-arms/${id}`, { method: "DELETE" });

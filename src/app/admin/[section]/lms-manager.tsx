@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type ContentType = "lessons" | "assignments" | "quizzes" | "online-classes";
 
@@ -85,6 +86,7 @@ const emptyForms: Record<ContentType, Record<string, string>> = {
 };
 
 export function LMSManager() {
+  const confirm = useConfirm();
   const [activeTab, setActiveTab] = useState<ContentType>("lessons");
   const [content, setContent] = useState<LMSContent[]>([]);
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
@@ -200,7 +202,12 @@ export function LMSManager() {
   }
 
   async function handleDelete(id: string, title: string) {
-    if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) {
+    if (!(await confirm({
+      title: "Delete Content",
+      message: `Delete "${title}"? This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+    }))) {
       return;
     }
 

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { AnnouncementViewModal, type AnnouncementData } from "@/components/ui/announcement-view-modal";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type Announcement = {
   id: string;
@@ -48,6 +49,7 @@ const emptyForm: FormState = {
 };
 
 export function AnnouncementManager() {
+  const confirm = useConfirm();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
@@ -211,7 +213,12 @@ export function AnnouncementManager() {
   }
 
   async function handleDelete(id: string, title: string) {
-    if (!window.confirm(`Delete announcement "${title}"? This cannot be undone.`)) {
+    if (!(await confirm({
+      title: "Delete Announcement",
+      message: `Delete announcement "${title}"? This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+    }))) {
       return;
     }
 

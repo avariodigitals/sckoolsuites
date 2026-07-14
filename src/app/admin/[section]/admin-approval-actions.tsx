@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type PaymentProofRow = {
   id: string;
@@ -73,6 +74,7 @@ export function AdminApprovalActions({
   sessionId?: string;
   termId?: string;
 }) {
+  const confirm = useConfirm();
   const [paymentRows, setPaymentRows] = useState<PaymentProofRow[]>([]);
   const [resultRows, setResultRows] = useState<ResultRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,11 +156,21 @@ export function AdminApprovalActions({
       return;
     }
 
-    if (action === "APPROVE" && !window.confirm("Approve this payment proof and generate/update receipt?")) {
+    if (action === "APPROVE" && !(await confirm({
+      title: "Approve Payment",
+      message: "Approve this payment proof and generate/update receipt?",
+      confirmLabel: "Approve",
+      variant: "success",
+    }))) {
       return;
     }
 
-    if (action === "REJECT" && !window.confirm("Reject this payment proof?")) {
+    if (action === "REJECT" && !(await confirm({
+      title: "Reject Payment",
+      message: "Reject this payment proof?",
+      confirmLabel: "Reject",
+      variant: "danger",
+    }))) {
       return;
     }
 
@@ -192,15 +204,30 @@ export function AdminApprovalActions({
       return;
     }
 
-    if (action === "APPROVE" && !window.confirm("Approve this result for possible publishing?")) {
+    if (action === "APPROVE" && !(await confirm({
+      title: "Approve Result",
+      message: "Approve this result for possible publishing?",
+      confirmLabel: "Approve",
+      variant: "success",
+    }))) {
       return;
     }
 
-    if (action === "PUBLISH" && !window.confirm("Publish this approved result to parent/student/report views?")) {
+    if (action === "PUBLISH" && !(await confirm({
+      title: "Publish Result",
+      message: "Publish this approved result to parent/student/report views?",
+      confirmLabel: "Publish",
+      variant: "info",
+    }))) {
       return;
     }
 
-    if (action === "REJECT" && !window.confirm("Return this result for correction?")) {
+    if (action === "REJECT" && !(await confirm({
+      title: "Return Result",
+      message: "Return this result for correction?",
+      confirmLabel: "Return",
+      variant: "danger",
+    }))) {
       return;
     }
 
