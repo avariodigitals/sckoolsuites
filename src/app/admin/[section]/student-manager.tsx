@@ -16,6 +16,7 @@ type Student = {
   email: string;
   gender: string;
   age: number;
+  dateOfBirth: string | null;
   classId: string | null;
   className: string | null;
   parentId: string | null;
@@ -54,6 +55,7 @@ type StudentForm = {
   email: string;
   gender: Gender;
   age: string;
+  dateOfBirth: string;
   classId: string;
   parentId: string;
   sportHouse: string;
@@ -84,6 +86,7 @@ const emptyStudent: StudentForm = {
   email: "",
   gender: "MALE",
   age: "",
+  dateOfBirth: "",
   classId: "",
   parentId: "",
   sportHouse: "",
@@ -103,6 +106,15 @@ function AvatarCell({ url, name }: { url: string | null; name: string }) {
   );
 }
 
+function calcAgeFromDOB(dob: string): number {
+  const birth = new Date(dob);
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const m = now.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+  return Math.max(0, age);
+}
+
 export function StudentManager({ sessionId, termId }: { sessionId?: string | null; termId?: string | null }) {
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
@@ -116,6 +128,7 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [guardianSearch, setGuardianSearch] = useState("");
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery.trim()) return students;
@@ -170,7 +183,8 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
       lastName: form.lastName,
       email: form.email,
       gender: form.gender,
-      age: Number(form.age) || 0,
+      age: Number(form.age) || (form.dateOfBirth ? calcAgeFromDOB(form.dateOfBirth) : 0),
+      dateOfBirth: form.dateOfBirth || null,
       classId: form.classId || null,
       parentId: form.parentId || null,
       sportHouse: form.sportHouse || null,
@@ -308,6 +322,7 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
       email: student.email,
       gender: student.gender as "MALE" | "FEMALE" | "OTHER",
       age: String(student.age),
+      dateOfBirth: student.dateOfBirth ? student.dateOfBirth.split("T")[0] : "",
       classId: student.classId ?? "",
       parentId: student.parentId ?? "",
       sportHouse: student.sportHouse ?? "",
@@ -316,6 +331,12 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
       guardian: emptyGuardian,
     });
   }
+
+  const filteredParents = useMemo(() => {
+    if (!guardianSearch.trim()) return parents;
+    const q = guardianSearch.toLowerCase();
+    return parents.filter((p) => p.name.toLowerCase().includes(q) || p.email.toLowerCase().includes(q));
+  }, [parents, guardianSearch]);
 
   if (loading) {
     return <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">Loading students...</div>;
@@ -379,13 +400,17 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
               <option value="OTHER">Other</option>
             </select>
             <Input
-              type="number"
-              value={form.age}
-              onChange={(e) => setForm((prev) => ({ ...prev, age: e.target.value }))}
-              placeholder="Age *"
-              min={3}
-              max={30}
+              type="date"
+              value={form.dateOfBirth}
+              onChange={(e) => setForm((prev) => ({ ...prev, dateOfBirth: e.target.value, age: e.target.value ? String(calcAgeFromDOB(e.target.value)) : prev.age }))}
+              placeholder="Date of Birth *"
+              max={new Date().toISOString().split("T")[0]}
             />
+            {form.dateOfBirth && (
+              <div className="flex items-center text-sm text-slate-500">
+                Age: {calcAgeFromDOB(form.dateOfBirth)} years
+              </div>
+            )}
             <select
               className="rounded-md border border-slate-300 px-3 py-2 text-sm"
               value={form.classId}
@@ -398,18 +423,29 @@ export function StudentManager({ sessionId, termId }: { sessionId?: string | nul
                 </option>
               ))}
             </select>
-            <select
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-              value={form.parentId}
-              onChange={(e) => setForm((prev) => ({ ...prev, parentId: e.target.value }))}
-            >
-              <option value="">Select parent/guardian</option>
-              {parents.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.email})
-                </option>
-              ))}
-            </select>
+            <div className="space-y-1">
+              <Input
+                placeholder="Search guardian..."
+                value={guardianSearch}
+                onChange={(e) => setGuardianSearch(e.target.value)}
+                className="text-sm"
+              />
+              <select
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm w-full"
+                value={form.parentId}
+                onChange={(e) => setForm((prev) => ({ ...prev, parentId: e.target.value }))}
+              >
+                <option value="">Select parent/guardian</option>
+                {filteredParents.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.email})
+                  </option>
+                ))}
+              </select>
+              {parents.length > 10 && !guardianSearch && (
+                <p className="text-xs text-slate-400">Type above to search {parents.length} guardians</p>
+              )}
+            </div>
             {creating && !form.parentId && (
               <div className="md:col-span-2 lg:col-span-3 rounded-lg border border-slate-200 bg-slate-50/50 p-3">
                 <h4 className="mb-2 text-xs font-semibold text-slate-700">New Guardian</h4>

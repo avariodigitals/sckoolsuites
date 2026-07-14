@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { GraduationCap } from "lucide-react";
+import Image from "next/image";
 import { auth } from "@/auth";
 import { LoginForm } from "@/app/login/login-form";
 import { roleDefaultRoute } from "@/lib/constants";
@@ -36,13 +36,17 @@ export default async function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600">
-            <GraduationCap className="h-8 w-8 text-white" />
+          <div className="mx-auto flex items-center justify-center">
+            <Image
+              src="/sckoolsuite-logo.svg"
+              alt="Sckool Suite"
+              width={200}
+              height={54}
+              priority
+              className="h-14 w-auto"
+            />
           </div>
-          <h1 className="mt-6 text-3xl font-bold tracking-tight text-slate-900">
-            Sckool Suite
-          </h1>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-4 text-sm text-slate-600">
             School Management System
           </p>
         </div>

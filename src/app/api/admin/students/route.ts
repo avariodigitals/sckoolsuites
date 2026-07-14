@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
-import { sendWelcomeEmail } from "@/lib/email";
+import { sendWelcomeEmail, sendTemplatedEmail } from "@/lib/email";
 import { Prisma } from "@prisma/client";
 
 const guardianSchema = z.object({
@@ -32,6 +32,7 @@ const createSchema = z.object({
   password: z.string().min(6).optional(),
   gender: z.enum(["MALE", "FEMALE", "OTHER"]),
   age: z.number().int().min(3).max(30),
+  dateOfBirth: z.string().optional().nullable(),
   classId: z.coerce.number().optional().nullable(),
   armId: z.coerce.number().optional().nullable(),
   parentId: z.coerce.number().optional().nullable(),
@@ -111,6 +112,7 @@ export async function GET(request: Request) {
       email: student.user.email,
       gender: student.gender,
       age: student.age,
+      dateOfBirth: student.dateOfBirth ? student.dateOfBirth.toISOString() : null,
       classId: student.classId,
       className: student.class?.name ?? null,
       armId: student.armId,
@@ -233,6 +235,10 @@ export async function POST(request: Request) {
       prisma.term.findFirst({ where: { schoolId, isCurrent: true } }),
     ]);
 
+    // Track guardian info for post-transaction email notifications
+    let guardianEmailInfo = null as { email: string; password: string; name: string; isNew: boolean } | null;
+    let createdGuardian = false;
+
     // Create user and student in transaction
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const user = await tx.user.create({
@@ -291,6 +297,12 @@ export async function POST(request: Request) {
 
         parentId = parent.id;
         createdGuardian = true;
+        guardianEmailInfo = {
+          email: guardianUser.email!,
+          password,
+          name: data.guardian.name.trim(),
+          isNew: true,
+        };
       }
 
       const student = await tx.student.create({
@@ -306,6 +318,7 @@ export async function POST(request: Request) {
           lastName,
           gender: data.gender,
           age: data.age,
+          dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
           sportHouse: data.sportHouse?.trim() || null,
           coCurricular: data.coCurricular?.trim() || null,
           responsibilities: data.responsibilities?.trim() || null,
@@ -378,6 +391,49 @@ export async function POST(request: Request) {
       };
     }
 
+    // Send welcome email to new guardian or notify existing guardian about child access
+    let guardianEmailStatus: { sent: boolean; error?: string } | null = null;
+    if (guardianEmailInfo?.isNew && guardianEmailInfo.email) {
+      try {
+        const guardianResult = await sendWelcomeEmail({
+          schoolId,
+          to: guardianEmailInfo.email,
+          userName: guardianEmailInfo.name,
+          email: guardianEmailInfo.email,
+          password: guardianEmailInfo.password,
+          role: "Parent",
+        });
+        guardianEmailStatus = { sent: guardianResult.ok, error: guardianResult.ok ? undefined : (guardianResult as any).error ?? "Email delivery failed" };
+      } catch (error) {
+        guardianEmailStatus = { sent: false, error: error instanceof Error ? error.message : "Email delivery failed" };
+      }
+    } else if (data.parentId && !createdGuardian) {
+      // Notify existing parent about new child access
+      try {
+        const existingParent = await prisma.parent.findFirst({
+          where: { id: data.parentId, schoolId },
+          include: { user: true },
+        });
+        if (existingParent?.user?.email) {
+          const school = await prisma.school.findUnique({ where: { id: schoolId } });
+          const notifyResult = await sendTemplatedEmail({
+            schoolId,
+            to: existingParent.user.email,
+            templateKey: "guardian_notification",
+            vars: {
+              schoolName: school?.name ?? "Sckool Suite",
+              parentName: existingParent.user.name ?? "Parent",
+              studentName: fullName,
+              portalUrl: process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "",
+            },
+          });
+          guardianEmailStatus = { sent: notifyResult.ok, error: notifyResult.ok ? undefined : "Email delivery failed" };
+        }
+      } catch (error) {
+        guardianEmailStatus = { sent: false, error: error instanceof Error ? error.message : "Email delivery failed" };
+      }
+    }
+
     return NextResponse.json({
       student: {
         id: result.student.id,
@@ -389,6 +445,7 @@ export async function POST(request: Request) {
         email: result.user.email,
         gender: result.student.gender,
         age: result.student.age,
+        dateOfBirth: result.student.dateOfBirth ? result.student.dateOfBirth.toISOString() : null,
         classId: result.student.classId,
         armId: result.student.armId,
         parentId: result.student.parentId,
@@ -397,6 +454,7 @@ export async function POST(request: Request) {
         createdAt: result.student.createdAt.toISOString(),
       },
       emailStatus,
+      guardianEmailStatus,
       message: emailStatus.sent
         ? "Student created and welcome email sent."
         : "Student created, but welcome email could not be delivered. Please resend credentials manually.",

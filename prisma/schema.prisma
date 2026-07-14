@@ -273,6 +273,7 @@ model Student {
   middleName       String?  @map("middle_name")
   lastName         String   @map("last_name")
   gender           String
+  dateOfBirth      DateTime? @map("date_of_birth")
   age              Int
   sportHouse       String?  @map("sport_house")
   passportUrl      String?  @map("passport_url")

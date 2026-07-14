@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { humanizeEnum } from "@/lib/utils";
 
 type User = {
   id: string;
@@ -30,7 +31,7 @@ export function UserManager() {
   const [showCreate, setShowCreate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "", roleId: "" });
-  const [editForm, setEditForm] = useState({ name: "", roleId: "", isActive: true });
+  const [editForm, setEditForm] = useState({ name: "", email: "", roleId: "", isActive: true });
 
   const filteredUsers = useMemo(() => {
     if (!searchQuery.trim()) return users;
@@ -137,7 +138,7 @@ export function UserManager() {
       const response = await fetch("/api/admin/users", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editingId, ...editForm }),
+        body: JSON.stringify({ id: editingId, name: editForm.name, email: editForm.email, roleId: editForm.roleId, isActive: editForm.isActive }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -156,7 +157,7 @@ export function UserManager() {
 
   function startEdit(user: User) {
     setEditingId(user.id);
-    setEditForm({ name: user.name, roleId: user.roleId, isActive: user.isActive });
+    setEditForm({ name: user.name, email: user.email, roleId: user.roleId, isActive: user.isActive });
     setShowCreate(false);
     setStatus("");
   }
@@ -201,7 +202,7 @@ export function UserManager() {
             <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.roleId} onChange={(e) => setForm((p) => ({ ...p, roleId: e.target.value }))}>
               <option value="">Select role</option>
               {roles.map((r) => (
-                <option key={r.id} value={r.id}>{r.name}</option>
+                <option key={r.id} value={r.id}>{humanizeEnum(r.name)}</option>
               ))}
             </select>
           </div>
@@ -217,10 +218,11 @@ export function UserManager() {
           <h3 className="mb-3 text-sm font-semibold text-slate-900">Edit User</h3>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             <Input value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} placeholder="Full name" />
+            <Input type="email" value={editForm.email} onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))} placeholder="Email address" />
             <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={editForm.roleId} onChange={(e) => setEditForm((p) => ({ ...p, roleId: e.target.value }))}>
               <option value="">Select role</option>
               {roles.map((r) => (
-                <option key={r.id} value={r.id}>{r.name}</option>
+                <option key={r.id} value={r.id}>{humanizeEnum(r.name)}</option>
               ))}
             </select>
             <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={String(editForm.isActive)} onChange={(e) => setEditForm((p) => ({ ...p, isActive: e.target.value === "true" }))}>

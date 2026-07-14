@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/auth";
+import { humanizeEnum } from "@/lib/utils";
 
 // ────────────────────────────────────────────────────────────────
 // Resend client
@@ -389,7 +390,7 @@ export async function sendWelcomeEmail({
       userName,
       email,
       password,
-      role,
+      role: humanizeEnum(role),
       portalUrl,
     },
   });

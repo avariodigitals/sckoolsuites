@@ -7,7 +7,9 @@ import {
   Plus,
   Search,
   X,
-  School
+  School,
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +31,8 @@ export function ArmsManager() {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ name: "", capacity: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", capacity: "" });
 
   // Analytics
   const stats = useMemo(() => {
@@ -68,6 +72,12 @@ export function ArmsManager() {
     return () => { cancelled = true; };
   }, []);
 
+  async function reloadArms() {
+    const armsRes = await fetch("/api/admin/class-arms?preset=1", { cache: "no-store" });
+    const armsData = await armsRes.json().catch(() => []);
+    setArms(armsData.arms ?? []);
+  }
+
   async function handleSubmit() {
     if (!form.name.trim()) {
       setStatus("Please enter an arm name.");
@@ -96,10 +106,7 @@ export function ArmsManager() {
       setShowForm(false);
       setStatus("Arm created successfully.");
 
-      // Reload data
-      const armsRes = await fetch("/api/admin/class-arms?preset=1", { cache: "no-store" });
-      const armsData = await armsRes.json().catch(() => []);
-      setArms(armsData.arms ?? []);
+      await reloadArms();
     } catch {
       setStatus("An error occurred.");
     } finally {
@@ -118,11 +125,68 @@ export function ArmsManager() {
       });
       if (!response.ok) throw new Error("Failed");
       setStatus("Arm deactivated.");
-      const armsRes = await fetch("/api/admin/class-arms?preset=1", { cache: "no-store" });
-      const armsData = await armsRes.json().catch(() => []);
-      setArms(armsData.arms ?? []);
+      await reloadArms();
     } catch {
       setStatus("Failed to deactivate.");
+    }
+  }
+
+  function startEdit(arm: ClassArm) {
+    setEditingId(arm.id);
+    setEditForm({ name: arm.name, capacity: arm.capacity !== null ? String(arm.capacity) : "" });
+    setShowForm(false);
+    setStatus("");
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
+  async function handleUpdate() {
+    if (!editingId || !editForm.name.trim()) {
+      setStatus("Please enter an arm name.");
+      return;
+    }
+    setStatus("");
+    setSubmitting(true);
+    try {
+      const response = await fetch(`/api/admin/class-arms/${editingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editForm.name.trim(),
+          capacity: editForm.capacity ? parseInt(editForm.capacity, 10) : null,
+        }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setStatus(data.error || "Failed to update arm.");
+        return;
+      }
+      setEditingId(null);
+      setStatus("Arm updated successfully.");
+      await reloadArms();
+    } catch {
+      setStatus("An error occurred.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!window.confirm("Delete this arm? This cannot be undone.")) return;
+    setStatus("");
+    try {
+      const response = await fetch(`/api/admin/class-arms/${id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setStatus(data.error || "Failed to delete arm.");
+        return;
+      }
+      setStatus("Arm deleted.");
+      await reloadArms();
+    } catch {
+      setStatus("Failed to delete arm.");
     }
   }
 
@@ -290,6 +354,44 @@ export function ArmsManager() {
         </div>
       )}
 
+      {/* Edit Arm Form */}
+      {editingId && (
+        <div className="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Edit Arm</h3>
+          <div className="grid gap-4 md:grid-cols-3 items-end">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Arm Name</label>
+              <Input
+                placeholder="e.g., A, B, C, Gold, Silver"
+                value={editForm.name}
+                onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Capacity (optional)</label>
+              <Input
+                type="number"
+                placeholder="e.g., 30"
+                value={editForm.capacity}
+                onChange={(e) => setEditForm((p) => ({ ...p, capacity: e.target.value }))}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleUpdate}
+                disabled={submitting || !editForm.name.trim()}
+                className="bg-indigo-600 hover:bg-indigo-700"
+              >
+                {submitting ? "Updating..." : "Update Arm"}
+              </Button>
+              <Button variant="outline" onClick={cancelEdit}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Arms Table */}
         <div className="rounded-xl bg-white shadow-sm border border-slate-200">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
@@ -348,7 +450,15 @@ export function ArmsManager() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
-                        {arm.isActive && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => startEdit(arm)}
+                        >
+                          <Pencil className="h-3.5 w-3.5 mr-1" />
+                          Edit
+                        </Button>
+                        {arm.isActive ? (
                           <Button
                             size="sm"
                             variant="outline"
@@ -357,7 +467,33 @@ export function ArmsManager() {
                           >
                             Deactivate
                           </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              await fetch(`/api/admin/class-arms/${arm.id}`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ isActive: true }),
+                              });
+                              setStatus("Arm activated.");
+                              await reloadArms();
+                            }}
+                            className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                          >
+                            Activate
+                          </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(arm.id)}
+                          className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 mr-1" />
+                          Delete
+                        </Button>
                       </div>
                     </td>
                   </tr>
