@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Check, X, Clock, RefreshCw, Mail, Shield } from "lucide-react";
+import { Check, X, Clock, Mail, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -49,8 +49,22 @@ export function PasswordResetRequests() {
   }, []);
 
   useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/admin/password-reset-requests");
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setRequests(data.requests || []);
+        }
+      } catch {
+        // ignore
+      }
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleApprove = async (id: string) => {
     setActioning(id);

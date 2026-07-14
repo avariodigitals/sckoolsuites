@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,16 +19,15 @@ type FormValues = z.infer<typeof schema>;
 export function LoginForm() {
   const [pending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
-  const [timedOut, setTimedOut] = useState(false);
-
-  useEffect(() => {
+  const [timedOut] = useState(() => {
     try {
       if (sessionStorage.getItem("login_reason") === "inactivity") {
-        setTimedOut(true);
         sessionStorage.removeItem("login_reason");
+        return true;
       }
     } catch {}
-  }, []);
+    return false;
+  });
   const {
     register,
     handleSubmit,
