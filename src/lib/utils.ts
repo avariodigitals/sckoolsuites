@@ -36,9 +36,5 @@ export function humanizeEnum(value: string | null | undefined) {
 export function getCloudinaryInlineUrl(url: string): string {
   if (!url) return url;
   if (!url.includes("cloudinary.com")) return url;
-  if (url.includes("/raw/upload/")) return url;
-  if (url.includes("/image/upload/") && !url.includes("fl_inline")) {
-    return url.replace("/image/upload/", "/image/upload/fl_inline/");
-  }
-  return url;
+  return `/api/cloudinary/preview?url=${encodeURIComponent(url)}`;
 }
