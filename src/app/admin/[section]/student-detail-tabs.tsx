@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Upload } from "lucide-react";
 import { useActiveSession } from "@/components/active-session-provider";
+import { getCloudinaryInlineUrl } from "@/lib/utils";
 
 /* ─── Helpers ─── */
 export function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -886,7 +887,7 @@ export function ExamTab({ data, studentId, onUpdate }: { data: any; studentId: s
                     <td className="px-3 py-2">{r.session?.name} / {r.term?.name}</td>
                     <td className="px-3 py-2">
                       {r.fileUrl ? (
-                        <a href={r.fileUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">{r.fileName ?? "View PDF"}</a>
+                        <a href={getCloudinaryInlineUrl(r.fileUrl)} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">{r.fileName ?? "View PDF"}</a>
                       ) : (
                         "—"
                       )}

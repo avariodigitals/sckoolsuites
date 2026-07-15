@@ -57,30 +57,26 @@ export async function DELETE(
       }
     }
 
-    await prisma.result.update({
+    await prisma.result.delete({
       where: { id: resultId },
-      data: {
-        fileUrl: null,
-        fileName: null,
-        status: "DRAFT",
-      },
     });
 
     await createAuditLog({
       schoolId,
       actorUserId: session.user.id,
-      action: "RESULT_FILE_DELETED",
+      action: "RESULT_DELETED",
       targetType: "Result",
       targetId: String(resultId),
       metadata: {
         studentId: result.studentId,
         previousFileName: result.fileName,
+        previousStatus: result.status,
       },
     });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("[result-delete]", error);
-    return NextResponse.json({ error: "Failed to delete result file" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to delete result" }, { status: 500 });
   }
 }

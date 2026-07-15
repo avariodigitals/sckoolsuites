@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { getCloudinaryInlineUrl } from "@/lib/utils";
 
 type PaymentProofRow = {
   id: string;
@@ -359,7 +360,7 @@ export function AdminApprovalActions({
                   {row.fileUrl ? (
                     <p className="md:col-span-2">
                       <strong>Uploaded PDF:</strong>{" "}
-                      <a className="text-blue-700 underline" href={row.fileUrl} target="_blank" rel="noreferrer">
+                      <a className="text-blue-700 underline" href={getCloudinaryInlineUrl(row.fileUrl)} target="_blank" rel="noreferrer">
                         {row.fileName || "Open result PDF"}
                       </a>
                     </p>

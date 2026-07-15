@@ -119,7 +119,7 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
 
                     <div className="flex flex-wrap gap-3">
                       <a
-                        href={item.fileUrl!}
+                        href={getCloudinaryInlineUrl(item.fileUrl!)}
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -128,7 +128,7 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
                         Download PDF ({item.fileName || "result.pdf"})
                       </a>
                       <a
-                        href={item.fileUrl!}
+                        href={getCloudinaryInlineUrl(item.fileUrl!)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"

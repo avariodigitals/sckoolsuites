@@ -178,7 +178,7 @@ export default async function ReportCardPage({ params }: { params: Promise<{ stu
           <p className="text-sm text-slate-600">Uploaded report: {result.fileName || "Result PDF"}</p>
           <div className="flex gap-2">
             <a
-              href={result.fileUrl}
+              href={previewUrl}
               download
               target="_blank"
               rel="noopener noreferrer"
