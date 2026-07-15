@@ -442,7 +442,7 @@ export async function resendUserCredentials({
   const hashed = await hashPassword(tempPassword);
   await prisma.user.update({
     where: { id: userId },
-    data: { password: hashed },
+    data: { password: hashed, mustChangePassword: true },
   });
 
   const result = await sendWelcomeEmail({

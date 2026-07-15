@@ -85,6 +85,24 @@ export async function POST(request: Request) {
           { status: 403 }
         );
       }
+
+      // Lock: teachers cannot overwrite result PDFs that already exist.
+      // They must request correction from their head (HEAD_TEACHER/HOD/ADMIN).
+      const existingResult = await prisma.result.findFirst({
+        where: {
+          schoolId,
+          studentId,
+          termId: effectiveTermId,
+          sessionId: effectiveSessionId,
+        },
+        select: { id: true, fileUrl: true },
+      });
+      if (existingResult?.fileUrl) {
+        return NextResponse.json(
+          { error: "A report has already been uploaded for this student in this term. To replace it, please request a correction from your head teacher or admin." },
+          { status: 403 }
+        );
+      }
     }
 
     const bytes = await file.arrayBuffer();

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { AcademicContextSwitcher } from "@/components/academic-context-switcher";
 import { PortalTopbar } from "@/components/portal-topbar";
 import { SignOutButton } from "@/components/sign-out-button";
+import { StaffClockInButton } from "@/components/staff-clock-in-button";
 
 export function PortalShell({
   role,
@@ -147,6 +148,7 @@ export function PortalShell({
                 <p className="text-xs text-slate-500 dark:text-slate-400">Current: {activeTermLabel}</p>
               </div>
               <div className="flex flex-col items-end gap-1">
+                {role !== "PARENT" && role !== "STUDENT" && <StaffClockInButton />}
                 {sessions && terms ? (
                   <AcademicContextSwitcher
                     sessions={sessions}

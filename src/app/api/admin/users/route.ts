@@ -7,9 +7,11 @@ import { createAuditLog } from "@/lib/audit-log";
 import { hashPassword } from "@/auth";
 import { humanizeEnum } from "@/lib/utils";
 import { parseNumericId } from "@/lib/id-helpers";
+import { sendWelcomeEmail } from "@/lib/email";
 import { Prisma } from "@prisma/client";
 
 const updateSchema = z.object({
+  id: z.union([z.number(), z.string()]),
   name: z.string().min(1).max(200).optional(),
   email: z.string().email().optional(),
   roleId: z.coerce.number().int().min(1).optional(),
@@ -19,9 +21,16 @@ const updateSchema = z.object({
 const createSchema = z.object({
   name: z.string().min(1).max(200),
   email: z.string().email(),
-  password: z.string().min(6).max(100),
+  password: z.string().min(6).max(100).optional(),
   roleId: z.coerce.number().int().min(1),
 });
+
+function generateTempPassword(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  let pwd = "";
+  for (let i = 0; i < 10; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+  return pwd + "@1";
+}
 
 export async function GET() {
   try {
@@ -88,7 +97,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid role" }, { status: 400 });
   }
 
-  const hashed = await hashPassword(data.password);
+  const plaintextPassword = data.password || generateTempPassword();
+  const hashed = await hashPassword(plaintextPassword);
   const user = await prisma.user.create({
     data: {
       schoolId,
@@ -97,6 +107,7 @@ export async function POST(request: Request) {
       password: hashed,
       roleId: role.id,
       isActive: true,
+      mustChangePassword: true,
     },
   });
 
@@ -109,6 +120,24 @@ export async function POST(request: Request) {
     metadata: { userId: user.id, name: user.name, email: user.email, roleId: role.id },
   });
 
+  let emailStatus: { sent: boolean; error?: string } = { sent: false };
+  try {
+    const emailResult = await sendWelcomeEmail({
+      schoolId,
+      to: data.email,
+      userName: data.name,
+      email: data.email,
+      password: plaintextPassword,
+      role: role.name,
+    });
+    emailStatus = { sent: emailResult.ok, error: emailResult.ok ? undefined : (emailResult as any).error ?? "Email delivery failed" };
+  } catch (error) {
+    emailStatus = {
+      sent: false,
+      error: error instanceof Error ? error.message : "Email delivery failed",
+    };
+  }
+
   return NextResponse.json({
     user: {
       id: user.id,
@@ -119,6 +148,10 @@ export async function POST(request: Request) {
       isActive: user.isActive,
       createdAt: user.createdAt ? new Date(user.createdAt).toISOString() : null,
     },
+    emailStatus,
+    message: emailStatus.sent
+      ? "User created and welcome email sent."
+      : "User created, but welcome email could not be delivered. Use Resend to send credentials manually.",
   }, { status: 201 });
 }
 
@@ -135,12 +168,12 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { id: rawId, ...data } = payload;
+  const rawId = parsed.data.id;
   if (!rawId) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
   let id: number;
   try {
-    id = parseNumericId(rawId, "user id");
+    id = parseNumericId(String(rawId), "user id");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid user id";
     return NextResponse.json({ error: message }, { status: 400 });
@@ -149,6 +182,7 @@ export async function PUT(request: Request) {
   const existing = await prisma.user.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
+  const { id: _id, ...data } = parsed.data;
   const updateData: Prisma.UserUncheckedUpdateInput = {};
   if (data.name !== undefined) updateData.name = data.name.trim();
   if (data.email !== undefined) updateData.email = data.email.trim();

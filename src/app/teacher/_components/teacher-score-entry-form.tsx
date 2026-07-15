@@ -71,6 +71,7 @@ export function TeacherScoreEntryForm({ subjectOptions, studentOptions }: { subj
   return (
     <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Enter Score</p>
+      <p className="text-xs text-amber-700">Once submitted, scores cannot be edited. To make corrections, contact your head teacher or admin.</p>
       <div className="grid gap-2 md:grid-cols-2">
         <select className="rounded-md border border-slate-300 px-3 py-2" value={subjectId} onChange={(event) => setSubjectId(event.target.value)}>
           {subjectOptions.map((item) => (

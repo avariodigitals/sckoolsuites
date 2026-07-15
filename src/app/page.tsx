@@ -33,5 +33,9 @@ export default async function Home() {
     redirect("/login");
   }
 
+  if (session.user.mustChangePassword) {
+    redirect("/change-password");
+  }
+
   redirect(roleDefaultRoute[session.user.role] ?? "/login");
 }

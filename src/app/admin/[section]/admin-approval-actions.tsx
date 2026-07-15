@@ -83,6 +83,7 @@ export function AdminApprovalActions({
   const [toast, setToast] = useState("");
   const [submittingKey, setSubmittingKey] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [resultFilter, setResultFilter] = useState<"pending" | "publish" | "all">("pending");
 
   const title = useMemo(() => {
     if (mode === "payments") return "Payment Proof Review";
@@ -336,9 +337,40 @@ export function AdminApprovalActions({
         ) : (
           <p className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-sm text-slate-600">No pending payment proofs for this school context.</p>
         )
-      ) : resultRows.length ? (
-        <div className="space-y-3">
-          {resultRows.map((row) => {
+      ) : (
+        <>
+          <div className="flex gap-2 border-b border-slate-200 pb-2">
+            <button
+              type="button"
+              onClick={() => setResultFilter("pending")}
+              className={`rounded-md px-3 py-1 text-xs font-medium ${resultFilter === "pending" ? "bg-slate-900 text-white" : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}
+            >
+              Pending Approval ({resultRows.filter((r) => r.status === "DRAFT" || r.status === "REJECTED").length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setResultFilter("publish")}
+              className={`rounded-md px-3 py-1 text-xs font-medium ${resultFilter === "publish" ? "bg-indigo-600 text-white" : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}
+            >
+              Ready to Publish ({resultRows.filter((r) => r.status === "APPROVED").length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setResultFilter("all")}
+              className={`rounded-md px-3 py-1 text-xs font-medium ${resultFilter === "all" ? "bg-slate-700 text-white" : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}
+            >
+              All ({resultRows.length})
+            </button>
+          </div>
+          {(() => {
+          const filteredResults = resultRows.filter((row) => {
+            if (resultFilter === "pending") return row.status === "DRAFT" || row.status === "REJECTED";
+            if (resultFilter === "publish") return row.status === "APPROVED";
+            return true;
+          });
+          return filteredResults.length ? (
+            <div className="space-y-3">
+              {filteredResults.map((row) => {
             const approveKey = `result-${row.student.id}-APPROVE`;
             const publishKey = `result-${row.student.id}-PUBLISH`;
             const rejectKey = `result-${row.student.id}-REJECT`;
@@ -406,7 +438,12 @@ export function AdminApprovalActions({
           })}
         </div>
       ) : (
-        <p className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-sm text-slate-600">No pending results in this academic context.</p>
+        <p className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-sm text-slate-600">
+          {resultFilter === "pending" ? "No results pending approval." : resultFilter === "publish" ? "No approved results ready for publishing." : "No results in this academic context."}
+        </p>
+      );
+          })()}
+        </>
       )}
     </section>
   );

@@ -32,7 +32,7 @@ export function UserManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", password: "", roleId: "" });
+  const [form, setForm] = useState({ name: "", email: "", roleId: "" });
   const [editForm, setEditForm] = useState({ name: "", email: "", roleId: "", isActive: true });
 
   const filteredUsers = useMemo(() => {
@@ -88,9 +88,9 @@ export function UserManager() {
         setStatus(payload?.error ?? "Failed to create user.");
         return;
       }
-      setForm({ name: "", email: "", password: "", roleId: "" });
+      setForm({ name: "", email: "", roleId: "" });
       setShowCreate(false);
-      setStatus("User created successfully.");
+      setStatus(payload?.message ?? "User created successfully.");
       await loadData();
     } catch {
       setStatus("An error occurred.");
@@ -136,6 +136,28 @@ export function UserManager() {
         return;
       }
       setStatus("User deactivated.");
+      await loadData();
+    } catch {
+      setStatus("An error occurred.");
+    }
+  }
+
+  async function handleHardDelete(id: string, name: string) {
+    if (!(await confirm({
+      title: "Permanently Delete User",
+      message: `Permanently delete ${name}? This cannot be undone. All their data will be removed.`,
+      confirmLabel: "Delete Permanently",
+      variant: "danger",
+    }))) return;
+    setStatus("");
+    try {
+      const response = await fetch(`/api/admin/users/${id}?hard=true`, { method: "DELETE" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setStatus(payload?.error ?? "Failed to delete user.");
+        return;
+      }
+      setStatus(payload?.message ?? "User permanently deleted.");
       await loadData();
     } catch {
       setStatus("An error occurred.");
@@ -199,18 +221,18 @@ export function UserManager() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-md"
         />
-        <Button size="sm" variant="outline" onClick={() => { setShowCreate(true); setEditingId(null); setForm({ name: "", email: "", password: "", roleId: "" }); setStatus(""); }}>
-          + New User
+        <Button size="sm" variant="outline" onClick={() => { setShowCreate(true); setEditingId(null); setForm({ name: "", email: "", roleId: "" }); setStatus(""); }}>
+          + Invite User
         </Button>
       </div>
 
       {showCreate && (
         <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <h3 className="mb-3 text-sm font-semibold text-slate-900">Create User</h3>
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <h3 className="mb-3 text-sm font-semibold text-slate-900">Invite User</h3>
+          <p className="mb-3 text-xs text-slate-500">A temporary password will be auto-generated and emailed to the user. They will be prompted to change it on first login.</p>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Full name *" />
             <Input type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} placeholder="Email *" />
-            <Input type="password" value={form.password} onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} placeholder="Password * (min 6)" />
             <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.roleId} onChange={(e) => setForm((p) => ({ ...p, roleId: e.target.value }))}>
               <option value="">Select role</option>
               {roles.map((r) => (
@@ -219,7 +241,7 @@ export function UserManager() {
             </select>
           </div>
           <div className="mt-3 flex gap-2">
-            <Button size="sm" onClick={handleCreate} disabled={submitting || !form.name || !form.email || !form.password || !form.roleId}>Create</Button>
+            <Button size="sm" onClick={handleCreate} disabled={submitting || !form.name || !form.email || !form.roleId}>Send Invite</Button>
             <Button size="sm" variant="outline" onClick={cancelEdit}>Cancel</Button>
           </div>
         </div>
@@ -295,6 +317,7 @@ export function UserManager() {
                       {u.isActive && (
                         <Button size="sm" variant="ghost" className="text-rose-600 hover:bg-rose-50" onClick={() => handleDelete(u.id, u.name)}>Deactivate</Button>
                       )}
+                      <Button size="sm" variant="ghost" className="text-rose-700 hover:bg-rose-100" onClick={() => handleHardDelete(u.id, u.name)}>Delete</Button>
                     </div>
                   </td>
                 </tr>

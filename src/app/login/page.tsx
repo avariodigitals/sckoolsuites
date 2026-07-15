@@ -29,6 +29,9 @@ export default async function LoginPage() {
 
   const session = await auth();
   if (session?.user?.role) {
+    if (session.user.mustChangePassword) {
+      redirect("/change-password");
+    }
     redirect(roleDefaultRoute[session.user.role] ?? "/");
   }
 

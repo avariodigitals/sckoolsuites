@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { ActiveSessionProvider, useActiveSession } from "@/components/active-session-provider";
 import { signOut } from "next-auth/react";
 import { navByRole, type NavItem as RoleNavItem } from "@/lib/navigation";
+import { StaffClockInButton } from "@/components/staff-clock-in-button";
 
 type Notification = {
   id: string;
@@ -507,6 +508,9 @@ export function ModernPortalShell({
                   </>
                 )}
               </div>
+
+              {/* Staff Clock In/Out */}
+              {role !== "PARENT" && role !== "STUDENT" && <StaffClockInButton />}
 
               {/* Active Session Selector */}
               <SessionSelector />

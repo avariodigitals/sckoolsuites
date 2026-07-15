@@ -8,6 +8,7 @@ declare module "next-auth" {
     avatarUrl?: string | null;
     defaultRoute?: string;
     schoolId?: string | null;
+    mustChangePassword?: boolean;
   }
 
   interface Session {
@@ -18,6 +19,7 @@ declare module "next-auth" {
       role: string;
       avatarUrl?: string | null;
       schoolId?: string | null;
+      mustChangePassword?: boolean;
     };
   }
 }
@@ -28,5 +30,6 @@ declare module "next-auth/jwt" {
     name?: string;
     avatarUrl?: string;
     schoolId?: string | null;
+    mustChangePassword?: boolean;
   }
 }

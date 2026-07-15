@@ -27,28 +27,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
+  const schoolId = session.user.schoolId || "default";
   const teacher = await prisma.teacher.findFirst({
-    where: { schoolId: "default", userId: session.user.id },
+    where: { schoolId, userId: session.user.id },
   });
   if (!teacher) {
     return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 });
   }
 
   const classRecord = await prisma.class.findFirst({
-    where: { id: parsed.data.classId, schoolId: "default" },
+    where: { id: parsed.data.classId, schoolId },
   });
   if (!classRecord || classRecord.teacherId !== teacher.id) {
     return NextResponse.json({ error: "You can only record attendance for your assigned classes" }, { status: 403 });
   }
 
   const student = await prisma.student.findFirst({
-    where: { id: parsed.data.studentId, schoolId: "default", classId: parsed.data.classId },
+    where: { id: parsed.data.studentId, schoolId, classId: parsed.data.classId },
   });
   if (!student) {
     return NextResponse.json({ error: "Student not found in selected class" }, { status: 404 });
   }
 
-  const context = await calendarService.getUserContext("default", session.user.id);
+  const context = await calendarService.getUserContext(schoolId, session.user.id);
   if (!context.sessionId || !context.termId) {
     return NextResponse.json({ error: "Academic context is not selected" }, { status: 400 });
   }
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
 
   const existing = await prisma.attendance.findFirst({
     where: {
-      schoolId: "default",
+      schoolId,
       studentId: student.id,
       classId: classRecord.id,
       sessionId: context.sessionId,
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
       })
     : await prisma.attendance.create({
         data: {
-          schoolId: "default",
+          schoolId,
           studentId: student.id,
           classId: classRecord.id,
           teacherId: teacher.id,
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
       });
 
   await createAuditLog({
-    schoolId: "default",
+    schoolId,
     actorUserId: session.user.id,
     action: existing ? "ATTENDANCE_UPDATED" : "ATTENDANCE_CREATED",
     targetType: "Attendance",

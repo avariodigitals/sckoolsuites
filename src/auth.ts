@@ -24,6 +24,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.role = user.role;
         token.schoolId = user.schoolId ?? null;
+        token.mustChangePassword = user.mustChangePassword ?? false;
       }
       // Refresh token data on sign-in or explicit session update only.
       // Avoiding a DB query here on every request removes a major latency
@@ -39,6 +40,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.name = dbUser.name;
           token.avatarUrl = dbUser.avatarUrl ?? "";
           token.schoolId = (dbUser as any).schoolId ?? null;
+          token.mustChangePassword = (dbUser as any).mustChangePassword ?? false;
         }
       }
       return token;
@@ -50,6 +52,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.role = (token.role as string) ?? "";
         session.user.avatarUrl = (token.avatarUrl as string) ?? "";
         session.user.schoolId = (token.schoolId as string | null) ?? null;
+        session.user.mustChangePassword = (token.mustChangePassword as boolean) ?? false;
       }
       return session;
     },
@@ -92,6 +95,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           role: user.role.name,
           defaultRoute: roleDefaultRoute[user.role.name as keyof typeof roleDefaultRoute],
           schoolId: (user as any).schoolId ?? null,
+          mustChangePassword: (user as any).mustChangePassword ?? false,
         };
       },
     }),

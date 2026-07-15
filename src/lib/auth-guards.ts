@@ -6,6 +6,7 @@ import { checkPrivilege, type PrivilegeCode } from "@/lib/privileges";
 export async function requireUser() {
   const session = await auth();
   if (!session?.user) redirect("/login");
+  if (session.user.mustChangePassword) redirect("/change-password");
   return session.user;
 }
 

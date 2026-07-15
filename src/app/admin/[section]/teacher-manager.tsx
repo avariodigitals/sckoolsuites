@@ -27,7 +27,6 @@ type Option = { id: string; name: string };
 const emptyTeacher = {
   name: "",
   email: "",
-  password: "",
   designation: "",
   reportsToId: "",
   classGroupId: "",
@@ -100,7 +99,6 @@ export function TeacherManager() {
     const body = {
       name: form.name,
       email: form.email,
-      ...(form.password ? { password: form.password } : {}),
       ...(form.designation ? { designation: form.designation } : {}),
       ...(form.reportsToId ? { reportsToId: Number(form.reportsToId) } : {}),
       ...(form.classGroupId ? { classGroupId: Number(form.classGroupId) } : {}),
@@ -300,7 +298,6 @@ export function TeacherManager() {
     setForm({
       name: teacher.name,
       email: teacher.email,
-      password: "",
       designation: teacher.designation ?? "",
       reportsToId: teacher.reportsTo ? String(teacher.reportsTo.id) : "",
       classGroupId: teacher.classGroupId ? String(teacher.classGroupId) : "",
@@ -351,6 +348,9 @@ export function TeacherManager() {
         <h3 className="mb-3 text-sm font-semibold text-slate-900">
           {editingId ? "Edit Teacher" : "Add New Teacher"}
         </h3>
+        {!editingId && (
+          <p className="mb-3 text-xs text-slate-500">A temporary password will be auto-generated and emailed to the teacher. They will be prompted to change it on first login.</p>
+        )}
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           <Input
             value={form.name}
@@ -364,14 +364,6 @@ export function TeacherManager() {
             placeholder="Email address *"
             disabled={editingId !== null}
           />
-          {!editingId && (
-            <Input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-              placeholder="Password (optional, default: email prefix + 123)"
-            />
-          )}
           <select
             className="rounded-md border border-slate-300 px-3 py-2 text-sm"
             value={form.designation}
@@ -407,7 +399,7 @@ export function TeacherManager() {
           )}
         </div>
         <div className="mt-3 flex gap-2">
-          <Button onClick={handleSubmit} disabled={submitting}>
+          <Button onClick={handleSubmit} disabled={submitting || (!editingId && (!form.name || !form.email))}>
             {submitting ? (editingId ? "Updating..." : "Creating...") : editingId ? "Update Teacher" : "Create Teacher"}
           </Button>
           {editingId && (
@@ -527,7 +519,7 @@ export function TeacherManager() {
                         >
                           Resend
                         </Button>
-                        {teacher.isActive && teacher.assignedClasses.length === 0 && teacher.assignedSubjects.length === 0 && (
+                        {teacher.isActive && (
                           <Button
                             size="sm"
                             variant="outline"

@@ -20,6 +20,7 @@ export async function middleware(request: NextRequest) {
     pathname === "/forgot-password" ||
     pathname === "/setup" ||
     pathname === "/create-account" ||
+    pathname === "/change-password" ||
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon") ||

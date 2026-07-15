@@ -21,6 +21,13 @@ function isAuthorized(role?: string) {
   return role ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(role) : false;
 }
 
+function generateTempPassword(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  let pwd = "";
+  for (let i = 0; i < 10; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+  return pwd + "@1";
+}
+
 export async function GET() {
   const session = await auth();
   const allowed = await crudPrivilege(session, "GET", "teachers");
@@ -127,7 +134,7 @@ export async function POST(request: Request) {
     }
 
     // Hash password
-    const plaintextPassword = data.password || data.email.split("@")[0] + "123";
+    const plaintextPassword = data.password || generateTempPassword();
     const hashedPassword = await hashPassword(plaintextPassword);
 
     // Create user and teacher in transaction
@@ -140,6 +147,7 @@ export async function POST(request: Request) {
           email: data.email,
           password: hashedPassword,
           isActive: data.isActive !== false,
+          mustChangePassword: true,
         },
       });
 

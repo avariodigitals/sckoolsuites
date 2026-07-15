@@ -112,6 +112,27 @@ export async function POST(request: Request) {
   }));
   const grade = calculateGradeFromBands(total, bands);
 
+  // Lock: teachers cannot overwrite scores that already exist.
+  // They must request correction from their head (HEAD_TEACHER/HOD/ADMIN).
+  if (!isAdmin) {
+    const existingScore = await prisma.score.findFirst({
+      where: {
+        schoolId,
+        studentId,
+        subjectId,
+        termId: context.termId,
+        sessionId: context.sessionId,
+      },
+      select: { id: true },
+    });
+    if (existingScore) {
+      return NextResponse.json(
+        { error: "This score has already been submitted and cannot be edited. Please request a correction from your head teacher or admin." },
+        { status: 403 }
+      );
+    }
+  }
+
   const score = await prisma.score.upsert({
     where: {
       studentId_subjectId_termId_sessionId: {

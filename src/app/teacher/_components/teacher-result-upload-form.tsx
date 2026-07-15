@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getCloudinaryInlineUrl } from "@/lib/utils";
 
 type StudentOption = {
   id: string | number;
@@ -84,6 +85,7 @@ export function TeacherResultUploadForm({ studentOptions }: { studentOptions: St
   return (
     <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Upload Result PDF</p>
+      <p className="text-xs text-amber-700">Once submitted, reports cannot be edited or replaced. To make corrections, contact your head teacher or admin.</p>
       <div className="grid gap-2 md:grid-cols-[1fr_auto]">
         <select
           className="rounded-md border border-slate-300 px-3 py-2"
@@ -126,7 +128,7 @@ export function TeacherResultUploadForm({ studentOptions }: { studentOptions: St
                 <p className="text-xs text-slate-500">{item.fileName} • {item.status}</p>
               </div>
               <a
-                href={item.fileUrl}
+                href={getCloudinaryInlineUrl(item.fileUrl)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded-md border border-slate-300 px-2 py-1 text-xs hover:bg-slate-50"

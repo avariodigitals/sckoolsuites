@@ -94,7 +94,7 @@ export function AdmissionsManager({ userRole }: { userRole?: string }) {
   const [status, setStatus] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [filterStatus, setFilterStatus] = useState<string>("PENDING");
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [testScoreInput, setTestScoreInput] = useState("");
   const [interviewNotesInput, setInterviewNotesInput] = useState("");

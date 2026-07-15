@@ -125,6 +125,7 @@ model School {
   schoolTemplates       SchoolTemplate[]
   schoolEvents          SchoolEvent[]
   surveys               Survey[]
+  staffAttendances      StaffAttendance[]
 
   @@map("school")
 }
@@ -178,6 +179,7 @@ model User {
   avatarUrl String?  @map("avatar_url")
   password  String
   isActive  Boolean  @default(true) @map("is_active")
+  mustChangePassword Boolean @default(false) @map("must_change_password")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
@@ -206,6 +208,7 @@ model User {
   announcementReactions    AnnouncementReaction[]
   surveyResponses          SurveyResponse[]
   createdSurveys           Survey[]              @relation("SurveyCreator")
+  staffAttendances         StaffAttendance[]
 
   @@index([email])
   @@index([roleId])
@@ -269,6 +272,7 @@ model Teacher {
   attendances   Attendance[]
   scores        Score[]
   students      Student[]
+  staffAttendances StaffAttendance[]
 
   @@index([userId])
   @@index([schoolId])
@@ -1866,4 +1870,30 @@ model SurveyAnswer {
   @@index([responseId])
   @@index([questionId])
   @@map("survey_answer")
+}
+
+model StaffAttendance {
+  id           Int      @id @default(autoincrement())
+  schoolId     String   @default("default") @map("school_id")
+  userId       Int      @map("user_id")
+  teacherId    Int?     @map("teacher_id")
+  type         String
+  timestamp    DateTime @default(now())
+  latitude     Float?   @map("latitude")
+  longitude    Float?   @map("longitude")
+  facePhotoUrl String?  @map("face_photo_url")
+  ipAddress    String?  @map("ip_address")
+  note         String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school       School   @relation(fields: [schoolId], references: [id])
+  teacher      Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([schoolId])
+  @@index([teacherId])
+  @@index([timestamp])
+  @@index([type])
+  @@map("staff_attendance")
 }
