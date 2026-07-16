@@ -209,6 +209,7 @@ model User {
   surveyResponses          SurveyResponse[]
   createdSurveys           Survey[]              @relation("SurveyCreator")
   staffAttendances         StaffAttendance[]
+  pushSubscriptions        PushSubscription[]
 
   @@index([email])
   @@index([roleId])
@@ -1896,4 +1897,22 @@ model StaffAttendance {
   @@index([timestamp])
   @@index([type])
   @@map("staff_attendance")
+}
+
+model PushSubscription {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  schoolId     String   @map("school_id")
+  endpoint     String   @unique
+  p256dhKey    String   @map("p256dh_key")
+  authKey      String   @map("auth_key")
+  userAgent    String?  @map("user_agent")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([schoolId])
+  @@map("push_subscription")
 }

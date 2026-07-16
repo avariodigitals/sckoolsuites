@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 import { sendWorkflowEmail } from "@/lib/email";
 import { createNotificationsForRoles } from "@/lib/notification-helpers";
+import { sendPushToRoles, isPushConfigured } from "@/lib/web-push";
 
 const createSchema = z.object({
   title: z.string().min(1).max(200),
@@ -205,6 +206,22 @@ export async function POST(request: Request) {
       metadata: { announcementId: announcement.id, audience: data.audience },
     });
 
+    // Send push notifications to subscribed users in the audience
+    let pushResult: { sent: number; failed: number } | null = null;
+    if (isPushConfigured()) {
+      try {
+        pushResult = await sendPushToRoles(schoolId, audienceRoles, {
+          title: `New Announcement: ${data.title}`,
+          body: data.isHtml ? data.body.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 150) : data.body.slice(0, 150),
+          url: "/announcements",
+          icon: "/icon.png",
+          tag: `announcement-${announcement.id}`,
+        }, session.user.id);
+      } catch (err) {
+        console.error("[announcements] Push notification failed:", err);
+      }
+    }
+
     return NextResponse.json(
       {
         announcement: {
@@ -222,6 +239,7 @@ export async function POST(request: Request) {
           updatedAt: announcement.updatedAt.toISOString(),
         },
         emailResult,
+        pushResult,
       },
       { status: 201 }
     );

@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Sora } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { InactivityTimer } from "@/components/inactivity-timer";
 import { ConfirmDialogProvider } from "@/components/ui/confirm-dialog";
+import { PushNotificationManager } from "@/components/push-notification-manager";
 import "./globals.css";
 
 const sora = Sora({
@@ -18,10 +19,25 @@ const plusJakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "Sckool Suite",
   description: "Nigerian-first School ERP + LMS",
+  manifest: "/manifest.json",
   icons: {
     icon: "/icon.png",
     shortcut: "/icon.png",
+    apple: "/icon.png",
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Sckool Suite",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0B1F4D",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -40,6 +56,7 @@ export default function RootLayout({
           <ConfirmDialogProvider>
             {children}
             <InactivityTimer />
+            <PushNotificationManager />
           </ConfirmDialogProvider>
         </SessionProvider>
       </body>
