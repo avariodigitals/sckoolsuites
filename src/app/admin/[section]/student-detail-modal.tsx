@@ -263,6 +263,13 @@ export function StudentDetailModal({ studentId, onClose }: { studentId: string; 
             >
               Promote
             </button>
+            <button
+              onClick={onClose}
+              className="ml-3 rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              title="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
 
           {/* Scrollable Content */}

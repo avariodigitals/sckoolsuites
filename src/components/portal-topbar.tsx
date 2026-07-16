@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { AlertTriangle, Bell, ChevronDown, ChevronRight, FileCheck2, Megaphone, MessageSquareText, Moon, Search, Sun } from "lucide-react";
+import { AlertTriangle, Bell, ChevronDown, ChevronRight, FileCheck2, LogOut, Megaphone, MessageSquareText, Moon, Search, Sun, UserCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
+import Link from "next/link";
 
 const THEME_EVENT = "sckoolsuite-theme-change";
 
@@ -50,6 +52,8 @@ export function PortalTopbar({
   avatarUrl?: string;
 }) {
   const router = useRouter();
+  const currentPathname = usePathname() ?? "";
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notificationError, setNotificationError] = useState("");
   const [loadingNotifications, setLoadingNotifications] = useState(false);
@@ -511,9 +515,20 @@ export function PortalTopbar({
             <ChevronDown className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
           </summary>
           <div className="absolute right-0 z-20 mt-2 w-44 rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
-            <p className="px-2 py-1 text-xs text-slate-500 dark:text-slate-300">My Profile</p>
-            <p className="px-2 py-1 text-xs text-slate-500 dark:text-slate-300">Account Settings</p>
-            <p className="px-2 py-1 text-xs text-slate-500 dark:text-slate-300">Help Center</p>
+            <Link
+              href={`${currentPathname.split("/").slice(0, 2).join("/")}/profile`}
+              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-slate-700 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              <UserCircle className="h-4 w-4 text-slate-400" />
+              My Profile
+            </Link>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-rose-600 transition hover:bg-rose-50 dark:hover:bg-rose-950/40"
+            >
+              <LogOut className="h-4 w-4 text-rose-400" />
+              Logout
+            </button>
           </div>
         </details>
       </div>

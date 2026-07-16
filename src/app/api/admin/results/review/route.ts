@@ -8,7 +8,7 @@ import { getClassGroupGradingProfiles, resolveClassGroupProfile } from "@/lib/cl
 import { calculateGradeFromBands } from "@/lib/grades";
 import { prisma } from "@/lib/db";
 import { sendTemplatedEmail } from "@/lib/email";
-import { createNotificationsForParents } from "@/lib/notification-helpers";
+import { createNotificationsForParents, createNotificationsForTeachersOfStudent } from "@/lib/notification-helpers";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 import { getSetupWizardState } from "@/lib/setup-wizard";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
@@ -358,6 +358,28 @@ export async function POST(request: Request) {
       },
     });
 
+    // Notify parent that result has been approved
+    await createNotificationsForParents(schoolId, [studentId], {
+      type: "result",
+      title: "Result Approved",
+      body: `Your child's result has been approved and is pending publication. You will be notified once it is published.`,
+      link: "/parent/results",
+      actorUserId: session.user.id,
+      excludeActorUserId: session.user.id,
+      metadata: { resultId: result.id, studentId, termId, sessionId, action: "APPROVED" },
+    });
+
+    // Notify the student's teachers that the result has been approved
+    await createNotificationsForTeachersOfStudent(schoolId, studentId, {
+      type: "result",
+      title: "Result Approved",
+      body: `A result you submitted has been approved by administration. It is now pending publication.`,
+      link: "/teacher/dashboard",
+      actorUserId: session.user.id,
+      excludeActorUserId: session.user.id,
+      metadata: { resultId: result.id, studentId, termId, sessionId, action: "APPROVED" },
+    });
+
     return NextResponse.json({
       ok: true,
       result: {
@@ -452,18 +474,13 @@ export async function POST(request: Request) {
       }
 
       if (!emailStatus.sent && studentForNotify?.parent?.user?.email) {
-        return NextResponse.json({
-          ok: true,
-          result: { id: published.id, status: published.status },
-          warning: "Result published, but publication email could not be delivered to the parent.",
-          emailStatus,
-        });
+        console.warn("[result-publish] Email delivery failed, but in-app notification will still be created.");
       }
     } catch {
-      // suppress non-critical notification errors; result is already published
+      // suppress non-critical email errors; in-app notification will still be created
     }
 
-    // Create in-app notification for the parent
+    // Create in-app notification for the parent (always runs, regardless of email status)
     await createNotificationsForParents(schoolId, [studentId], {
       type: "result",
       title: "Results Published",
@@ -474,7 +491,19 @@ export async function POST(request: Request) {
       metadata: { resultId: published.id, studentId, termId, sessionId },
     });
 
-    return NextResponse.json({ ok: true, result: { id: published.id, status: published.status } });
+    // Notify teachers that the result has been published
+    await createNotificationsForTeachersOfStudent(schoolId, studentId, {
+      type: "result",
+      title: "Result Published",
+      body: `A result you submitted has been published and is now visible to parents.`,
+      link: "/teacher/dashboard",
+      actorUserId: session.user.id,
+      excludeActorUserId: session.user.id,
+      metadata: { resultId: published.id, studentId, termId, sessionId, action: "PUBLISHED" },
+    });
+
+    const response: any = { ok: true, result: { id: published.id, status: published.status } };
+    return NextResponse.json(response);
   }
 
   const rejected = await prisma.result.update({
@@ -502,6 +531,17 @@ export async function POST(request: Request) {
       status: rejected.status,
       reviewNote: rejected.reviewNote,
     },
+  });
+
+  // Notify teacher that result was returned for correction
+  await createNotificationsForTeachersOfStudent(schoolId, studentId, {
+    type: "result",
+    title: "Result Returned for Correction",
+    body: `A result was returned for correction. Please review and resubmit. ${reviewNote ? `Note: ${reviewNote}` : ""}`,
+    link: "/teacher/dashboard",
+    actorUserId: session.user.id,
+    excludeActorUserId: session.user.id,
+    metadata: { resultId: rejected.id, studentId, termId, sessionId, action: "REJECTED" },
   });
 
   return NextResponse.json({ ok: true, result: { id: rejected.id, status: rejected.status } });

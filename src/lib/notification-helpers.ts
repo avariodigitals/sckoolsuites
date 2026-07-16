@@ -134,3 +134,60 @@ export async function createNotificationsForParents(
     console.error("[notification-helpers] Failed to create notifications for parents:", err);
   }
 }
+
+export async function createNotificationsForTeachersOfStudent(
+  schoolId: string,
+  studentId: number,
+  input: Omit<CreateNotificationInput, "schoolId" | "userId"> & { excludeActorUserId?: number }
+) {
+  try {
+    const student = await prisma.student.findFirst({
+      where: { id: studentId, schoolId },
+      select: {
+        classId: true,
+        class: { select: { teacherId: true } },
+      },
+    });
+    if (!student) return;
+
+    const teacherIds = new Set<number>();
+
+    if (student.class?.teacherId) {
+      teacherIds.add(student.class.teacherId);
+    }
+
+    const subjectTeachers = await prisma.subject.findMany({
+      where: { schoolId, classId: student.classId },
+      select: { teacherId: true },
+    });
+    for (const s of subjectTeachers) {
+      if (s.teacherId) teacherIds.add(s.teacherId);
+    }
+
+    if (!teacherIds.size) return;
+
+    const teachers = await prisma.teacher.findMany({
+      where: { id: { in: Array.from(teacherIds) } },
+      select: { userId: true },
+    });
+    const userIds = teachers
+      .map((t) => t.userId)
+      .filter((id) => id !== input.excludeActorUserId);
+    if (!userIds.length) return;
+
+    await prisma.notificationRecord.createMany({
+      data: userIds.map((userId) => ({
+        schoolId,
+        userId,
+        type: input.type,
+        title: input.title,
+        body: input.body,
+        link: input.link ?? null,
+        actorUserId: input.actorUserId ?? null,
+        metadata: input.metadata ? JSON.stringify(input.metadata) : null,
+      })),
+    });
+  } catch (err) {
+    console.error("[notification-helpers] Failed to create notifications for teachers of student:", err);
+  }
+}
