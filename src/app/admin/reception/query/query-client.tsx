@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -91,7 +91,11 @@ export function QueryClient({ schoolId: _schoolId }: { schoolId: string }) {
     } catch { setStatus("Failed to delete."); }
   }
 
-  if (loading) { loadData(); return <div className="p-6 text-slate-500">Loading queries...</div>; }
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  if (loading) { return <div className="p-6 text-slate-500">Loading queries...</div>; }
 
   return (
     <div className="space-y-6">

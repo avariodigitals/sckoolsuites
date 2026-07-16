@@ -306,6 +306,9 @@ export const getDashboardData = cache(async function getDashboardData(schoolId: 
     school,
     incomeCount,
     expenseCount,
+    incomeCategories,
+    expenseCategories,
+    totalExpensesAgg,
   ] = await Promise.all([
     prisma.student.count({ where: { schoolId } }),
     prisma.parent.count({ where: { schoolId } }),
@@ -342,6 +345,9 @@ export const getDashboardData = cache(async function getDashboardData(schoolId: 
     prisma.school.findUnique({ where: { id: schoolId }, include: { branding: true } }),
     prisma.income.count({ where: { schoolId } }),
     prisma.expense.count({ where: { schoolId } }),
+    prisma.incomeCategory.count({ where: { schoolId } }),
+    prisma.expenseCategory.count({ where: { schoolId } }),
+    prisma.expense.aggregate({ where: { schoolId }, _sum: { amount: true } }),
   ]);
 
   const selectedSession = sessions.find((s: any) => s.id === context?.sessionId) ?? null;
@@ -365,6 +371,9 @@ export const getDashboardData = cache(async function getDashboardData(schoolId: 
     announcements: announcements.filter((item: any) => !isContestAnnouncementEntry(item)),
     incomeCount,
     expenseCount,
+    incomeCategories,
+    expenseCategories,
+    totalExpenses: totalExpensesAgg._sum.amount ?? 0,
   };
 });
 

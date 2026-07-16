@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -119,8 +119,11 @@ export function CorrespondenceClient({ schoolId: _schoolId }: { schoolId: string
     }
   }
 
-  if (loading) {
+  useEffect(() => {
     loadData();
+  }, [loadData]);
+
+  if (loading) {
     return <div className="p-6 text-slate-500">Loading correspondence...</div>;
   }
 

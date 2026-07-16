@@ -126,6 +126,7 @@ model School {
   schoolEvents          SchoolEvent[]
   surveys               Survey[]
   staffAttendances      StaffAttendance[]
+  subjectAssignments    SubjectAssignment[]
 
   @@map("school")
 }
@@ -266,6 +267,7 @@ model Teacher {
   classes       Class[]
   classArms     ClassArm[]
   subjects      Subject[]
+  subjectAssignments SubjectAssignment[]
   lessons       Lesson[]
   assignments   Assignment[]
   quizzes       Quiz[]
@@ -416,6 +418,7 @@ model Class {
   feeProfileClasses     FeeProfileClass[]
   classAssessments      ClassAssessment[]
   admissionApplications AdmissionApplication[]
+  subjectAssignments    SubjectAssignment[]
 
   @@unique([schoolId, name])
   @@index([schoolId])
@@ -529,6 +532,7 @@ model Subject {
   quizzes       Quiz[]
   onlineClasses OnlineClass[]
   scores        Score[]
+  subjectAssignments SubjectAssignment[]
 
   @@index([schoolId])
   @@index([classId])
@@ -1897,6 +1901,28 @@ model StaffAttendance {
   @@index([timestamp])
   @@index([type])
   @@map("staff_attendance")
+}
+
+model SubjectAssignment {
+  id         Int      @id @default(autoincrement())
+  schoolId   String   @default("default") @map("school_id")
+  teacherId  Int      @map("teacher_id")
+  subjectId  Int      @map("subject_id")
+  classId    Int      @map("class_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  teacher    Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject    Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  class      Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  school     School   @relation(fields: [schoolId], references: [id])
+
+  @@unique([teacherId, subjectId, classId])
+  @@index([schoolId])
+  @@index([teacherId])
+  @@index([subjectId])
+  @@index([classId])
+  @@map("subject_assignment")
 }
 
 model PushSubscription {

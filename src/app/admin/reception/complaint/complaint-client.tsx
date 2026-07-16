@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -125,8 +125,11 @@ export function ComplaintClient({ schoolId: _schoolId }: { schoolId: string }) {
     }
   }
 
-  if (loading) {
+  useEffect(() => {
     loadData();
+  }, [loadData]);
+
+  if (loading) {
     return <div className="p-6 text-slate-500">Loading complaints...</div>;
   }
 

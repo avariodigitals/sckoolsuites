@@ -69,6 +69,9 @@ export function FinanceManager({ defaultTab }: { defaultTab?: Tab }) {
   const [showCatForm, setShowCatForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
 
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
   const [formData, setFormData] = useState({
     categoryId: "",
     amount: "",
@@ -112,25 +115,54 @@ export function FinanceManager({ defaultTab }: { defaultTab?: Tab }) {
     return () => { cancelled = true; };
   }, []);
 
+  async function refreshData() {
+    const [incRes, expRes, incCatRes, expCatRes, billsRes] = await Promise.all([
+      fetch("/api/admin/finance/income", { cache: "no-store" }),
+      fetch("/api/admin/finance/expense", { cache: "no-store" }),
+      fetch("/api/admin/finance/income-categories", { cache: "no-store" }),
+      fetch("/api/admin/finance/expense-categories", { cache: "no-store" }),
+      fetch("/api/admin/bills", { cache: "no-store" }),
+    ]);
+    if (incRes.ok) setIncomes(await incRes.json());
+    if (expRes.ok) setExpenses(await expRes.json());
+    if (incCatRes.ok) setIncomeCategories(await incCatRes.json());
+    if (expCatRes.ok) setExpenseCategories(await expCatRes.json());
+    if (billsRes.ok) {
+      const billData = await billsRes.json();
+      setBills(Array.isArray(billData) ? billData : billData.invoices ?? []);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!formData.categoryId || !formData.amount) return;
+    setSubmitting(true);
+    setError("");
     const endpoint = tab === "income" ? "/api/admin/finance/income" : "/api/admin/finance/expense";
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        categoryId: Number(formData.categoryId),
-        amount: Number(formData.amount),
-        description: formData.description,
-        date: formData.date,
-        paymentMethod: formData.paymentMethod || undefined,
-      }),
-    });
-    if (res.ok) {
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          categoryId: Number(formData.categoryId),
+          amount: Number(formData.amount),
+          description: formData.description,
+          date: formData.date,
+          paymentMethod: formData.paymentMethod || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        setError(payload?.error || `Failed to add ${tab}`);
+        return;
+      }
       setShowForm(false);
       setFormData({ categoryId: "", amount: "", description: "", date: new Date().toISOString().split("T")[0], paymentMethod: "" });
-      window.location.reload();
+      await refreshData();
+    } catch {
+      setError("An error occurred while saving.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -205,6 +237,12 @@ export function FinanceManager({ defaultTab }: { defaultTab?: Tab }) {
         <button onClick={() => { setTab("ledger"); setShowForm(false); }} className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${tab === "ledger" ? "border-indigo-500 text-indigo-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}><BookOpen className="h-4 w-4" />Ledger</button>
         <button onClick={() => { setTab("revenue"); setShowForm(false); }} className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${tab === "revenue" ? "border-cyan-500 text-cyan-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}><BarChart3 className="h-4 w-4" />Revenue</button>
       </div>
+
+      {error && (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
+        </div>
+      )}
 
       {isEditableTab && (
         <>
@@ -320,7 +358,7 @@ export function FinanceManager({ defaultTab }: { defaultTab?: Tab }) {
                 <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={formData.description} onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))} placeholder={`Optional description for this ${tab}...`} />
               </div>
               <div className="md:col-span-4 flex gap-2">
-                <Button type="submit" size="sm">Save</Button>
+                <Button type="submit" size="sm" disabled={submitting}>{submitting ? "Saving..." : "Save"}</Button>
                 <Button type="button" variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
               </div>
             </form>

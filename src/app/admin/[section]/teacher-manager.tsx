@@ -15,11 +15,30 @@ type Teacher = {
   createdAt: string;
   assignedClasses: { id: string; name: string }[];
   assignedSubjects: { id: string; name: string }[];
+  subjectAssignments: { id: number; subjectId: number; subjectName: string; classId: number; className: string }[];
   studentCount: number;
   designation: string | null;
   reportsTo: { id: number; name: string } | null;
   classGroupId: number | null;
   classGroupName: string | null;
+  phone?: string | null;
+  avatarUrl?: string | null;
+  role?: string;
+  roleLabel?: string;
+};
+
+type StaffMember = {
+  id: number;
+  userId: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  isActive: boolean;
+  role: string;
+  roleLabel: string;
+  createdAt: string;
+  isNonTeacherStaff: true;
 };
 
 type Option = { id: string; name: string };
@@ -37,8 +56,8 @@ export function TeacherManager() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [unassignedClasses, setUnassignedClasses] = useState<Option[]>([]);
   const [unassignedSubjects, setUnassignedSubjects] = useState<Option[]>([]);
-  const [, setAllClasses] = useState<Option[]>([]);
-  const [, setAllSubjects] = useState<Option[]>([]);
+  const [allClasses, setAllClasses] = useState<Option[]>([]);
+  const [allSubjects, setAllSubjects] = useState<Option[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,6 +68,8 @@ export function TeacherManager() {
   const [unassigningSubjectId, setUnassigningSubjectId] = useState<string | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [classGroups, setClassGroups] = useState<{ id: number; name: string }[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [activeTab, setActiveTab] = useState<"teachers" | "staff">("teachers");
 
   const filteredTeachers = useMemo(() => {
     if (!searchQuery.trim()) return teachers;
@@ -62,6 +83,17 @@ export function TeacherManager() {
     );
   }, [teachers, searchQuery]);
 
+  const filteredStaff = useMemo(() => {
+    if (!searchQuery.trim()) return staff;
+    const query = searchQuery.toLowerCase();
+    return staff.filter(
+      (s) =>
+        s.name.toLowerCase().includes(query) ||
+        s.email.toLowerCase().includes(query) ||
+        s.roleLabel.toLowerCase().includes(query)
+    );
+  }, [staff, searchQuery]);
+
   async function loadData() {
     setLoading(true);
     setStatus("");
@@ -73,6 +105,7 @@ export function TeacherManager() {
         return;
       }
       setTeachers(payload.teachers ?? []);
+      setStaff(payload.staff ?? []);
       setUnassignedClasses(payload.unassignedClasses ?? []);
       setUnassignedSubjects(payload.unassignedSubjects ?? []);
       setAllClasses(payload.allClasses ?? []);
@@ -245,6 +278,52 @@ export function TeacherManager() {
     }
   }
 
+  async function handleAssignSubjectToClass(teacherId: string, subjectId: string, classId: string) {
+    setStatus("");
+    try {
+      const response = await fetch(`/api/admin/teachers/${teacherId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subjectId: Number(subjectId), subjectClassId: Number(classId), action: "ASSIGN" }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setStatus(payload?.error ?? "Failed to assign subject to class.");
+        return;
+      }
+
+      setStatus("Subject assigned to class successfully.");
+      await loadData();
+    } catch {
+      setStatus("An error occurred.");
+    }
+  }
+
+  async function handleUnassignSubjectFromClass(teacherId: string, subjectId: number, classId: number) {
+    setStatus("");
+    try {
+      const response = await fetch(`/api/admin/teachers/${teacherId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subjectId, subjectClassId: classId, action: "UNASSIGN" }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setStatus(payload?.error ?? "Failed to unassign subject from class.");
+        return;
+      }
+
+      setStatus("Subject unassigned from class successfully.");
+      await loadData();
+    } catch {
+      setStatus("An error occurred.");
+    }
+  }
+
   async function handleResend(id: string, name: string) {
     if (!(await confirm({
       title: "Resend Welcome Email",
@@ -322,28 +401,47 @@ export function TeacherManager() {
         </div>
       ) : null}
 
+      {/* Tabs */}
+      <div className="flex gap-2">
+        <button
+          className={`rounded-lg px-4 py-2 text-sm font-medium ${activeTab === "teachers" ? "bg-indigo-600 text-white" : "bg-white border border-slate-200 text-slate-700"}`}
+          onClick={() => setActiveTab("teachers")}
+        >
+          Teachers ({teachers.length})
+        </button>
+        <button
+          className={`rounded-lg px-4 py-2 text-sm font-medium ${activeTab === "staff" ? "bg-indigo-600 text-white" : "bg-white border border-slate-200 text-slate-700"}`}
+          onClick={() => setActiveTab("staff")}
+        >
+          Non-Teaching Staff ({staff.length})
+        </button>
+      </div>
+
       {/* Search and Filter */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Input
-          placeholder="Search by name, email, class or subject..."
+          placeholder={activeTab === "teachers" ? "Search by name, email, class or subject..." : "Search by name, email or role..."}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-md"
         />
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            setEditingId(null);
-            setForm(emptyTeacher);
-            setStatus("");
-          }}
-        >
-          + New Teacher
-        </Button>
+        {activeTab === "teachers" && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setEditingId(null);
+              setForm(emptyTeacher);
+              setStatus("");
+            }}
+          >
+            + New Teacher
+          </Button>
+        )}
       </div>
 
       {/* Teacher Form */}
+      {activeTab === "teachers" && (
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <h3 className="mb-3 text-sm font-semibold text-slate-900">
           {editingId ? "Edit Teacher" : "Add New Teacher"}
@@ -409,8 +507,10 @@ export function TeacherManager() {
           )}
         </div>
       </div>
+      )}
 
       {/* Teachers Table */}
+      {activeTab === "teachers" && (
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <h3 className="mb-3 text-sm font-semibold text-slate-900">
           Teachers ({filteredTeachers.length} of {teachers.length})
@@ -472,23 +572,74 @@ export function TeacherManager() {
                       )}
                     </td>
                     <td className="px-2 py-2">
-                      {teacher.assignedSubjects.length === 0 ? (
+                      {teacher.assignedSubjects.length === 0 && teacher.subjectAssignments.length === 0 ? (
                         <span className="text-slate-400">No subjects</span>
                       ) : (
-                        <div className="flex flex-wrap gap-1">
-                          {teacher.assignedSubjects.map((subj) => (
-                            <span key={subj.id} className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-xs">
-                              {subj.name}
-                              <button
-                                onClick={() => handleUnassignSubject(teacher.id, subj.id)}
-                                disabled={unassigningSubjectId === subj.id}
-                                className="text-rose-500 hover:text-rose-700"
-                                title="Unassign subject"
-                              >
-                                {unassigningSubjectId === subj.id ? "..." : "×"}
-                              </button>
-                            </span>
-                          ))}
+                        <div className="space-y-1">
+                          {teacher.assignedSubjects.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {teacher.assignedSubjects.map((subj) => (
+                                <span key={subj.id} className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-xs">
+                                  {subj.name}
+                                  <button
+                                    onClick={() => handleUnassignSubject(teacher.id, subj.id)}
+                                    disabled={unassigningSubjectId === subj.id}
+                                    className="text-rose-500 hover:text-rose-700"
+                                    title="Unassign subject"
+                                  >
+                                    {unassigningSubjectId === subj.id ? "..." : "×"}
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {teacher.subjectAssignments.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {teacher.subjectAssignments.map((sa) => (
+                                <span key={sa.id} className="inline-flex items-center gap-1 rounded bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">
+                                  {sa.subjectName} → {sa.className}
+                                  <button
+                                    onClick={() => handleUnassignSubjectFromClass(teacher.id, sa.subjectId, sa.classId)}
+                                    className="text-rose-500 hover:text-rose-700"
+                                    title="Unassign subject from class"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {allSubjects.length > 0 && allClasses.length > 0 && (
+                        <div className="mt-1 flex gap-1">
+                          <select
+                            className="rounded-md border border-slate-300 px-2 py-1 text-xs"
+                            onChange={(e) => {
+                              const subjectId = e.target.value;
+                              const classSelect = e.target.nextElementSibling as HTMLSelectElement;
+                              if (subjectId && classSelect?.value) {
+                                void handleAssignSubjectToClass(teacher.id, subjectId, classSelect.value);
+                                e.target.value = "";
+                                classSelect.value = "";
+                              }
+                            }}
+                            value=""
+                          >
+                            <option value="">Subject...</option>
+                            {allSubjects.map((s) => (
+                              <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                          </select>
+                          <select
+                            className="rounded-md border border-slate-300 px-2 py-1 text-xs"
+                            value=""
+                          >
+                            <option value="">Class...</option>
+                            {allClasses.map((c) => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                          </select>
                         </div>
                       )}
                     </td>
@@ -575,6 +726,72 @@ export function TeacherManager() {
           </table>
         </div>
       </div>
+      )}
+
+      {/* Non-Teaching Staff Table */}
+      {activeTab === "staff" && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <h3 className="mb-3 text-sm font-semibold text-slate-900">
+            Non-Teaching Staff ({filteredStaff.length} of {staff.length})
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <th className="px-2 py-2">Name</th>
+                  <th className="px-2 py-2">Email</th>
+                  <th className="px-2 py-2">Phone</th>
+                  <th className="px-2 py-2">Role</th>
+                  <th className="px-2 py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredStaff.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-2 py-4 text-center text-slate-500">
+                      No non-teaching staff found.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredStaff.map((member) => (
+                    <tr key={member.id} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="px-2 py-2 font-medium text-slate-900">
+                        <div className="flex items-center gap-2">
+                          {member.avatarUrl ? (
+                            <img src={member.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
+                              {member.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          {member.name}
+                        </div>
+                      </td>
+                      <td className="px-2 py-2 text-slate-600">{member.email}</td>
+                      <td className="px-2 py-2 text-slate-600">{member.phone ?? <span className="text-slate-400">—</span>}</td>
+                      <td className="px-2 py-2">
+                        <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{member.roleLabel}</span>
+                      </td>
+                      <td className="px-2 py-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs ${
+                            member.isActive
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-slate-100 text-slate-600"
+                          }`
+                          }
+                        >
+                          {member.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {viewingId && (
         <TeacherDetailModal

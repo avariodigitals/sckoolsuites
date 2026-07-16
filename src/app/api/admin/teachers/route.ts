@@ -40,7 +40,7 @@ export async function GET() {
 
   const schoolId = session.user.schoolId || "default";
 
-  const [teachers, classes, subjects, classGroups] = await Promise.all([
+  const [teachers, classes, subjects, classGroups, staffUsers] = await Promise.all([
     prisma.teacher.findMany({
       where: { schoolId },
       include: {
@@ -50,6 +50,7 @@ export async function GET() {
         students: { include: { user: true } },
         reportsTo: { include: { user: true } },
         classGroup: true,
+        subjectAssignments: { include: { subject: true, class: true } },
       },
       orderBy: [{ createdAt: "desc" }],
     }),
@@ -67,7 +68,40 @@ export async function GET() {
       where: { schoolId },
       orderBy: { name: "asc" },
     }),
+    prisma.user.findMany({
+      where: {
+        schoolId,
+        isActive: true,
+        role: { name: { notIn: ["PARENT", "STUDENT"] } },
+      },
+      include: { role: true },
+      orderBy: [{ name: "asc" }],
+    }),
   ]);
+
+  const teacherUserIds = new Set(teachers.map((t: any) => t.userId));
+  const nonTeacherStaff = staffUsers
+    .filter((u: any) => !teacherUserIds.has(u.id))
+    .map((u: any) => ({
+      id: u.id,
+      userId: u.id,
+      name: u.name,
+      email: u.email,
+      phone: u.phone ?? null,
+      avatarUrl: u.avatarUrl ?? null,
+      isActive: u.isActive,
+      role: u.role?.name ?? "STAFF",
+      roleLabel: u.role?.label ?? u.role?.name ?? "Staff",
+      designation: null,
+      reportsTo: null,
+      assignedClasses: [],
+      assignedSubjects: [],
+      studentCount: 0,
+      classGroupId: null,
+      classGroupName: null,
+      createdAt: u.createdAt.toISOString(),
+      isNonTeacherStaff: true,
+    }));
 
   return NextResponse.json({
     teachers: teachers.map((teacher: any) => ({
@@ -84,7 +118,19 @@ export async function GET() {
       reportsTo: teacher.reportsTo ? { id: teacher.reportsTo.id, name: teacher.reportsTo.user.name } : null,
       classGroupId: teacher.classGroupId ?? null,
       classGroupName: teacher.classGroup?.name ?? null,
+      phone: teacher.user.phone ?? null,
+      avatarUrl: teacher.user.avatarUrl ?? null,
+      role: "TEACHER",
+      roleLabel: "Teacher",
+      subjectAssignments: teacher.subjectAssignments?.map((sa: any) => ({
+        id: sa.id,
+        subjectId: sa.subjectId,
+        subjectName: sa.subject?.name ?? "",
+        classId: sa.classId,
+        className: sa.class?.name ?? "",
+      })) ?? [],
     })),
+    staff: nonTeacherStaff,
     unassignedClasses: classes
       .filter((c: any) => !c.teacherId)
       .map((c: any) => ({ id: c.id, name: c.name })),

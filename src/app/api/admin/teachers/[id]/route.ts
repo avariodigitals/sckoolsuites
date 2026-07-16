@@ -18,6 +18,7 @@ const assignSchema = z.object({
   classId: z.coerce.number().int().min(1).optional(),
   armId: z.coerce.number().int().min(1).optional(),
   subjectId: z.coerce.number().int().min(1).optional(),
+  subjectClassId: z.coerce.number().int().min(1).optional(),
   action: z.enum(["ASSIGN", "UNASSIGN"]),
 });
 
@@ -51,8 +52,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   // Check if this is an assignment action
   const assignParsed = assignSchema.safeParse(payload);
-  if (assignParsed.success && (assignParsed.data.classId || assignParsed.data.armId || assignParsed.data.subjectId)) {
-    const { classId, armId, subjectId, action } = assignParsed.data;
+  if (assignParsed.success && (assignParsed.data.classId || assignParsed.data.armId || assignParsed.data.subjectId || assignParsed.data.subjectClassId)) {
+    const { classId, armId, subjectId, subjectClassId, action } = assignParsed.data;
 
     // Verify teacher exists
     const teacher = await prisma.teacher.findFirst({
@@ -233,6 +234,67 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         });
 
         return NextResponse.json({ ok: true, message: "Subject unassigned successfully" });
+      }
+    }
+
+    if (subjectClassId && subjectId) {
+      const subjectExists = await prisma.subject.findFirst({
+        where: { id: subjectId, schoolId },
+      });
+      if (!subjectExists) {
+        return NextResponse.json({ error: "Subject not found" }, { status: 404 });
+      }
+
+      const classExists = await prisma.class.findFirst({
+        where: { id: subjectClassId, schoolId },
+      });
+      if (!classExists) {
+        return NextResponse.json({ error: "Class not found" }, { status: 404 });
+      }
+
+      if (action === "ASSIGN") {
+        const existing = await prisma.subjectAssignment.findUnique({
+          where: {
+            teacherId_subjectId_classId: {
+              teacherId,
+              subjectId,
+              classId: subjectClassId,
+            },
+          },
+        });
+        if (existing) {
+          return NextResponse.json({ ok: true, message: "Already assigned" });
+        }
+
+        await prisma.subjectAssignment.create({
+          data: { schoolId, teacherId, subjectId, classId: subjectClassId },
+        });
+
+        await createAuditLog({
+          schoolId,
+          actorUserId: session.user.id,
+          action: "SUBJECT_TEACHER_ASSIGNED_TO_CLASS",
+          targetType: "Teacher",
+          targetId: String(teacherId),
+          metadata: { teacherId, subjectId, classId: subjectClassId },
+        });
+
+        return NextResponse.json({ ok: true, message: "Subject teacher assigned to class successfully" });
+      } else {
+        await prisma.subjectAssignment.deleteMany({
+          where: { teacherId, subjectId, classId: subjectClassId },
+        });
+
+        await createAuditLog({
+          schoolId,
+          actorUserId: session.user.id,
+          action: "SUBJECT_TEACHER_UNASSIGNED_FROM_CLASS",
+          targetType: "Teacher",
+          targetId: String(teacherId),
+          metadata: { teacherId, subjectId, classId: subjectClassId },
+        });
+
+        return NextResponse.json({ ok: true, message: "Subject teacher unassigned from class successfully" });
       }
     }
   }

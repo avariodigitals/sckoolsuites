@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -168,8 +168,11 @@ export function EnquiryClient({ schoolId: _schoolId }: { schoolId: string }) {
     });
   }
 
-  if (loading) {
+  useEffect(() => {
     loadEnquiries();
+  }, [loadEnquiries]);
+
+  if (loading) {
     return <div className="p-6 text-slate-500">Loading enquiries...</div>;
   }
 
