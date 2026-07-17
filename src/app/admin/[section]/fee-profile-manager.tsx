@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
-type FeeGroup = { id: string; name: string; code: string };
+type FeeGroup = { id: string; name: string; code: string; description?: string | null; isActive?: boolean; feeItemCount?: number };
 type FeeComponent = { id: string; name: string; description?: string | null };
+type FeeConcession = { id: string; name: string; type: string; value: number; description?: string | null; isActive: boolean };
 type ClassGroup = { id: string; name: string };
 type Class = { id: string; name: string; classGroupId?: string | null };
 type ClassArm = { id: string; name: string; classId: string };
@@ -50,6 +51,7 @@ export function FeeProfileManager() {
   const [arms, setArms] = useState<ClassArm[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [terms, setTerms] = useState<Term[]>([]);
+  const [concessions, setConcessions] = useState<FeeConcession[]>([]);
   const [stats, setStats] = useState({ totalProfiles: 0, isActivated: false });
 
   // Form state
@@ -71,20 +73,37 @@ export function FeeProfileManager() {
   const [componentName, setComponentName] = useState("");
   const [componentDesc, setComponentDesc] = useState("");
 
+  // New fee group form
+  const [showGroupForm, setShowGroupForm] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [groupCode, setGroupCode] = useState("");
+  const [groupDesc, setGroupDesc] = useState("");
+
+  // Concession form
+  const [showConcessionForm, setShowConcessionForm] = useState(false);
+  const [concessionName, setConcessionName] = useState("");
+  const [concessionType, setConcessionType] = useState("PERCENTAGE");
+  const [concessionValue, setConcessionValue] = useState("");
+  const [concessionDesc, setConcessionDesc] = useState("");
+
+  // Active sub-tab
+  const [activeTab, setActiveTab] = useState<"profiles" | "groups" | "components" | "concessions">("profiles");
+
   async function loadData() {
     setLoading(true);
     try {
-      const [profilesRes, groupsRes, componentsRes, classGroupsRes, classesRes, armsRes, sessionsRes] = await Promise.all([
+      const [profilesRes, groupsRes, componentsRes, classGroupsRes, classesRes, armsRes, sessionsRes, concessionsRes] = await Promise.all([
         fetch("/api/admin/finance/fee-profiles", { cache: "no-store" }),
         fetch("/api/admin/finance/fee-groups", { cache: "no-store" }),
         fetch("/api/admin/finance/fee-components", { cache: "no-store" }),
         fetch("/api/admin/class-groups", { cache: "no-store" }),
         fetch("/api/admin/classes", { cache: "no-store" }),
-        fetch("/api/admin/arms", { cache: "no-store" }),
+        fetch("/api/admin/class-arms", { cache: "no-store" }),
         fetch("/api/context/session-term", { cache: "no-store" }),
+        fetch("/api/admin/finance/fee-concessions", { cache: "no-store" }),
       ]);
 
-      const [profilesData, groupsData, componentsData, classGroupsData, classesData, armsData, sessionData] = await Promise.all([
+      const [profilesData, groupsData, componentsData, classGroupsData, classesData, armsData, sessionData, concessionsData] = await Promise.all([
         profilesRes.json(),
         groupsRes.json(),
         componentsRes.json(),
@@ -92,6 +111,7 @@ export function FeeProfileManager() {
         classesRes.json(),
         armsRes.json(),
         sessionsRes.json(),
+        concessionsRes.json(),
       ]);
 
       setProfiles(profilesData.profiles || []);
@@ -103,6 +123,7 @@ export function FeeProfileManager() {
       setArms(armsData.arms || []);
       setSessions(sessionData.sessions || []);
       setTerms(sessionData.terms || []);
+      setConcessions(concessionsData.concessions || []);
     } catch {
       setStatus("Failed to load data");
     } finally {
@@ -191,6 +212,82 @@ export function FeeProfileManager() {
       setStatus("Failed to create component");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function createFeeGroup() {
+    if (!groupName.trim()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/finance/fee-groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: groupName, code: groupCode || undefined, description: groupDesc || undefined }),
+      });
+      if (res.ok) {
+        await loadData();
+        setGroupName("");
+        setGroupCode("");
+        setGroupDesc("");
+        setShowGroupForm(false);
+        setStatus("Fee group created successfully");
+      } else {
+        const data = await res.json();
+        setStatus(data.error || "Failed to create fee group");
+      }
+    } catch {
+      setStatus("Failed to create fee group");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function createConcession() {
+    if (!concessionName.trim() || !concessionValue) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/finance/fee-concessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: concessionName,
+          type: concessionType,
+          value: Number(concessionValue),
+          description: concessionDesc || undefined,
+        }),
+      });
+      if (res.ok) {
+        await loadData();
+        setConcessionName("");
+        setConcessionValue("");
+        setConcessionDesc("");
+        setShowConcessionForm(false);
+        setStatus("Concession created successfully");
+      } else {
+        const data = await res.json();
+        setStatus(data.error || "Failed to create concession");
+      }
+    } catch {
+      setStatus("Failed to create concession");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function deleteConcession(id: string) {
+    if (!(await confirm({
+      title: "Delete Concession",
+      message: "Delete this concession?",
+      confirmLabel: "Delete",
+      variant: "danger",
+    }))) return;
+    try {
+      const res = await fetch(`/api/admin/finance/fee-concessions?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        await loadData();
+      }
+    } catch {
+      setStatus("Failed to delete concession");
     }
   }
 
@@ -310,40 +407,32 @@ export function FeeProfileManager() {
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="flex gap-2">
-        <Button onClick={() => setShowForm(!showForm)}>
-          {showForm ? "Cancel" : "+ Create Fee Profile"}
-        </Button>
-        <Button variant="outline" onClick={() => setShowComponentForm(!showComponentForm)}>
-          {showComponentForm ? "Cancel" : "+ Add Fee Component"}
-        </Button>
+      {/* Tab Navigation */}
+      <div className="flex gap-1 border-b border-slate-200">
+        {([
+          { key: "profiles", label: "Fee Profiles" },
+          { key: "groups", label: "Fee Groups" },
+          { key: "components", label: "Fee Components" },
+          { key: "concessions", label: "Concessions" },
+        ] as const).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => { setActiveTab(t.key); setShowForm(false); setShowComponentForm(false); setShowGroupForm(false); setShowConcessionForm(false); }}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* Add Fee Component Form */}
-      {showComponentForm && (
-        <div className="rounded-xl border border-slate-200 bg-white p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Add Fee Component</h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Input
-              placeholder="Component Name (e.g., Tuition, Sports)"
-              value={componentName}
-              onChange={(e) => setComponentName(e.target.value)}
-            />
-            <Input
-              placeholder="Description (optional)"
-              value={componentDesc}
-              onChange={(e) => setComponentDesc(e.target.value)}
-            />
-          </div>
-          <div className="mt-4 flex gap-2">
-            <Button onClick={createComponent} disabled={submitting || !componentName.trim()}>
-              {submitting ? "Creating..." : "Create Component"}
+      {/* === PROFILES TAB === */}
+      {activeTab === "profiles" && (
+        <>
+          <div className="flex gap-2">
+            <Button onClick={() => setShowForm(!showForm)}>
+              {showForm ? "Cancel" : "+ Create Fee Profile"}
             </Button>
-            <Button variant="outline" onClick={() => setShowComponentForm(false)}>Cancel</Button>
           </div>
-        </div>
-      )}
 
       {/* Fee Profile Form - Step 1 */}
       {showForm && step === 1 && (
@@ -634,6 +723,235 @@ export function FeeProfileManager() {
           )}
         </div>
       </div>
+        </>
+      )}
+
+      {/* === GROUPS TAB === */}
+      {activeTab === "groups" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-900">Fee Groups ({feeGroups.length})</h3>
+            <Button onClick={() => setShowGroupForm(!showGroupForm)}>
+              {showGroupForm ? "Cancel" : "+ Create Fee Group"}
+            </Button>
+          </div>
+
+          {showGroupForm && (
+            <div className="rounded-xl border border-slate-200 bg-white p-6">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">Create Fee Group</h3>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Group Name *</label>
+                  <Input
+                    placeholder="e.g., Boarding, Day, Transport"
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Code (optional)</label>
+                  <Input
+                    placeholder="e.g., BOARD, DAY"
+                    value={groupCode}
+                    onChange={(e) => setGroupCode(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Description (optional)</label>
+                  <Input
+                    placeholder="Brief description"
+                    value={groupDesc}
+                    onChange={(e) => setGroupDesc(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button onClick={createFeeGroup} disabled={submitting || !groupName.trim()}>
+                  {submitting ? "Creating..." : "Create Group"}
+                </Button>
+                <Button variant="outline" onClick={() => setShowGroupForm(false)}>Cancel</Button>
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <div className="divide-y divide-slate-200">
+              {feeGroups.length === 0 ? (
+                <div className="px-6 py-8 text-center text-slate-500">
+                  No fee groups yet. Create a fee group first to organize your fee items.
+                </div>
+              ) : (
+                feeGroups.map((group) => (
+                  <div key={group.id} className="p-4 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-slate-900">{group.name}</h4>
+                        <span className="px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-600">{group.code}</span>
+                        {group.isActive === false && (
+                          <span className="px-2 py-0.5 rounded-full text-xs bg-rose-50 text-rose-600">Inactive</span>
+                        )}
+                      </div>
+                      {group.description && (
+                        <p className="text-sm text-slate-500 mt-0.5">{group.description}</p>
+                      )}
+                      {group.feeItemCount !== undefined && (
+                        <p className="text-xs text-slate-400 mt-0.5">{group.feeItemCount} fee item(s)</p>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* === COMPONENTS TAB === */}
+      {activeTab === "components" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-900">Fee Components ({feeComponents.length})</h3>
+            <Button onClick={() => setShowComponentForm(!showComponentForm)}>
+              {showComponentForm ? "Cancel" : "+ Add Fee Component"}
+            </Button>
+          </div>
+
+          {showComponentForm && (
+            <div className="rounded-xl border border-slate-200 bg-white p-6">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">Add Fee Component</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Input
+                  placeholder="Component Name (e.g., Tuition, Sports)"
+                  value={componentName}
+                  onChange={(e) => setComponentName(e.target.value)}
+                />
+                <Input
+                  placeholder="Description (optional)"
+                  value={componentDesc}
+                  onChange={(e) => setComponentDesc(e.target.value)}
+                />
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button onClick={createComponent} disabled={submitting || !componentName.trim()}>
+                  {submitting ? "Creating..." : "Create Component"}
+                </Button>
+                <Button variant="outline" onClick={() => setShowComponentForm(false)}>Cancel</Button>
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <div className="divide-y divide-slate-200">
+              {feeComponents.length === 0 ? (
+                <div className="px-6 py-8 text-center text-slate-500">
+                  No fee components yet. Create components like Tuition, Sports, Library, etc.
+                </div>
+              ) : (
+                feeComponents.map((comp) => (
+                  <div key={comp.id} className="p-4">
+                    <h4 className="font-semibold text-slate-900">{comp.name}</h4>
+                    {comp.description && <p className="text-sm text-slate-500 mt-0.5">{comp.description}</p>}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* === CONCESSIONS TAB === */}
+      {activeTab === "concessions" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-900">Fee Concessions ({concessions.length})</h3>
+            <Button onClick={() => setShowConcessionForm(!showConcessionForm)}>
+              {showConcessionForm ? "Cancel" : "+ Add Concession"}
+            </Button>
+          </div>
+
+          {showConcessionForm && (
+            <div className="rounded-xl border border-slate-200 bg-white p-6">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">Add Fee Concession</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Concession Name *</label>
+                  <Input
+                    placeholder="e.g., Sibling Discount, Scholarship, Staff Child"
+                    value={concessionName}
+                    onChange={(e) => setConcessionName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Type *</label>
+                  <select
+                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                    value={concessionType}
+                    onChange={(e) => setConcessionType(e.target.value)}
+                  >
+                    <option value="PERCENTAGE">Percentage (%)</option>
+                    <option value="FIXED">Fixed Amount (₦)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Value * {concessionType === "PERCENTAGE" ? "(% e.g., 10 for 10%)" : "(₦ amount)"}
+                  </label>
+                  <Input
+                    type="number"
+                    placeholder={concessionType === "PERCENTAGE" ? "e.g., 10" : "e.g., 5000"}
+                    value={concessionValue}
+                    onChange={(e) => setConcessionValue(e.target.value)}
+                    min={0}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Description (optional)</label>
+                  <Input
+                    placeholder="Brief description"
+                    value={concessionDesc}
+                    onChange={(e) => setConcessionDesc(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button onClick={createConcession} disabled={submitting || !concessionName.trim() || !concessionValue}>
+                  {submitting ? "Creating..." : "Create Concession"}
+                </Button>
+                <Button variant="outline" onClick={() => setShowConcessionForm(false)}>Cancel</Button>
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <div className="divide-y divide-slate-200">
+              {concessions.length === 0 ? (
+                <div className="px-6 py-8 text-center text-slate-500">
+                  No concessions yet. Create concessions like sibling discounts, scholarships, staff child discounts, etc.
+                </div>
+              ) : (
+                concessions.map((concession) => (
+                  <div key={concession.id} className="p-4 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-slate-900">{concession.name}</h4>
+                        <span className="px-2 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-700">
+                          {concession.type === "PERCENTAGE" ? `${concession.value}%` : `₦${concession.value.toLocaleString()}`}
+                        </span>
+                      </div>
+                      {concession.description && (
+                        <p className="text-sm text-slate-500 mt-0.5">{concession.description}</p>
+                      )}
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => deleteConcession(concession.id)}>
+                      Delete
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -127,6 +127,9 @@ model School {
   surveys               Survey[]
   staffAttendances      StaffAttendance[]
   subjectAssignments    SubjectAssignment[]
+  studentDocuments      StudentDocument[]
+  loans                 Loan[]
+  assets                Asset[]
 
   @@map("school")
 }
@@ -211,6 +214,7 @@ model User {
   createdSurveys           Survey[]              @relation("SurveyCreator")
   staffAttendances         StaffAttendance[]
   pushSubscriptions        PushSubscription[]
+  uploadedStudentDocuments StudentDocument[]
 
   @@index([email])
   @@index([roleId])
@@ -324,6 +328,7 @@ model Student {
   attendances          Attendance[]
   assignments          Assignment[]
   admissionApplication AdmissionApplication? @relation("ConvertedStudent")
+  documents            StudentDocument[]
 
   @@index([userId])
   @@index([parentId])
@@ -675,6 +680,21 @@ model FeeProfileArm {
 
   @@unique([feeProfileId, armId])
   @@map("fee_profile_arm")
+}
+
+model FeeConcession {
+  id          Int      @id @default(autoincrement())
+  schoolId    String   @default("default") @map("school_id")
+  name        String
+  type        String   @default("PERCENTAGE") @map("concession_type")
+  value       Float    @default(0)
+  description String?  @map("description")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([schoolId, name])
+  @@map("fee_concession")
 }
 
 model Invoice {
@@ -1092,6 +1112,7 @@ model IncomeCategory {
   school  School   @relation(fields: [schoolId], references: [id])
   incomes Income[]
 
+  @@unique([schoolId, name])
   @@index([schoolId])
   @@map("income_category")
 }
@@ -1108,6 +1129,7 @@ model ExpenseCategory {
   school   School    @relation(fields: [schoolId], references: [id])
   expenses Expense[]
 
+  @@unique([schoolId, name])
   @@index([schoolId])
   @@map("expense_category")
 }
@@ -1941,4 +1963,76 @@ model PushSubscription {
   @@index([userId])
   @@index([schoolId])
   @@map("push_subscription")
+}
+
+model StudentDocument {
+  id          Int      @id @default(autoincrement())
+  schoolId    String   @map("school_id")
+  studentId   Int      @map("student_id")
+  title       String
+  documentType String  @map("document_type")
+  fileUrl     String   @map("file_url")
+  fileName    String?  @map("file_name")
+  fileSize    Int?     @map("file_size")
+  mimeType    String?  @map("mime_type")
+  description String?
+  uploadedById Int?    @map("uploaded_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school   School   @relation(fields: [schoolId], references: [id])
+  student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  uploadedBy User?  @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([studentId])
+  @@map("student_document")
+}
+
+model Loan {
+  id            Int      @id @default(autoincrement())
+  schoolId      String   @map("school_id")
+  lenderName    String   @map("lender_name")
+  principalAmount Float  @map("principal_amount")
+  interestRate  Float?   @map("interest_rate")
+  amountPaid    Float    @default(0) @map("amount_paid")
+  outstandingBalance Float @map("outstanding_balance")
+  currency      String   @default("NGN")
+  startDate     DateTime @map("start_date")
+  dueDate       DateTime? @map("due_date")
+  status        String   @default("ACTIVE")
+  description   String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([status])
+  @@map("loan")
+}
+
+model Asset {
+  id            Int      @id @default(autoincrement())
+  schoolId      String   @map("school_id")
+  name          String
+  assetType     String   @map("asset_type")
+  category      String
+  purchaseValue Float    @map("purchase_value")
+  currentValue  Float    @map("current_value")
+  purchaseDate  DateTime @map("purchase_date")
+  depreciationRate Float? @default(0) @map("depreciation_rate")
+  location      String?
+  condition     String   @default("GOOD")
+  description   String?
+  serialNumber  String?  @map("serial_number")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([assetType])
+  @@map("asset")
 }

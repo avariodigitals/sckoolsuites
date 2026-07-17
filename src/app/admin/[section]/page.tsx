@@ -362,6 +362,8 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
       { label: "Students", value: String(overview.students), helper: "Active school records" },
       { label: "Staff", value: String(overview.teachers), helper: "Teaching workforce" },
       { label: "Outstanding Fees", value: naira(overview.outstanding), helper: "Collections pending" },
+      { label: "Loans Outstanding", value: naira(overview.totalLoanOutstanding ?? 0), helper: "Active loan balances" },
+      { label: "Asset Value", value: naira(overview.totalAssetValue ?? 0), helper: "Current asset worth" },
       { label: "Attendance", value: String(overview.attendance), helper: "Logged attendance entries" },
     ],
     students: [

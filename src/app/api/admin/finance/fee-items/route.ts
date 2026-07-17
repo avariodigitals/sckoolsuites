@@ -34,7 +34,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
 
   const [items, groups, classes, sessions, terms, arms] = await Promise.all([
     prisma.feeItem.findMany({
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
   const classId = parsed.data.classId ?? null;
   const armId = parsed.data.armId ?? null;
 

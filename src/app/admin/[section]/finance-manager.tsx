@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { naira } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Plus, Wallet, Settings, Trash2, BookOpen, BarChart3, Receipt } from "lucide-react";
+import { TrendingUp, TrendingDown, Plus, Wallet, Settings, Trash2, BookOpen, BarChart3, Receipt, Landmark, Package } from "lucide-react";
 
 interface Category {
   id: number;
@@ -55,7 +55,36 @@ interface LedgerEntry {
   amount: number;
 }
 
-type Tab = "income" | "expense" | "debtors" | "ledger" | "revenue";
+interface LoanRecord {
+  id: number;
+  lenderName: string;
+  principalAmount: number;
+  interestRate: number | null;
+  amountPaid: number;
+  outstandingBalance: number;
+  startDate: string;
+  dueDate: string | null;
+  status: string;
+  description: string | null;
+}
+
+interface AssetRecord {
+  id: number;
+  name: string;
+  assetType: string;
+  category: string;
+  purchaseValue: number;
+  currentValue: number;
+  purchaseDate: string;
+  depreciationRate: number | null;
+  location: string | null;
+  condition: string;
+  serialNumber: string | null;
+  isActive: boolean;
+  description: string | null;
+}
+
+type Tab = "income" | "expense" | "debtors" | "ledger" | "revenue" | "loans" | "assets";
 
 export function FinanceManager({ defaultTab }: { defaultTab?: Tab }) {
   const [tab, setTab] = useState<Tab>(defaultTab ?? "income");
@@ -64,6 +93,8 @@ export function FinanceManager({ defaultTab }: { defaultTab?: Tab }) {
   const [incomeCategories, setIncomeCategories] = useState<Category[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<Category[]>([]);
   const [bills, setBills] = useState<BillRecord[]>([]);
+  const [loans, setLoans] = useState<LoanRecord[]>([]);
+  const [assets, setAssets] = useState<AssetRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showCatForm, setShowCatForm] = useState(false);
@@ -86,13 +117,15 @@ export function FinanceManager({ defaultTab }: { defaultTab?: Tab }) {
     async function fetchData() {
       setLoading(true);
       try {
-        const [incRes, expRes, incCatRes, expCatRes, billsRes, pmRes] = await Promise.all([
+        const [incRes, expRes, incCatRes, expCatRes, billsRes, pmRes, loansRes, assetsRes] = await Promise.all([
           fetch("/api/admin/finance/income", { cache: "no-store" }),
           fetch("/api/admin/finance/expense", { cache: "no-store" }),
           fetch("/api/admin/finance/income-categories", { cache: "no-store" }),
           fetch("/api/admin/finance/expense-categories", { cache: "no-store" }),
           fetch("/api/admin/bills", { cache: "no-store" }),
           fetch("/api/admin/payment-methods", { cache: "no-store" }),
+          fetch("/api/admin/finance/loans", { cache: "no-store" }),
+          fetch("/api/admin/finance/assets", { cache: "no-store" }),
         ]);
         if (pmRes.ok) {
           const pmData = await pmRes.json();
@@ -107,6 +140,8 @@ export function FinanceManager({ defaultTab }: { defaultTab?: Tab }) {
           const billData = await billsRes.json();
           setBills(Array.isArray(billData) ? billData : billData.invoices ?? []);
         }
+        if (loansRes.ok) setLoans(await loansRes.json());
+        if (assetsRes.ok) setAssets(await assetsRes.json());
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -116,12 +151,14 @@ export function FinanceManager({ defaultTab }: { defaultTab?: Tab }) {
   }, []);
 
   async function refreshData() {
-    const [incRes, expRes, incCatRes, expCatRes, billsRes] = await Promise.all([
+    const [incRes, expRes, incCatRes, expCatRes, billsRes, loansRes, assetsRes] = await Promise.all([
       fetch("/api/admin/finance/income", { cache: "no-store" }),
       fetch("/api/admin/finance/expense", { cache: "no-store" }),
       fetch("/api/admin/finance/income-categories", { cache: "no-store" }),
       fetch("/api/admin/finance/expense-categories", { cache: "no-store" }),
       fetch("/api/admin/bills", { cache: "no-store" }),
+      fetch("/api/admin/finance/loans", { cache: "no-store" }),
+      fetch("/api/admin/finance/assets", { cache: "no-store" }),
     ]);
     if (incRes.ok) setIncomes(await incRes.json());
     if (expRes.ok) setExpenses(await expRes.json());
@@ -131,6 +168,8 @@ export function FinanceManager({ defaultTab }: { defaultTab?: Tab }) {
       const billData = await billsRes.json();
       setBills(Array.isArray(billData) ? billData : billData.invoices ?? []);
     }
+    if (loansRes.ok) setLoans(await loansRes.json());
+    if (assetsRes.ok) setAssets(await assetsRes.json());
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -236,6 +275,8 @@ export function FinanceManager({ defaultTab }: { defaultTab?: Tab }) {
         <button onClick={() => { setTab("debtors"); setShowForm(false); }} className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${tab === "debtors" ? "border-amber-500 text-amber-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}><Receipt className="h-4 w-4" />Debtors</button>
         <button onClick={() => { setTab("ledger"); setShowForm(false); }} className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${tab === "ledger" ? "border-indigo-500 text-indigo-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}><BookOpen className="h-4 w-4" />Ledger</button>
         <button onClick={() => { setTab("revenue"); setShowForm(false); }} className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${tab === "revenue" ? "border-cyan-500 text-cyan-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}><BarChart3 className="h-4 w-4" />Revenue</button>
+        <button onClick={() => { setTab("loans"); setShowForm(false); }} className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${tab === "loans" ? "border-rose-500 text-rose-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}><Landmark className="h-4 w-4" />Loans</button>
+        <button onClick={() => { setTab("assets"); setShowForm(false); }} className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${tab === "assets" ? "border-indigo-500 text-indigo-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}><Package className="h-4 w-4" />Assets</button>
       </div>
 
       {error && (
@@ -554,6 +595,447 @@ export function FinanceManager({ defaultTab }: { defaultTab?: Tab }) {
           </Card>
         </div>
       )}
+
+      {tab === "loans" && (
+        <LoansTab loans={loans} loading={loading} onRefresh={refreshData} />
+      )}
+
+      {tab === "assets" && (
+        <AssetsTab assets={assets} loading={loading} onRefresh={refreshData} />
+      )}
+    </div>
+  );
+}
+
+function LoansTab({ loans, loading, onRefresh }: { loans: LoanRecord[]; loading: boolean; onRefresh: () => Promise<void> }) {
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    lenderName: "",
+    principalAmount: "",
+    interestRate: "",
+    amountPaid: "",
+    startDate: new Date().toISOString().split("T")[0],
+    dueDate: "",
+    description: "",
+  });
+
+  const totalPrincipal = loans.reduce((s, l) => s + l.principalAmount, 0);
+  const totalOutstanding = loans.reduce((s, l) => s + l.outstandingBalance, 0);
+  const totalPaid = loans.reduce((s, l) => s + l.amountPaid, 0);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.lenderName || !form.principalAmount || !form.startDate) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/finance/loans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lenderName: form.lenderName,
+          principalAmount: Number(form.principalAmount),
+          interestRate: form.interestRate ? Number(form.interestRate) : undefined,
+          amountPaid: form.amountPaid ? Number(form.amountPaid) : 0,
+          startDate: form.startDate,
+          dueDate: form.dueDate || undefined,
+          description: form.description || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        setError(payload?.error || "Failed to add loan");
+        return;
+      }
+      setForm({ lenderName: "", principalAmount: "", interestRate: "", amountPaid: "", startDate: new Date().toISOString().split("T")[0], dueDate: "", description: "" });
+      setShowForm(false);
+      await onRefresh();
+    } catch {
+      setError("An error occurred.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function recordPayment(loanId: number) {
+    const amount = prompt("Enter payment amount:");
+    if (!amount || isNaN(Number(amount))) return;
+    try {
+      const res = await fetch("/api/admin/finance/loans", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: loanId, amountPaid: Number(amount) }),
+      });
+      if (res.ok) await onRefresh();
+    } catch {
+      // ignore
+    }
+  }
+
+  async function deleteLoan(loanId: number) {
+    if (!confirm("Delete this loan record?")) return;
+    try {
+      const res = await fetch(`/api/admin/finance/loans?id=${loanId}`, { method: "DELETE" });
+      if (res.ok) await onRefresh();
+    } catch {
+      // ignore
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card><CardContent className="p-4">
+          <p className="text-sm text-slate-500">Total Principal</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{naira(totalPrincipal)}</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-sm text-slate-500">Total Paid</p>
+          <p className="mt-1 text-2xl font-bold text-emerald-700">{naira(totalPaid)}</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-sm text-slate-500">Outstanding Balance</p>
+          <p className="mt-1 text-2xl font-bold text-rose-700">{naira(totalOutstanding)}</p>
+        </CardContent></Card>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-slate-900">Loans ({loans.length})</h3>
+        <Button size="sm" onClick={() => setShowForm(!showForm)}><Plus className="mr-1 h-4 w-4" />Add Loan</Button>
+      </div>
+
+      {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+
+      {showForm && (
+        <Card className="border-slate-200">
+          <CardHeader className="pb-3"><CardTitle className="text-base">Add Loan</CardTitle></CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Lender Name *</label>
+                <input className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.lenderName} onChange={(e) => setForm((s) => ({ ...s, lenderName: e.target.value }))} required placeholder="e.g. First Bank Nigeria" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Principal Amount *</label>
+                <input type="number" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.principalAmount} onChange={(e) => setForm((s) => ({ ...s, principalAmount: e.target.value }))} required min={0} step={0.01} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Interest Rate (%)</label>
+                <input type="number" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.interestRate} onChange={(e) => setForm((s) => ({ ...s, interestRate: e.target.value }))} min={0} step={0.01} placeholder="e.g. 15" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Amount Paid So Far</label>
+                <input type="number" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.amountPaid} onChange={(e) => setForm((s) => ({ ...s, amountPaid: e.target.value }))} min={0} step={0.01} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Start Date *</label>
+                <input type="date" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.startDate} onChange={(e) => setForm((s) => ({ ...s, startDate: e.target.value }))} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Due Date</label>
+                <input type="date" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.dueDate} onChange={(e) => setForm((s) => ({ ...s, dueDate: e.target.value }))} />
+              </div>
+              <div className="md:col-span-3">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.description} onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))} placeholder="Optional description..." />
+              </div>
+              <div className="md:col-span-3 flex gap-2">
+                <Button type="submit" size="sm" disabled={submitting}>{submitting ? "Saving..." : "Save"}</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="border-slate-200">
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-8 text-center text-sm text-slate-500">Loading...</div>
+          ) : loans.length === 0 ? (
+            <div className="p-8 text-center">
+              <Landmark className="mx-auto h-8 w-8 text-slate-300 mb-2" />
+              <p className="text-sm text-slate-500">No loans recorded.</p>
+              <p className="text-xs text-slate-400 mt-1">Add a loan to track what the school owes.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Lender</TableHead>
+                  <TableHead className="text-right">Principal</TableHead>
+                  <TableHead className="text-right">Interest</TableHead>
+                  <TableHead className="text-right">Paid</TableHead>
+                  <TableHead className="text-right">Outstanding</TableHead>
+                  <TableHead>Start</TableHead>
+                  <TableHead>Due</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loans.map((loan) => (
+                  <TableRow key={loan.id}>
+                    <TableCell className="font-medium text-slate-900">{loan.lenderName}</TableCell>
+                    <TableCell className="text-right">{naira(loan.principalAmount)}</TableCell>
+                    <TableCell className="text-right text-slate-500">{loan.interestRate ? `${loan.interestRate}%` : "—"}</TableCell>
+                    <TableCell className="text-right text-emerald-600">{naira(loan.amountPaid)}</TableCell>
+                    <TableCell className="text-right font-bold text-rose-600">{naira(loan.outstandingBalance)}</TableCell>
+                    <TableCell className="text-slate-600">{new Date(loan.startDate).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-slate-600">{loan.dueDate ? new Date(loan.dueDate).toLocaleDateString() : "—"}</TableCell>
+                    <TableCell>
+                      <Badge className={`capitalize ${loan.status === "ACTIVE" ? "bg-amber-50 text-amber-700 border-amber-200" : loan.status === "PAID_OFF" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-600 border-slate-200"}`}>{loan.status.replace(/_/g, " ").toLowerCase()}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <button onClick={() => recordPayment(loan.id)} className="rounded bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-200">Payment</button>
+                        <button onClick={() => deleteLoan(loan.id)} className="rounded p-1 text-slate-400 hover:text-rose-600"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function AssetsTab({ assets, loading, onRefresh }: { assets: AssetRecord[]; loading: boolean; onRefresh: () => Promise<void> }) {
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    name: "",
+    assetType: "EQUIPMENT",
+    category: "",
+    purchaseValue: "",
+    currentValue: "",
+    purchaseDate: new Date().toISOString().split("T")[0],
+    depreciationRate: "",
+    location: "",
+    condition: "GOOD",
+    serialNumber: "",
+    description: "",
+  });
+
+  const assetTypes = [
+    { value: "LAND", label: "Land" },
+    { value: "BUILDING", label: "Building" },
+    { value: "EQUIPMENT", label: "Equipment" },
+    { value: "FURNITURE", label: "Furniture & Fixtures" },
+    { value: "VEHICLE", label: "Vehicle" },
+    { value: "COMPUTER", label: "Computer & IT" },
+    { value: "LIBRARY", label: "Library Books" },
+    { value: "INTANGIBLE", label: "Intangible Asset" },
+    { value: "OTHER", label: "Other" },
+  ];
+
+  const conditions = [
+    { value: "EXCELLENT", label: "Excellent" },
+    { value: "GOOD", label: "Good" },
+    { value: "FAIR", label: "Fair" },
+    { value: "POOR", label: "Poor" },
+    { value: "DAMAGED", label: "Damaged" },
+  ];
+
+  const totalPurchaseValue = assets.reduce((s, a) => s + a.purchaseValue, 0);
+  const totalCurrentValue = assets.reduce((s, a) => s + a.currentValue, 0);
+  const activeAssets = assets.filter((a) => a.isActive).length;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.name || !form.assetType || !form.category || !form.purchaseValue || !form.purchaseDate) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/finance/assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          assetType: form.assetType,
+          category: form.category,
+          purchaseValue: Number(form.purchaseValue),
+          currentValue: form.currentValue ? Number(form.currentValue) : undefined,
+          purchaseDate: form.purchaseDate,
+          depreciationRate: form.depreciationRate ? Number(form.depreciationRate) : undefined,
+          location: form.location || undefined,
+          condition: form.condition,
+          serialNumber: form.serialNumber || undefined,
+          description: form.description || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        setError(payload?.error || "Failed to add asset");
+        return;
+      }
+      setForm({ name: "", assetType: "EQUIPMENT", category: "", purchaseValue: "", currentValue: "", purchaseDate: new Date().toISOString().split("T")[0], depreciationRate: "", location: "", condition: "GOOD", serialNumber: "", description: "" });
+      setShowForm(false);
+      await onRefresh();
+    } catch {
+      setError("An error occurred.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function deleteAsset(assetId: number) {
+    if (!confirm("Delete this asset record?")) return;
+    try {
+      const res = await fetch(`/api/admin/finance/assets?id=${assetId}`, { method: "DELETE" });
+      if (res.ok) await onRefresh();
+    } catch {
+      // ignore
+    }
+  }
+
+  function getAssetTypeLabel(type: string) {
+    const found = assetTypes.find((t) => t.value === type);
+    return found ? found.label : type;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card><CardContent className="p-4">
+          <p className="text-sm text-slate-500">Total Purchase Value</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{naira(totalPurchaseValue)}</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-sm text-slate-500">Total Current Value</p>
+          <p className="mt-1 text-2xl font-bold text-indigo-700">{naira(totalCurrentValue)}</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-sm text-slate-500">Active Assets</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{activeAssets} / {assets.length}</p>
+        </CardContent></Card>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-slate-900">Assets ({assets.length})</h3>
+        <Button size="sm" onClick={() => setShowForm(!showForm)}><Plus className="mr-1 h-4 w-4" />Add Asset</Button>
+      </div>
+
+      {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+
+      {showForm && (
+        <Card className="border-slate-200">
+          <CardHeader className="pb-3"><CardTitle className="text-base">Add Asset</CardTitle></CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Asset Name *</label>
+                <input className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} required placeholder="e.g. School Bus" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Asset Type *</label>
+                <select className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white" value={form.assetType} onChange={(e) => setForm((s) => ({ ...s, assetType: e.target.value }))} required>
+                  {assetTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Category *</label>
+                <input className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.category} onChange={(e) => setForm((s) => ({ ...s, category: e.target.value }))} required placeholder="e.g. Transportation" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Purchase Value *</label>
+                <input type="number" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.purchaseValue} onChange={(e) => setForm((s) => ({ ...s, purchaseValue: e.target.value }))} required min={0} step={0.01} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Current Value</label>
+                <input type="number" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.currentValue} onChange={(e) => setForm((s) => ({ ...s, currentValue: e.target.value }))} min={0} step={0.01} placeholder="Defaults to purchase value" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Purchase Date *</label>
+                <input type="date" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.purchaseDate} onChange={(e) => setForm((s) => ({ ...s, purchaseDate: e.target.value }))} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Depreciation Rate (%)</label>
+                <input type="number" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.depreciationRate} onChange={(e) => setForm((s) => ({ ...s, depreciationRate: e.target.value }))} min={0} step={0.1} placeholder="e.g. 10" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Condition</label>
+                <select className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white" value={form.condition} onChange={(e) => setForm((s) => ({ ...s, condition: e.target.value }))}>
+                  {conditions.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                <input className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.location} onChange={(e) => setForm((s) => ({ ...s, location: e.target.value }))} placeholder="e.g. Main Building" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Serial Number</label>
+                <input className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.serialNumber} onChange={(e) => setForm((s) => ({ ...s, serialNumber: e.target.value }))} />
+              </div>
+              <div className="md:col-span-3">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.description} onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))} placeholder="Optional description..." />
+              </div>
+              <div className="md:col-span-3 flex gap-2">
+                <Button type="submit" size="sm" disabled={submitting}>{submitting ? "Saving..." : "Save"}</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="border-slate-200">
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-8 text-center text-sm text-slate-500">Loading...</div>
+          ) : assets.length === 0 ? (
+            <div className="p-8 text-center">
+              <Package className="mx-auto h-8 w-8 text-slate-300 mb-2" />
+              <p className="text-sm text-slate-500">No assets recorded.</p>
+              <p className="text-xs text-slate-400 mt-1">Add assets to track school property and its value.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead className="text-right">Purchase</TableHead>
+                  <TableHead className="text-right">Current</TableHead>
+                  <TableHead>Condition</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {assets.map((asset) => (
+                  <TableRow key={asset.id}>
+                    <TableCell className="font-medium text-slate-900">{asset.name}</TableCell>
+                    <TableCell><Badge className="bg-slate-50 border-slate-200 text-slate-700">{getAssetTypeLabel(asset.assetType)}</Badge></TableCell>
+                    <TableCell className="text-slate-600">{asset.category}</TableCell>
+                    <TableCell className="text-right">{naira(asset.purchaseValue)}</TableCell>
+                    <TableCell className="text-right font-medium text-indigo-700">{naira(asset.currentValue)}</TableCell>
+                    <TableCell>
+                      <Badge className={`capitalize ${asset.condition === "EXCELLENT" || asset.condition === "GOOD" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : asset.condition === "FAIR" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>{asset.condition.toLowerCase()}</Badge>
+                    </TableCell>
+                    <TableCell className="text-slate-600">{asset.location || "—"}</TableCell>
+                    <TableCell>
+                      <Badge className={asset.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-500 border-slate-200"}>{asset.isActive ? "Active" : "Inactive"}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <button onClick={() => deleteAsset(asset.id)} className="rounded p-1 text-slate-400 hover:text-rose-600"><Trash2 className="h-3.5 w-3.5" /></button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

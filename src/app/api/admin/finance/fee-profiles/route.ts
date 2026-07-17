@@ -37,7 +37,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
 
   const profiles = await prisma.feeProfile.findMany({
     where: { schoolId, isActive: true },
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
   const data = parsed.data;
 
   try {
@@ -201,7 +201,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
 
   try {
     // Check if any students have been billed with this profile

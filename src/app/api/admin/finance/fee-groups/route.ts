@@ -26,8 +26,9 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const schoolId = session.user.schoolId || "default";
   const groups = await prisma.feeGroup.findMany({
-    where: { schoolId: "default" },
+    where: { schoolId },
     include: { _count: { select: { feeItems: true } } },
     orderBy: { name: "asc" },
   });
@@ -65,10 +66,12 @@ export async function POST(request: Request) {
   const name = parsed.data.name.trim();
   const code = slugifyFinanceCode(parsed.data.code?.trim() || name);
 
+  const schoolId = session.user.schoolId || "default";
+
   try {
     const created = await prisma.feeGroup.create({
       data: {
-        schoolId: "default",
+        schoolId,
         name,
         code,
         description: parsed.data.description?.trim() || null,

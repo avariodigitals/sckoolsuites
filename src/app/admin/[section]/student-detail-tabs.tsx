@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Upload } from "lucide-react";
 import { useActiveSession } from "@/components/active-session-provider";
 import { getCloudinaryInlineUrl } from "@/lib/utils";
@@ -997,25 +997,233 @@ export function NoteTab({ data }: { data: any }) {
   );
 }
 
-export function DocumentTab({ data }: { data: any }) {
-  const docs = data?.admission?.documents ?? [];
-  if (docs.length === 0) return <Empty text="No documents on file." />;
+export function DocumentTab({ data, studentId, onUpdate }: { data: any; studentId: string; onUpdate?: () => void }) {
+  const admissionDocs = data?.admission?.documents ?? [];
+  const [uploadedDocs, setUploadedDocs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [docType, setDocType] = useState("BIRTH_CERTIFICATE");
+  const [docTitle, setDocTitle] = useState("");
+  const [docDescription, setDocDescription] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+
+  const documentTypes = [
+    { value: "BIRTH_CERTIFICATE", label: "Birth Certificate" },
+    { value: "REPORT_CARD", label: "Report Card / Transcript" },
+    { value: "TRANSFER_CERTIFICATE", label: "Transfer Certificate" },
+    { value: "MEDICAL_RECORD", label: "Medical Record" },
+    { value: "PASSPORT_PHOTOGRAPH", label: "Passport Photograph" },
+    { value: "ADMISSION_LETTER", label: "Admission Letter" },
+    { value: "GUARDIAN_ID", label: "Guardian ID" },
+    { value: "PROOF_OF_ADDRESS", label: "Proof of Address" },
+    { value: "TESTIMONIAL", label: "Testimonial" },
+    { value: "OTHER", label: "Other" },
+  ];
+
+  async function fetchDocs() {
+    try {
+      const res = await fetch(`/api/admin/students/${studentId}/documents`, { cache: "no-store" });
+      if (res.ok) {
+        const docs = await res.json();
+        setUploadedDocs(docs);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchDocs();
+  }, [studentId]);
+
+  async function uploadDoc() {
+    if (!file) {
+      setMsg("Please select a file to upload.");
+      return;
+    }
+    setUploading(true);
+    setMsg("");
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("title", docTitle || file.name);
+    fd.append("documentType", docType);
+    if (docDescription) fd.append("description", docDescription);
+
+    try {
+      const res = await fetch(`/api/admin/students/${studentId}/documents`, {
+        method: "POST",
+        body: fd,
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMsg(payload?.error ?? "Failed to upload document.");
+      } else {
+        setMsg("Document uploaded successfully.");
+        setFile(null);
+        setDocTitle("");
+        setDocDescription("");
+        setDocType("BIRTH_CERTIFICATE");
+        await fetchDocs();
+        if (onUpdate) await onUpdate();
+      }
+    } catch {
+      setMsg("An error occurred while uploading.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function deleteDoc(docId: number) {
+    if (!confirm("Delete this document?")) return;
+    setDeletingId(docId);
+    try {
+      const res = await fetch(`/api/admin/students/${studentId}/documents?docId=${docId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setMsg("Document deleted.");
+        await fetchDocs();
+        if (onUpdate) await onUpdate();
+      } else {
+        const payload = await res.json().catch(() => ({}));
+        setMsg(payload?.error ?? "Failed to delete document.");
+      }
+    } catch {
+      setMsg("An error occurred while deleting.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  function getDocTypeLabel(type: string) {
+    const found = documentTypes.find((t) => t.value === type);
+    return found ? found.label : type.replace(/_/g, " ").toLowerCase();
+  }
+
   return (
-    <Section title={`Documents (${docs.length})`}>
-      <div className="space-y-3">
-        {docs.map((d: any, i: number) => (
-          <div key={i} className="flex items-center justify-between rounded-lg border border-slate-200 p-3 text-sm">
+    <div className="space-y-6">
+      {msg && (
+        <div className={`rounded-lg border px-3 py-2 text-sm ${msg.includes("success") || msg.includes("deleted") ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"}`}>
+          {msg}
+        </div>
+      )}
+
+      <Section title="Upload Document">
+        <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+          <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <div className="font-medium text-slate-900">{d.title}</div>
-              <div className="text-slate-500">{d.documentType}</div>
+              <label className="mb-1 block text-xs font-medium text-slate-500">Document Type</label>
+              <select
+                value={docType}
+                onChange={(e) => setDocType(e.target.value)}
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+              >
+                {documentTypes.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
             </div>
-            {d.fileUrl && (
-              <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="rounded bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-200">View</a>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-500">Title (optional)</label>
+              <input
+                value={docTitle}
+                onChange={(e) => setDocTitle(e.target.value)}
+                placeholder="e.g. Birth Certificate"
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-500">Description (optional)</label>
+            <input
+              value={docDescription}
+              onChange={(e) => setDocDescription(e.target.value)}
+              placeholder="Brief description of this document"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-500">File (PDF, DOC, DOCX, PNG, JPG — max 10MB)</label>
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.tiff"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm file:mr-3 file:rounded file:border-0 file:bg-indigo-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-indigo-700"
+            />
+            {file && (
+              <p className="mt-1 text-xs text-slate-600">Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</p>
             )}
           </div>
-        ))}
-      </div>
-    </Section>
+          <div>
+            <button
+              onClick={uploadDoc}
+              disabled={uploading || !file}
+              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            >
+              <Upload className="h-4 w-4" />
+              {uploading ? "Uploading..." : "Upload Document"}
+            </button>
+          </div>
+        </div>
+      </Section>
+
+      <Section title={`Uploaded Documents (${uploadedDocs.length})`}>
+        {loading ? (
+          <Empty text="Loading documents..." />
+        ) : uploadedDocs.length === 0 ? (
+          <Empty text="No documents uploaded yet." />
+        ) : (
+          <div className="space-y-3">
+            {uploadedDocs.map((d: any) => (
+              <div key={d.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-3 text-sm">
+                <div className="flex-1">
+                  <div className="font-medium text-slate-900">{d.title}</div>
+                  <div className="text-slate-500">
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">{getDocTypeLabel(d.documentType)}</span>
+                    {d.description && <span className="ml-2 text-xs">{d.description}</span>}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    {d.fileName} · {new Date(d.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="rounded bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-200">View</a>
+                  <button
+                    onClick={() => deleteDoc(d.id)}
+                    disabled={deletingId === d.id}
+                    className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-100 disabled:opacity-50"
+                  >
+                    {deletingId === d.id ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      {admissionDocs.length > 0 && (
+        <Section title={`Admission Application Documents (${admissionDocs.length})`}>
+          <div className="space-y-3">
+            {admissionDocs.map((d: any, i: number) => (
+              <div key={i} className="flex items-center justify-between rounded-lg border border-slate-200 p-3 text-sm">
+                <div>
+                  <div className="font-medium text-slate-900">{d.title}</div>
+                  <div className="text-slate-500">{d.documentType}</div>
+                </div>
+                {d.fileUrl && (
+                  <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="rounded bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-200">View</a>
+                )}
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+    </div>
   );
 }
 

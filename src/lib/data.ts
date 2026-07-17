@@ -52,7 +52,7 @@ export const getAdminOverview = cache(async function getAdminOverview(schoolId: 
       schoolId,
     };
 
-    const [students, teachers, parents, classes, bills, paid, attendance, announcements] = await Promise.all([
+    const [students, teachers, parents, classes, bills, paid, attendance, announcements, loanOutstanding, assetValue] = await Promise.all([
       hasSession
         ? prisma.studentEnrollment.count({ where: enrollmentWhere })
         : prisma.student.count({ where: { schoolId } }),
@@ -63,6 +63,8 @@ export const getAdminOverview = cache(async function getAdminOverview(schoolId: 
       prisma.payment.aggregate({ where: paymentWhere, _sum: { amount: true } }),
       prisma.attendance.count({ where: attendanceWhere }),
       prisma.announcement.findMany({ where: announcementWhere, select: { title: true, body: true }, take: 1000 }),
+      prisma.loan.aggregate({ where: { schoolId, status: "ACTIVE" }, _sum: { outstandingBalance: true } }).catch(() => ({ _sum: { outstandingBalance: 0 } })),
+      prisma.asset.aggregate({ where: { schoolId, isActive: true }, _sum: { currentValue: true } }).catch(() => ({ _sum: { currentValue: 0 } })),
     ]);
 
     return {
@@ -75,6 +77,8 @@ export const getAdminOverview = cache(async function getAdminOverview(schoolId: 
       totalInvoiced: bills._sum.totalAmount ?? 0,
       outstanding: bills._sum.balance ?? 0,
       totalPaid: paid._sum.amount ?? 0,
+      totalLoanOutstanding: loanOutstanding._sum.outstandingBalance ?? 0,
+      totalAssetValue: assetValue._sum.currentValue ?? 0,
     };
   } catch (err: any) {
     console.error("[getAdminOverview] DB error:", err.message);
@@ -88,6 +92,8 @@ export const getAdminOverview = cache(async function getAdminOverview(schoolId: 
       totalInvoiced: 0,
       outstanding: 0,
       totalPaid: 0,
+      totalLoanOutstanding: 0,
+      totalAssetValue: 0,
     };
   }
 });

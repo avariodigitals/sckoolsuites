@@ -190,7 +190,7 @@ export function StudentDetailModal({ studentId, onClose }: { studentId: string; 
       case "subject": return <SubjectTab data={data} />;
       case "dialogue": return <DialogueTab data={data} />;
       case "note": return <NoteTab data={data} />;
-      case "document": return <DocumentTab data={data} />;
+      case "document": return <DocumentTab data={data} studentId={studentId} onUpdate={load} />;
       case "qualification": return <QualificationTab data={data} />;
       case "account": return <AccountTab data={data} />;
       case "transport": return <TransportTab data={data} />;

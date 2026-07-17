@@ -163,6 +163,21 @@ model FeeProfileArm {
   @@map("fee_profile_arm")
 }
 
+model FeeConcession {
+  id          Int      @id @default(autoincrement())
+  schoolId    String   @default("default") @map("school_id")
+  name        String
+  type        String   @default("PERCENTAGE") @map("concession_type")
+  value       Float    @default(0)
+  description String?  @map("description")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([schoolId, name])
+  @@map("fee_concession")
+}
+
 model Invoice {
   id                  Int           @id @default(autoincrement())
   schoolId            String        @default("default") @map("school_id")

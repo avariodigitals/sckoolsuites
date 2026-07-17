@@ -602,6 +602,60 @@ export async function POST(request: Request) {
           });
         }
       }
+
+      // Seed default expense categories for Nigerian schools
+      const defaultExpenseCategories = [
+        { name: "Staff Salaries & Wages", description: "Teaching and non-teaching staff salaries, allowances, and wages" },
+        { name: "Utilities", description: "Electricity, water, internet, and telecommunications" },
+        { name: "Generator & Fuel", description: "Diesel, petrol, generator maintenance, and power alternatives" },
+        { name: "Building & Maintenance", description: "Repairs, renovations, and facility maintenance" },
+        { name: "Teaching & Learning Materials", description: "Textbooks, exercise books, instructional materials, and teaching aids" },
+        { name: "Examinations & Assessment", description: "WAEC, NECO, JAMB, internal exams, and assessment materials" },
+        { name: "Sports & Co-curricular", description: "Sports equipment, inter-house sports, clubs, and competitions" },
+        { name: "Transport & Vehicle Maintenance", description: "School bus fuel, maintenance, and transport operations" },
+        { name: "Office Supplies & Stationery", description: "Office consumables, printing, and administrative supplies" },
+        { name: "Security", description: "Security guards, surveillance, and security equipment" },
+        { name: "Cleaning & Sanitation", description: "Cleaning supplies, waste disposal, and sanitation" },
+        { name: "Insurance", description: "Property, liability, and vehicle insurance premiums" },
+        { name: "Marketing & Advertising", description: "Promotions, banners, social media, and recruitment drives" },
+        { name: "ICT & Software", description: "Computer maintenance, software subscriptions, and internet services" },
+        { name: "Medical & First Aid", description: "First aid supplies, school clinic, and medical emergencies" },
+        { name: "Food & Boarding", description: "Cafeteria operations, boarding house feeding, and kitchen supplies" },
+        { name: "Professional Development", description: "Teacher training, workshops, and conferences" },
+        { name: "Bank Charges & Interest", description: "Bank fees, loan interest, and financial charges" },
+        { name: "Taxes & Levies", description: "PAYE, VAT, and government levies" },
+        { name: "Miscellaneous", description: "Other expenses not categorized above" },
+      ];
+
+      for (const cat of defaultExpenseCategories) {
+        await prisma.expenseCategory.upsert({
+          where: { schoolId_name: { schoolId, name: cat.name } },
+          update: { description: cat.description },
+          create: { schoolId, name: cat.name, description: cat.description, isActive: true },
+        });
+      }
+
+      // Also seed default income categories
+      const defaultIncomeCategories = [
+        { name: "School Fees", description: "Tuition and fee payments from students" },
+        { name: "Application & Admission Fees", description: "Admission form and processing fees" },
+        { name: "Examination Fees", description: "Internal and external examination fees" },
+        { name: "Transport Fees", description: "School bus and transport service fees" },
+        { name: "Boarding Fees", description: "Boarding house accommodation fees" },
+        { name: "Uniform & Book Sales", description: "Sale of uniforms, books, and merchandise" },
+        { name: "PTA Dues & Donations", description: "PTA contributions and voluntary donations" },
+        { name: "Event & Fundraising", description: "Events, fundraising, and ceremony proceeds" },
+        { name: "Investment Income", description: "Interest, dividends, and investment returns" },
+        { name: "Other Income", description: "Miscellaneous income not categorized above" },
+      ];
+
+      for (const cat of defaultIncomeCategories) {
+        await prisma.incomeCategory.upsert({
+          where: { schoolId_name: { schoolId, name: cat.name } },
+          update: { description: cat.description },
+          create: { schoolId, name: cat.name, description: cat.description, isActive: true, isDefault: cat.name === "School Fees" },
+        });
+      }
     }
 
     if (step === "users-roles") {

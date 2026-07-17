@@ -3,12 +3,13 @@ import { crudPrivilege } from "@/lib/route-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
-import { createAuditLog } from "@/lib/audit-log";
 import { parseNumericId } from "@/lib/id-helpers";
 
-const componentSchema = z.object({
-  name: z.string().min(1).max(100),
-  description: z.string().optional(),
+const concessionSchema = z.object({
+  name: z.string().min(1).max(120),
+  type: z.enum(["PERCENTAGE", "FIXED"]).default("PERCENTAGE"),
+  value: z.number().min(0),
+  description: z.string().max(500).optional(),
 });
 
 function isAuthorized(role?: string) {
@@ -26,12 +27,12 @@ export async function GET() {
   }
 
   const schoolId = session.user.schoolId || "default";
-  const components = await prisma.feeComponent.findMany({
+  const concessions = await prisma.feeConcession.findMany({
     where: { schoolId, isActive: true },
     orderBy: { name: "asc" },
   });
 
-  return NextResponse.json({ components });
+  return NextResponse.json({ concessions });
 }
 
 export async function POST(request: Request) {
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
   }
 
   const payload = await request.json();
-  const parsed = componentSchema.safeParse(payload);
+  const parsed = concessionSchema.safeParse(payload);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
@@ -54,27 +55,20 @@ export async function POST(request: Request) {
   const data = parsed.data;
 
   try {
-    const component = await prisma.feeComponent.create({
+    const concession = await prisma.feeConcession.create({
       data: {
         schoolId,
         name: data.name.trim(),
+        type: data.type,
+        value: data.value,
         description: data.description?.trim() || null,
       },
     });
 
-    await createAuditLog({
-      schoolId,
-      actorUserId: session.user.id,
-      action: "FEE_COMPONENT_CREATED",
-      targetType: "FeeComponent",
-      targetId: String(component.id),
-      metadata: { name: data.name },
-    });
-
-    return NextResponse.json({ component }, { status: 201 });
+    return NextResponse.json({ concession }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to create fee component";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Unable to create concession";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }
 
@@ -93,32 +87,23 @@ export async function DELETE(request: Request) {
 
   let parsedId: number;
   try {
-    parsedId = parseNumericId(id ?? undefined, "fee component id");
+    parsedId = parseNumericId(id ?? undefined, "fee concession id");
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Invalid fee component id";
+    const message = error instanceof Error ? error.message : "Invalid fee concession id";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
   const schoolId = session.user.schoolId || "default";
 
   try {
-    await prisma.feeComponent.update({
+    await prisma.feeConcession.update({
       where: { id: parsedId },
       data: { isActive: false },
     });
 
-    await createAuditLog({
-      schoolId,
-      actorUserId: session.user.id,
-      action: "FEE_COMPONENT_DELETED",
-      targetType: "FeeComponent",
-      targetId: String(parsedId),
-      metadata: {},
-    });
-
     return NextResponse.json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to delete fee component";
+    const message = error instanceof Error ? error.message : "Unable to delete concession";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
