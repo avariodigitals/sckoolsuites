@@ -5,8 +5,6 @@ import Image from "next/image";
 import {
   X,
   User,
-  Phone,
-  Shield,
   Users,
   BookOpen,
   FileText,
@@ -25,9 +23,7 @@ import {
   Camera,
 } from "lucide-react";
 import {
-  BasicTab,
-  ContactTab,
-  LoginTab,
+  ProfileTab,
   GuardianTab,
   SiblingTab,
   RecordTab,
@@ -47,9 +43,7 @@ import {
 import { StudentPromoteDialog } from "./student-promote-dialog";
 
 type TabKey =
-  | "basic"
-  | "contact"
-  | "login"
+  | "profile"
   | "guardian"
   | "sibling"
   | "record"
@@ -67,9 +61,7 @@ type TabKey =
   | "transport";
 
 const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-  { key: "basic", label: "Basic", icon: <User className="h-4 w-4" /> },
-  { key: "contact", label: "Contact", icon: <Phone className="h-4 w-4" /> },
-  { key: "login", label: "User Login", icon: <Shield className="h-4 w-4" /> },
+  { key: "profile", label: "Profile", icon: <User className="h-4 w-4" /> },
   { key: "guardian", label: "Guardian", icon: <Users className="h-4 w-4" /> },
   { key: "sibling", label: "Sibling", icon: <Users className="h-4 w-4" /> },
   { key: "record", label: "Record", icon: <BookOpen className="h-4 w-4" /> },
@@ -88,7 +80,7 @@ const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
 ];
 
 export function StudentDetailModal({ studentId, onClose }: { studentId: string; onClose: () => void }) {
-  const [activeTab, setActiveTab] = useState<TabKey>("basic");
+  const [activeTab, setActiveTab] = useState<TabKey>("profile");
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState("");
@@ -176,9 +168,7 @@ export function StudentDetailModal({ studentId, onClose }: { studentId: string; 
     if (!s) return null;
 
     switch (activeTab) {
-      case "basic": return <BasicTab student={s} studentId={studentId} onUpdate={load} />;
-      case "contact": return <ContactTab student={s} studentId={studentId} onUpdate={load} />;
-      case "login": return <LoginTab student={s} studentId={studentId} onUpdate={load} />;
+      case "profile": return <ProfileTab student={s} studentId={studentId} onUpdate={load} />;
       case "guardian": return <GuardianTab student={s} data={data} studentId={studentId} onUpdate={load} />;
       case "sibling": return <SiblingTab data={data} />;
       case "record": return <RecordTab data={data} />;

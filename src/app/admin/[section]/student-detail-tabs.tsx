@@ -72,6 +72,197 @@ function EditSectionHeader({ title, editing, onEdit, onCancel, onSave, saving }:
   );
 }
 
+function LabeledInput({ label, value, onChange, type = "text", max }: { label: string; value: string; onChange: (v: string) => void; type?: string; max?: string }) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-slate-500">{label}</label>
+      <input type={type} value={value} max={max} onChange={(e) => onChange(e.target.value)} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
+    </div>
+  );
+}
+
+function LabeledSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-slate-500">{label}</label>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+}
+
+function EditBtn({ editing, onEdit, onCancel, onSave, saving }: { editing: boolean; onEdit: () => void; onCancel: () => void; onSave: () => void; saving: boolean }) {
+  if (editing) {
+    return (
+      <div className="flex gap-2">
+        <button onClick={onSave} disabled={saving} className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50">{saving ? "Saving..." : "Save"}</button>
+        <button onClick={onCancel} className="rounded bg-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-300">Cancel</button>
+      </div>
+    );
+  }
+  return <button onClick={onEdit} className="rounded bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100">Edit</button>;
+}
+
+function calcAge(dob: string) {
+  const b = new Date(dob); const n = new Date();
+  let y = n.getFullYear() - b.getFullYear();
+  let mo = n.getMonth() - b.getMonth();
+  let d = n.getDate() - b.getDate();
+  if (d < 0) { mo--; d += new Date(n.getFullYear(), n.getMonth(), 0).getDate(); }
+  if (mo < 0) { y--; mo += 12; }
+  const p: string[] = [];
+  if (y > 0) p.push(`${y} yr${y !== 1 ? "s" : ""}`);
+  if (mo > 0) p.push(`${mo} mo${mo !== 1 ? "s" : ""}`);
+  if (d > 0) p.push(`${d} day${d !== 1 ? "s" : ""}`);
+  return p.join(" ") || "0 days";
+}
+
+export function ProfileTab({ student, studentId, onUpdate }: { student: any; studentId: string; onUpdate: () => void }) {
+  const [editingPersonal, setEditingPersonal] = useState(false);
+  const [editingContact, setEditingContact] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+
+  const [pForm, setPForm] = useState({
+    firstName: student.firstName ?? "", middleName: student.middleName ?? "", lastName: student.lastName ?? "",
+    gender: student.gender ?? "MALE", age: String(student.age ?? ""),
+    dateOfBirth: student.dateOfBirth ? String(student.dateOfBirth).split("T")[0] : "",
+    sportHouse: student.sportHouse ?? "", coCurricular: student.coCurricular ?? "", responsibilities: student.responsibilities ?? "",
+  });
+  const [cForm, setCForm] = useState({ phone: student.user?.phone ?? "", address: student.user?.address ?? "" });
+  const [emailVal, setEmailVal] = useState(student.user?.email ?? "");
+
+  async function patch(body: Record<string, unknown>, okMsg: string, done: () => void) {
+    setSaving(true); setMsg("");
+    try {
+      const res = await fetch(`/api/admin/students/${studentId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) setMsg(payload?.error ?? "Failed to update.");
+      else { setMsg(okMsg); done(); await onUpdate(); }
+    } catch { setMsg("An error occurred."); }
+    finally { setSaving(false); }
+  }
+
+  async function resetPassword() {
+    if (!newPassword || newPassword.length < 6) { setMsg("Password must be at least 6 characters."); return; }
+    if (!window.confirm("Reset this student's password?")) return;
+    setSaving(true); setMsg("");
+    try {
+      const res = await fetch(`/api/admin/students/${studentId}/password`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: newPassword }) });
+      if (!res.ok) { const p = await res.json().catch(() => ({})); setMsg(p?.error ?? "Failed."); }
+      else { setMsg("Password reset successfully."); setNewPassword(""); }
+    } catch { setMsg("An error occurred."); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <div className="space-y-5">
+      {msg && <div className={`rounded-lg border px-3 py-2 text-sm ${msg.includes("success") || msg.includes("updated") ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"}`}>{msg}</div>}
+
+      <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-slate-900">Personal Information</h3>
+          <EditBtn editing={editingPersonal} onEdit={() => setEditingPersonal(true)} onCancel={() => { setEditingPersonal(false); setPForm({ firstName: student.firstName ?? "", middleName: student.middleName ?? "", lastName: student.lastName ?? "", gender: student.gender ?? "MALE", age: String(student.age ?? ""), dateOfBirth: student.dateOfBirth ? String(student.dateOfBirth).split("T")[0] : "", sportHouse: student.sportHouse ?? "", coCurricular: student.coCurricular ?? "", responsibilities: student.responsibilities ?? "" }); setMsg(""); }} onSave={() => patch({ firstName: pForm.firstName.trim(), middleName: pForm.middleName.trim() || null, lastName: pForm.lastName.trim(), gender: pForm.gender, age: Number(pForm.age) || 0, dateOfBirth: pForm.dateOfBirth || null, sportHouse: pForm.sportHouse.trim() || null, coCurricular: pForm.coCurricular.trim() || null, responsibilities: pForm.responsibilities.trim() || null }, "Personal info updated.", () => setEditingPersonal(false))} saving={saving} />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {editingPersonal ? (
+            <>
+              <LabeledInput label="First Name" value={pForm.firstName} onChange={(v) => setPForm((p) => ({ ...p, firstName: v }))} />
+              <LabeledInput label="Middle Name" value={pForm.middleName} onChange={(v) => setPForm((p) => ({ ...p, middleName: v }))} />
+              <LabeledInput label="Last Name" value={pForm.lastName} onChange={(v) => setPForm((p) => ({ ...p, lastName: v }))} />
+              <LabeledSelect label="Gender" value={pForm.gender} onChange={(v) => setPForm((p) => ({ ...p, gender: v }))} options={[{ value: "MALE", label: "Male" }, { value: "FEMALE", label: "Female" }, { value: "OTHER", label: "Other" }]} />
+              <LabeledInput label="Date of Birth" type="date" value={pForm.dateOfBirth} max={new Date().toISOString().split("T")[0]} onChange={(v) => { const ageNum = v ? (() => { const b = new Date(v); const n = new Date(); let a = n.getFullYear() - b.getFullYear(); const m = n.getMonth() - b.getMonth(); if (m < 0 || (m === 0 && n.getDate() < b.getDate())) a--; return Math.max(0, a); })() : ""; setPForm((p) => ({ ...p, dateOfBirth: v, age: String(ageNum) })); }} />
+              {pForm.dateOfBirth && <div className="flex items-end text-xs text-slate-500 pb-2">Age: {calcAge(pForm.dateOfBirth)}</div>}
+              <LabeledInput label="Sport House" value={pForm.sportHouse} onChange={(v) => setPForm((p) => ({ ...p, sportHouse: v }))} />
+              <LabeledInput label="Co-curricular" value={pForm.coCurricular} onChange={(v) => setPForm((p) => ({ ...p, coCurricular: v }))} />
+              <LabeledInput label="Responsibilities" value={pForm.responsibilities} onChange={(v) => setPForm((p) => ({ ...p, responsibilities: v }))} />
+            </>
+          ) : (
+            <>
+              <FieldCard label="First Name" value={student.firstName} />
+              <FieldCard label="Middle Name" value={student.middleName} />
+              <FieldCard label="Last Name" value={student.lastName} />
+              <FieldCard label="Gender" value={student.gender} />
+              <FieldCard label="Date of Birth" value={student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "-"} />
+              <FieldCard label="Age" value={student.dateOfBirth ? calcAge(student.dateOfBirth) : `${student.age} years`} />
+              <FieldCard label="Sport House" value={student.sportHouse} />
+              <FieldCard label="Co-curricular" value={student.coCurricular} />
+              <FieldCard label="Responsibilities" value={student.responsibilities} />
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-900">Contact Details</h3>
+            <EditBtn editing={editingContact} onEdit={() => setEditingContact(true)} onCancel={() => { setEditingContact(false); setCForm({ phone: student.user?.phone ?? "", address: student.user?.address ?? "" }); setMsg(""); }} onSave={() => patch({ phone: cForm.phone.trim() || null, address: cForm.address.trim() || null }, "Contact info updated.", () => setEditingContact(false))} saving={saving} />
+          </div>
+          <div className="space-y-3">
+            {editingContact ? (
+              <>
+                <LabeledInput label="Phone" value={cForm.phone} onChange={(v) => setCForm((p) => ({ ...p, phone: v }))} />
+                <div><label className="mb-1 block text-xs font-medium text-slate-500">Address</label><textarea value={cForm.address} onChange={(e) => setCForm((p) => ({ ...p, address: e.target.value }))} rows={2} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /></div>
+              </>
+            ) : (
+              <>
+                <FieldCard label="Email" value={student.user?.email} />
+                <FieldCard label="Phone" value={student.user?.phone} />
+                <FieldCard label="Address" value={student.user?.address} />
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <h3 className="mb-4 text-sm font-semibold text-slate-900">Login & Security</h3>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-500">Email / Username</label>
+              {editingEmail ? (
+                <div className="flex gap-2">
+                  <input type="email" value={emailVal} onChange={(e) => setEmailVal(e.target.value)} className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm" />
+                  <button onClick={() => patch({ email: emailVal.trim() }, "Email updated.", () => setEditingEmail(false))} disabled={saving} className="rounded bg-emerald-600 px-3 py-1.5 text-xs text-white hover:bg-emerald-700 disabled:opacity-50">Save</button>
+                  <button onClick={() => { setEditingEmail(false); setEmailVal(student.user?.email ?? ""); }} className="rounded bg-slate-200 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-300">Cancel</button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-slate-900">{student.user?.email}</span>
+                  <button onClick={() => setEditingEmail(true)} className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600 hover:bg-slate-200">Edit</button>
+                </div>
+              )}
+            </div>
+            <FieldCard label="Account Status"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${student.user?.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{student.user?.isActive ? "Active" : "Inactive"}</span></FieldCard>
+            <div className="border-t border-slate-100 pt-3">
+              <label className="mb-1 block text-xs font-medium text-slate-500">Reset Password</label>
+              <div className="flex gap-2">
+                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New password (min 6 chars)" className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm" />
+                <button onClick={resetPassword} disabled={saving} className="rounded bg-indigo-600 px-3 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-50">{saving ? "..." : "Reset"}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <h3 className="mb-4 text-sm font-semibold text-slate-900">Academic Information</h3>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <FieldCard label="Class" value={student.class?.name} />
+          <FieldCard label="Student ID" value={student.id} />
+          <FieldCard label="User ID" value={student.userId} />
+          <FieldCard label="Status"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${student.user?.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{student.user?.isActive ? "Active" : "Inactive"}</span></FieldCard>
+          <FieldCard label="Created" value={new Date(student.createdAt).toLocaleDateString()} />
+          <FieldCard label="Updated" value={new Date(student.updatedAt).toLocaleDateString()} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function BasicTab({ student, studentId, onUpdate }: { student: any; studentId: string; onUpdate: () => void }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -612,20 +803,27 @@ export function GuardianTab({ student, data, studentId, onUpdate }: { student: a
                 {searchResults.map((p) => (
                   <button
                     key={p.id}
-                    onClick={() => { setSelectedParentId(p.id); setSearchQuery(`${p.name} (${p.email})`); }}
+                    onClick={() => { setSelectedParentId(p.id); }}
                     className={`flex w-full items-center justify-between border-b border-slate-100 px-3 py-2 text-left text-sm hover:bg-slate-50 ${selectedParentId === p.id ? "bg-indigo-50" : ""}`}
                   >
                     <div>
                       <div className="font-medium text-slate-900">{p.name}</div>
                       <div className="text-xs text-slate-500">{p.email}{p.phone ? ` · ${p.phone}` : ""}</div>
                     </div>
-                    {selectedParentId === p.id && <span className="text-xs font-medium text-indigo-600">Selected</span>}
+                    {selectedParentId === p.id && <span className="text-xs font-medium text-indigo-600">✓ Selected</span>}
                   </button>
                 ))}
               </div>
             )}
             {searchQuery.trim().length >= 1 && !searching && searchResults.length === 0 && (
               <p className="text-xs text-slate-500">No matching guardians found. Try adding a new one instead.</p>
+            )}
+            {selectedParentId && (
+              <div className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm">
+                <span className="text-slate-700">Selected: </span>
+                <span className="font-medium text-slate-900">{searchResults.find((p) => p.id === selectedParentId)?.name}</span>
+                <span className="ml-2 text-xs text-slate-500">{searchResults.find((p) => p.id === selectedParentId)?.email}</span>
+              </div>
             )}
             {selectedParentId && (
               <div className="flex flex-wrap items-center gap-2">
