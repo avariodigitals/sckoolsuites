@@ -72,7 +72,7 @@ export async function GET() {
       where: {
         schoolId,
         isActive: true,
-        role: { name: { notIn: ["PARENT", "STUDENT"] } },
+        role: { name: { notIn: ["PARENT", "STUDENT", "TEACHER"] } },
       },
       include: { role: true },
       orderBy: [{ name: "asc" }],

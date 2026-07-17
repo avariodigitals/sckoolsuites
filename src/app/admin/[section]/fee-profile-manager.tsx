@@ -92,38 +92,40 @@ export function FeeProfileManager() {
   async function loadData() {
     setLoading(true);
     try {
-      const [profilesRes, groupsRes, componentsRes, classGroupsRes, classesRes, armsRes, sessionsRes, concessionsRes] = await Promise.all([
-        fetch("/api/admin/finance/fee-profiles", { cache: "no-store" }),
-        fetch("/api/admin/finance/fee-groups", { cache: "no-store" }),
-        fetch("/api/admin/finance/fee-components", { cache: "no-store" }),
-        fetch("/api/admin/class-groups", { cache: "no-store" }),
-        fetch("/api/admin/classes", { cache: "no-store" }),
-        fetch("/api/admin/class-arms", { cache: "no-store" }),
-        fetch("/api/context/session-term", { cache: "no-store" }),
-        fetch("/api/admin/finance/fee-concessions", { cache: "no-store" }),
+      const results = await Promise.allSettled([
+        fetch("/api/admin/finance/fee-profiles", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/admin/finance/fee-groups", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/admin/finance/fee-components", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/admin/class-groups", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/admin/classes", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/admin/class-arms", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/context/session-term", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/admin/finance/fee-concessions", { cache: "no-store" }).then((r) => r.json()),
       ]);
 
-      const [profilesData, groupsData, componentsData, classGroupsData, classesData, armsData, sessionData, concessionsData] = await Promise.all([
-        profilesRes.json(),
-        groupsRes.json(),
-        componentsRes.json(),
-        classGroupsRes.json(),
-        classesRes.json(),
-        armsRes.json(),
-        sessionsRes.json(),
-        concessionsRes.json(),
-      ]);
+      const [profilesR, groupsR, componentsR, classGroupsR, classesR, armsR, sessionsR, concessionsR] = results;
 
-      setProfiles(profilesData.profiles || []);
-      setStats(profilesData.stats || { totalProfiles: 0, isActivated: false });
-      setFeeGroups(groupsData.groups || []);
-      setFeeComponents(componentsData.components || []);
-      setClassGroups(classGroupsData.classGroups || []);
-      setClasses(classesData.classes || []);
-      setArms(armsData.arms || []);
-      setSessions(sessionData.sessions || []);
-      setTerms(sessionData.terms || []);
-      setConcessions(concessionsData.concessions || []);
+      if (profilesR.status === "fulfilled") {
+        setProfiles(profilesR.value.profiles || []);
+        setStats(profilesR.value.stats || { totalProfiles: 0, isActivated: false });
+      }
+      if (groupsR.status === "fulfilled") setFeeGroups(groupsR.value.groups || []);
+      if (componentsR.status === "fulfilled") setFeeComponents(componentsR.value.components || []);
+      if (classGroupsR.status === "fulfilled") setClassGroups(classGroupsR.value.classGroups || []);
+      if (classesR.status === "fulfilled") setClasses(classesR.value.classes || []);
+      if (armsR.status === "fulfilled") setArms(armsR.value.arms || []);
+      if (sessionsR.status === "fulfilled") {
+        setSessions(sessionsR.value.sessions || []);
+        setTerms(sessionsR.value.terms || []);
+      }
+      if (concessionsR.status === "fulfilled") setConcessions(concessionsR.value.concessions || []);
+
+      const failed = results.filter((r) => r.status === "rejected");
+      if (failed.length === results.length) {
+        setStatus("Failed to load data. Check your connection and try again.");
+      } else if (failed.length > 0) {
+        setStatus(`Loaded with warnings: ${failed.length} API(s) failed`);
+      }
     } catch {
       setStatus("Failed to load data");
     } finally {
@@ -381,8 +383,34 @@ export function FeeProfileManager() {
         </div>
       )}
 
+      {/* Setup Guide - shown when prerequisites are missing */}
+      {(sessions.length === 0 || terms.length === 0 || feeGroups.length === 0 || feeComponents.length === 0) && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <p className="text-sm font-semibold text-blue-800">Fee Setup Checklist</p>
+          <p className="text-sm text-blue-700 mt-1 mb-3">Complete these steps before creating fee profiles:</p>
+          <ol className="list-decimal list-inside space-y-1 text-sm text-blue-700">
+            <li>
+              {sessions.length > 0 ? "\u2705" : "\u2b1c"} Create an Academic Session —{" "}
+              <a href="/admin/settings/academic-calendar" className="underline font-medium">Go to Academic Calendar</a>
+            </li>
+            <li>
+              {terms.length > 0 ? "\u2705" : "\u2b1c"} Create a Term within the session —{" "}
+              <a href="/admin/settings/academic-calendar" className="underline font-medium">Go to Academic Calendar</a>
+            </li>
+            <li>
+              {feeGroups.length > 0 ? "\u2705" : "\u2b1c"} Create a Fee Group (e.g. Tuition, Transport) — use the "Fee Groups" tab above
+            </li>
+            <li>
+              {feeComponents.length > 0 ? "\u2705" : "\u2b1c"} Create Fee Components (e.g. Tuition Fee, Bus Fee) — use the "Fee Components" tab above
+            </li>
+            <li>\u2705 Create Classes and Arms — <a href="/admin/classes" className="underline font-medium">Go to Classes</a></li>
+            <li>\u2705 Create a Fee Profile linking session, term, classes, and fee components</li>
+          </ol>
+        </div>
+      )}
+
       {/* Activation Status */}
-      {!stats.isActivated && (
+      {!stats.isActivated && feeGroups.length > 0 && feeComponents.length > 0 && sessions.length > 0 && terms.length > 0 && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
           <p className="text-sm font-medium text-amber-800">System Activation Required</p>
           <p className="text-sm text-amber-700 mt-1">Create at least one fee profile to activate the billing system.</p>
@@ -449,42 +477,60 @@ export function FeeProfileManager() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Fee Group *</label>
-              <select
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-                value={selectedFeeGroup}
-                onChange={(e) => setSelectedFeeGroup(e.target.value)}
-              >
-                <option value="">Select Fee Group</option>
-                {feeGroups.map((g) => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
-                ))}
-              </select>
+              {feeGroups.length === 0 ? (
+                <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                  No fee groups. Switch to the "Fee Groups" tab to create one.
+                </div>
+              ) : (
+                <select
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                  value={selectedFeeGroup}
+                  onChange={(e) => setSelectedFeeGroup(e.target.value)}
+                >
+                  <option value="">Select Fee Group</option>
+                  {feeGroups.map((g) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Session *</label>
-              <select
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-                value={selectedSession}
-                onChange={(e) => setSelectedSession(e.target.value)}
-              >
-                <option value="">Select Session</option>
-                {sessions.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+              {sessions.length === 0 ? (
+                <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                  No sessions found. <a href="/admin/settings/academic-calendar" className="underline font-medium">Create one here</a>
+                </div>
+              ) : (
+                <select
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                  value={selectedSession}
+                  onChange={(e) => setSelectedSession(e.target.value)}
+                >
+                  <option value="">Select Session</option>
+                  {sessions.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Term *</label>
-              <select
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-                value={selectedTerm}
-                onChange={(e) => setSelectedTerm(e.target.value)}
-              >
-                <option value="">Select Term</option>
-                {terms.filter((t) => !selectedSession || t.sessionId === selectedSession).map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
+              {terms.length === 0 ? (
+                <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                  No terms found. <a href="/admin/settings/academic-calendar" className="underline font-medium">Create one here</a>
+                </div>
+              ) : (
+                <select
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                  value={selectedTerm}
+                  onChange={(e) => setSelectedTerm(e.target.value)}
+                >
+                  <option value="">Select Term</option>
+                  {terms.filter((t) => !selectedSession || t.sessionId === selectedSession).map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Due Date</label>

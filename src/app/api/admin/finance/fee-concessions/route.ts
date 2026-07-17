@@ -27,21 +27,27 @@ export async function GET() {
   }
 
   const schoolId = session.user.schoolId || "default";
-  const concessions = await prisma.feeConcession.findMany({
-    where: { schoolId, isActive: true },
-    orderBy: { name: "asc" },
-  });
 
-  return NextResponse.json({
-    concessions: concessions.map((c) => ({
-      id: String(c.id),
-      name: c.name,
-      type: c.type,
-      value: c.value,
-      description: c.description,
-      isActive: c.isActive,
-    })),
-  });
+  try {
+    const concessions = await prisma.feeConcession.findMany({
+      where: { schoolId, isActive: true },
+      orderBy: { name: "asc" },
+    });
+
+    return NextResponse.json({
+      concessions: concessions.map((c) => ({
+        id: String(c.id),
+        name: c.name,
+        type: c.type,
+        value: c.value,
+        description: c.description,
+        isActive: c.isActive,
+      })),
+    });
+  } catch (error) {
+    console.error("FeeConcession fetch error:", error);
+    return NextResponse.json({ concessions: [] });
+  }
 }
 
 export async function POST(request: Request) {
