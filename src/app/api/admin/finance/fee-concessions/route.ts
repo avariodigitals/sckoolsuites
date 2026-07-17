@@ -32,7 +32,16 @@ export async function GET() {
     orderBy: { name: "asc" },
   });
 
-  return NextResponse.json({ concessions });
+  return NextResponse.json({
+    concessions: concessions.map((c) => ({
+      id: String(c.id),
+      name: c.name,
+      type: c.type,
+      value: c.value,
+      description: c.description,
+      isActive: c.isActive,
+    })),
+  });
 }
 
 export async function POST(request: Request) {

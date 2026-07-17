@@ -31,7 +31,13 @@ export async function GET() {
     orderBy: { name: "asc" },
   });
 
-  return NextResponse.json({ components });
+  return NextResponse.json({
+    components: components.map((c) => ({
+      id: String(c.id),
+      name: c.name,
+      description: c.description,
+    })),
+  });
 }
 
 export async function POST(request: Request) {

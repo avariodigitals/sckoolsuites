@@ -28,7 +28,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
 
   try {
     const teacher = await prisma.teacher.findFirst({

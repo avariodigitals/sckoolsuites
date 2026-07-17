@@ -54,10 +54,10 @@ export async function GET(request: Request) {
     });
 
     const formattedArms = arms.map((arm) => ({
-      id: arm.id,
+      id: String(arm.id),
       name: arm.name,
       capacity: arm.capacity ?? null,
-      classId: arm.classId,
+      classId: String(arm.classId),
       className: arm.class?.name || null,
       isActive: arm.isActive,
       createdAt: arm.createdAt,

@@ -35,7 +35,7 @@ export async function GET() {
 
   return NextResponse.json({
     groups: groups.map((group: any) => ({
-      id: group.id,
+      id: String(group.id),
       name: group.name,
       code: group.code,
       description: group.description,

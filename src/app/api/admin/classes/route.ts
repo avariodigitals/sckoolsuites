@@ -113,23 +113,23 @@ export async function GET() {
       for (const a of classAssessments) byId.set(String(a.id), a);
 
       return {
-        id: cls.id,
+        id: String(cls.id),
         name: cls.name,
-        classGroupId: cls.classGroupId,
+        classGroupId: cls.classGroupId ? String(cls.classGroupId) : null,
         classGroupName: cls.classGroup?.name ?? null,
-        teacherId: cls.teacherId,
+        teacherId: cls.teacherId ? String(cls.teacherId) : null,
         teacherName: cls.teacher?.user.name ?? null,
-        arms: cls.arms?.map((a) => ({ id: a.id, name: a.name, isActive: a.isActive, teacherId: a.teacherId, teacherName: a.teacher?.user?.name ?? null })) ?? [],
-        students: cls.students?.map((s) => ({ id: s.id, name: s.user?.name })) ?? [],
-        subjects: cls.subjects?.map((s) => ({ id: s.id, name: s.name })) ?? [],
+        arms: cls.arms?.map((a) => ({ id: String(a.id), name: a.name, isActive: a.isActive, teacherId: a.teacherId ? String(a.teacherId) : null, teacherName: a.teacher?.user?.name ?? null })) ?? [],
+        students: cls.students?.map((s) => ({ id: String(s.id), name: s.user?.name })) ?? [],
+        subjects: cls.subjects?.map((s) => ({ id: String(s.id), name: s.name })) ?? [],
         assessments: Array.from(byId.values()),
         studentCount: cls.students.length,
         createdAt: cls.createdAt.toISOString(),
       };
     }),
-    classGroups: classGroups.map((g) => ({ id: g.id, name: g.name })),
-    teachers: teachers.map((t) => ({ id: t.id, name: t.user.name })),
-    subjects: subjects.map((s) => ({ id: s.id, name: s.name })),
+    classGroups: classGroups.map((g) => ({ id: String(g.id), name: g.name })),
+    teachers: teachers.map((t) => ({ id: String(t.id), name: t.user.name })),
+    subjects: subjects.map((s) => ({ id: String(s.id), name: s.name })),
   });
 }
 

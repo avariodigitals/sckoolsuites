@@ -27,8 +27,8 @@ export async function GET() {
 
   return NextResponse.json({
     ...context,
-    sessions: sessions.map((s) => ({ id: s.id, name: s.name, isCurrent: s.isCurrent })),
-    terms: terms.map((t) => ({ id: t.id, name: t.name, sessionId: t.sessionId, sessionName: t.session?.name ?? null, isCurrent: t.isCurrent })),
+    sessions: sessions.map((s) => ({ id: String(s.id), name: s.name, isCurrent: s.isCurrent })),
+    terms: terms.map((t) => ({ id: String(t.id), name: t.name, sessionId: String(t.sessionId), sessionName: t.session?.name ?? null, isCurrent: t.isCurrent })),
   });
 }
 

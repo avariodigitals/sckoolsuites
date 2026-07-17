@@ -22,7 +22,9 @@ export async function GET() {
       orderBy: { createdAt: "asc" },
     });
 
-    return NextResponse.json({ classGroups });
+    return NextResponse.json({
+      classGroups: classGroups.map((g) => ({ id: String(g.id), name: g.name })),
+    });
   } catch (error) {
     console.error("Failed to fetch class groups:", error);
     return NextResponse.json(

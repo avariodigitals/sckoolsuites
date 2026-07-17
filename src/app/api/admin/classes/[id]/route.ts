@@ -55,7 +55,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   const payload = await request.json();
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
 
   // Check if this is an arm management action
   const armParsed = armSchema.safeParse(payload);
@@ -407,7 +407,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
 
   // Check class exists
   const existing = await prisma.class.findFirst({

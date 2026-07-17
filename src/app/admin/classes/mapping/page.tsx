@@ -6,7 +6,7 @@ import { DashboardHeader } from "@/components/modern-dashboard";
 import { ArmSubjectMappingManager } from "../../[section]/arm-subject-mapping";
 
 export default async function ArmSubjectMappingPage() {
-  const user = await requireRole(["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
+  const user = await requireRole(["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"]);
   const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
   const profile = await getCurrentSchoolByUser(user.id);
 
