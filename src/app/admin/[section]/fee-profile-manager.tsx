@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -391,19 +392,19 @@ export function FeeProfileManager() {
           <ol className="list-decimal list-inside space-y-1 text-sm text-blue-700">
             <li>
               {sessions.length > 0 ? "\u2705" : "\u2b1c"} Create an Academic Session —{" "}
-              <a href="/admin/settings/academic-calendar" className="underline font-medium">Go to Academic Calendar</a>
+              <Link href="/admin/settings/academic-calendar" className="underline font-medium">Go to Academic Calendar</Link>
             </li>
             <li>
               {terms.length > 0 ? "\u2705" : "\u2b1c"} Create a Term within the session —{" "}
-              <a href="/admin/settings/academic-calendar" className="underline font-medium">Go to Academic Calendar</a>
+              <Link href="/admin/settings/academic-calendar" className="underline font-medium">Go to Academic Calendar</Link>
             </li>
             <li>
-              {feeGroups.length > 0 ? "\u2705" : "\u2b1c"} Create a Fee Group (e.g. Tuition, Transport) — use the "Fee Groups" tab above
+              {feeGroups.length > 0 ? "\u2705" : "\u2b1c"} Create a Fee Group (e.g. Tuition, Transport) — use the &quot;Fee Groups&quot; tab above
             </li>
             <li>
-              {feeComponents.length > 0 ? "\u2705" : "\u2b1c"} Create Fee Components (e.g. Tuition Fee, Bus Fee) — use the "Fee Components" tab above
+              {feeComponents.length > 0 ? "\u2705" : "\u2b1c"} Create Fee Components (e.g. Tuition Fee, Bus Fee) — use the &quot;Fee Components&quot; tab above
             </li>
-            <li>\u2705 Create Classes and Arms — <a href="/admin/classes" className="underline font-medium">Go to Classes</a></li>
+            <li>\u2705 Create Classes and Arms — <Link href="/admin/classes" className="underline font-medium">Go to Classes</Link></li>
             <li>\u2705 Create a Fee Profile linking session, term, classes, and fee components</li>
           </ol>
         </div>
@@ -479,7 +480,7 @@ export function FeeProfileManager() {
               <label className="block text-sm font-medium text-slate-700 mb-1">Fee Group *</label>
               {feeGroups.length === 0 ? (
                 <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                  No fee groups. Switch to the "Fee Groups" tab to create one.
+                  No fee groups. Switch to the &quot;Fee Groups&quot; tab to create one.
                 </div>
               ) : (
                 <select
@@ -498,7 +499,7 @@ export function FeeProfileManager() {
               <label className="block text-sm font-medium text-slate-700 mb-1">Session *</label>
               {sessions.length === 0 ? (
                 <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                  No sessions found. <a href="/admin/settings/academic-calendar" className="underline font-medium">Create one here</a>
+                  No sessions found. <Link href="/admin/settings/academic-calendar" className="underline font-medium">Create one here</Link>
                 </div>
               ) : (
                 <select
@@ -517,7 +518,7 @@ export function FeeProfileManager() {
               <label className="block text-sm font-medium text-slate-700 mb-1">Term *</label>
               {terms.length === 0 ? (
                 <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                  No terms found. <a href="/admin/settings/academic-calendar" className="underline font-medium">Create one here</a>
+                  No terms found. <Link href="/admin/settings/academic-calendar" className="underline font-medium">Create one here</Link>
                 </div>
               ) : (
                 <select

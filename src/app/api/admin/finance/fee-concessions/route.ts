@@ -108,8 +108,6 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  const schoolId = session.user.schoolId || "default";
-
   try {
     await prisma.feeConcession.update({
       where: { id: parsedId },
