@@ -104,7 +104,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
 
   const bills = core.bills.filter((bill: any) => childIds.has(bill.studentId));
   const attendance = core.attendance.filter((row: any) => childIds.has(row.studentId));
-  const scores = core.scores.filter((score: any) => childIds.has(score.studentId));
+  const contextScores = core.scores.filter((score: any) => childIds.has(score.studentId));
   const assignments = core.assignments.filter((assignment: any) => assignment.studentId && childIds.has(assignment.studentId));
   const lessons = core.lessons.filter((lesson: any) => children.some((child: any) => child.classId && child.classId === lesson.classId));
 
@@ -162,17 +162,11 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
 
   const [results, receipts] = await Promise.all([
     (async () => {
-      const whereBase = {
-        schoolId,
-        studentId: { in: Array.from(childIds) },
-        ...(context.session?.id ? { sessionId: context.session.id } : {}),
-        ...(context.term?.id ? { termId: context.term.id } : {}),
-      };
-
       try {
         return await prisma.result.findMany({
           where: {
-            ...whereBase,
+            schoolId,
+            studentId: { in: Array.from(childIds) },
             status: { in: ["PUBLISHED"] },
           },
           include: { student: { include: { user: true, class: true } }, term: true, session: true },
@@ -193,6 +187,35 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
       orderBy: { createdAt: "desc" },
     }),
   ]);
+
+  // Fetch scores for all published results' session/term so subject scores display correctly
+  const publishedResultKeys = new Set(
+    results.map((r: any) => `${r.sessionId}-${r.termId}`)
+  );
+  const contextKey = context.session?.id && context.term?.id
+    ? `${context.session.id}-${context.term.id}`
+    : null;
+  const missingKeys = [...publishedResultKeys].filter((k) => k !== contextKey);
+
+  let extraScores: any[] = [];
+  if (missingKeys.length > 0 && results.length > 0) {
+    const sessionTermPairs = results
+      .filter((r: any) => missingKeys.includes(`${r.sessionId}-${r.termId}`))
+      .map((r: any) => ({ sessionId: r.sessionId, termId: r.termId }));
+    const uniquePairs = Array.from(
+      new Map(sessionTermPairs.map((p) => [`${p.sessionId}-${p.termId}`, p])).values()
+    );
+    extraScores = await prisma.score.findMany({
+      where: {
+        schoolId,
+        studentId: { in: Array.from(childIds) },
+        OR: uniquePairs.map((p) => ({ sessionId: p.sessionId, termId: p.termId })),
+      },
+      include: { subject: true },
+    });
+  }
+
+  const scores = [...contextScores, ...extraScores];
 
   const sectionKey = section as AllowedSection;
   const tab = tabs[sectionKey];
@@ -267,37 +290,43 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
   }));
 
   const resultPanelData = children.flatMap((child: any) => {
-    const latest = results.find((result: any) => result.studentId === child.id) ?? null;
-    if (!latest) {
+    const childResults = results.filter((result: any) => result.studentId === child.id);
+    if (childResults.length === 0) {
       return [];
     }
 
-    const childScores = latest ? scores.filter((score: any) => score.studentId === child.id) : [];
-    const termAverage = latest && childScores.length
-      ? childScores.reduce((sum: any, score: any) => sum + score.total, 0) / childScores.length
-      : null;
-    const termGradeMeta = termAverage !== null ? calculateGradeFromBands(termAverage, gradingBands) : null;
+    return childResults.map((latest: any) => {
+      const childScores = scores.filter((score: any) =>
+        score.studentId === child.id &&
+        score.sessionId === latest.sessionId &&
+        score.termId === latest.termId
+      );
+      const termAverage = childScores.length
+        ? childScores.reduce((sum: any, score: any) => sum + score.total, 0) / childScores.length
+        : null;
+      const termGradeMeta = termAverage !== null ? calculateGradeFromBands(termAverage, gradingBands) : null;
 
-    return [{
-      studentId: child.id,
-      studentName: child.user.name,
-      className: child.class?.name ?? "Class not assigned",
-      termName: latest?.term.name ?? (context.term?.name ?? ""),
-      sessionName: latest?.session.name ?? (context.session?.name ?? ""),
-      termPercentage: termAverage ?? latest?.termPercentage ?? null,
-      termGrade: termGradeMeta?.grade ?? latest?.termGrade ?? null,
-      termGpa: termGradeMeta?.gpa ?? latest?.termGpa ?? null,
-      classTeacherComment: latest?.classTeacherComment ?? null,
-      principalComment: latest?.principalComment ?? null,
-      fileUrl: latest?.fileUrl ?? null,
-      fileName: latest?.fileName ?? null,
-      subjects: childScores.map((score: any) => ({
-        id: score.id,
-        subjectName: score.subject.name,
-        total: score.total,
-        grade: calculateGradeFromBands(score.total, gradingBands).grade,
-      })),
-    }];
+      return {
+        studentId: child.id,
+        studentName: child.user.name,
+        className: child.class?.name ?? "Class not assigned",
+        termName: latest?.term.name ?? (context.term?.name ?? ""),
+        sessionName: latest?.session.name ?? (context.session?.name ?? ""),
+        termPercentage: termAverage ?? latest?.termPercentage ?? null,
+        termGrade: termGradeMeta?.grade ?? latest?.termGrade ?? null,
+        termGpa: termGradeMeta?.gpa ?? latest?.termGpa ?? null,
+        classTeacherComment: latest?.classTeacherComment ?? null,
+        principalComment: latest?.principalComment ?? null,
+        fileUrl: latest?.fileUrl ?? null,
+        fileName: latest?.fileName ?? null,
+        subjects: childScores.map((score: any) => ({
+          id: score.id,
+          subjectName: score.subject.name,
+          total: score.total,
+          grade: calculateGradeFromBands(score.total, gradingBands).grade,
+        })),
+      };
+    });
   });
 
   const lmsChildren = children.map((child: any) => ({
@@ -489,7 +518,11 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
           {childrenWithPublishedResults.length ? childrenWithPublishedResults.map((child: any) => {
             const latest = results.find((item: any) => item.studentId === child.id);
             const isUploadedPdf = Boolean(latest?.fileUrl);
-            const childScores = latest && !isUploadedPdf ? scores.filter((item: any) => item.studentId === child.id) : [];
+            const childScores = latest && !isUploadedPdf ? scores.filter((item: any) =>
+              item.studentId === child.id &&
+              item.sessionId === latest.sessionId &&
+              item.termId === latest.termId
+            ) : [];
             const topSubjects = [...childScores].sort((a, b) => (b.total ?? 0) - (a.total ?? 0)).slice(0, 4);
             const average = childScores.length ? childScores.reduce((sum: any, item: any) => sum + item.total, 0) / childScores.length : 0;
 

@@ -67,17 +67,11 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
   const childAssignments = core.assignments.filter((assignment: any) => assignment.studentId === child.id || (child.classId && assignment.classId === child.classId));
 
   const childResults = await (async () => {
-    const whereBase = {
-      schoolId,
-      studentId: child.id,
-      ...(context.session?.id ? { sessionId: context.session.id } : {}),
-      ...(context.term?.id ? { termId: context.term.id } : {}),
-    };
-
     try {
       return await prisma.result.findMany({
         where: {
-          ...whereBase,
+          schoolId,
+          studentId: child.id,
           status: { in: ["PUBLISHED"] },
         },
         include: { term: true, session: true },
@@ -94,7 +88,32 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
   })();
 
   const latestResult = childResults[0] ?? null;
-  const childScores = latestResult ? childScoresAll : [];
+
+  // Fetch scores for the latest published result's session/term
+  let childScores: any[] = [];
+  if (latestResult) {
+    const contextKey = context.session?.id && context.term?.id
+      ? `${context.session.id}-${context.term.id}`
+      : null;
+    const resultKey = `${latestResult.sessionId}-${latestResult.termId}`;
+    if (resultKey === contextKey) {
+      childScores = childScoresAll;
+    } else {
+      try {
+        childScores = await prisma.score.findMany({
+          where: {
+            schoolId,
+            studentId: child.id,
+            sessionId: latestResult.sessionId,
+            termId: latestResult.termId,
+          },
+          include: { subject: true },
+        });
+      } catch {
+        childScores = [];
+      }
+    }
+  }
   const totalOutstanding = childInvoices.reduce((sum: any, item: any) => sum + item.balance, 0);
   const presentCount = childAttendance.filter((item: any) => item.status === "PRESENT").length;
   const attendancePercent = childAttendance.length ? (presentCount / childAttendance.length) * 100 : 0;

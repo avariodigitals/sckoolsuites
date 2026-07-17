@@ -29,14 +29,18 @@ type ChildResultSummary = {
 
 export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
   const [activeTab, setActiveTab] = useState<"recent" | "preview">("recent");
-  const [selectedStudentId, setSelectedStudentId] = useState(data[0]?.studentId ?? "");
+  const [selectedKey, setSelectedKey] = useState(data[0] ? `${data[0].studentId}-${data[0].termName}-${data[0].sessionName}` : "");
 
-  const selected = useMemo(() => data.find((item) => item.studentId === selectedStudentId) ?? null, [data, selectedStudentId]);
+  const selected = useMemo(() => data.find((item) =>
+    `${item.studentId}-${item.termName}-${item.sessionName}` === selectedKey
+  ) ?? null, [data, selectedKey]);
   const previewUrl = selected ? `/reports/${selected.studentId}` : "";
 
   if (!data.length) {
     return <div className="rounded-xl border border-dashed border-slate-300 bg-white/70 p-6 text-center text-sm text-slate-500">No published result is available yet.</div>;
   }
+
+  const uniqueKeys = data.map((item) => `${item.studentId}-${item.termName}-${item.sessionName}`);
 
   return (
     <section className="space-y-5">
@@ -64,7 +68,7 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
             const isUploadedPdf = Boolean(item.fileUrl);
 
             return (
-              <article key={item.studentId} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <article key={`${item.studentId}-${item.termName}-${item.sessionName}`} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] px-4 py-3 text-white">
                   <p className="text-base font-semibold">{item.studentName} - Result Summary</p>
                   <p className="text-xs text-white/80">{item.className} • {item.termName || "-"} / {item.sessionName || "-"}</p>
@@ -215,12 +219,15 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Select Report</label>
               <select
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-                value={selectedStudentId}
-                onChange={(event) => setSelectedStudentId(event.target.value)}
+                value={selectedKey}
+                onChange={(event) => setSelectedKey(event.target.value)}
               >
-                {data.map((item) => (
-                  <option key={item.studentId} value={item.studentId}>{item.studentName} - {item.termName || "Current Term"}</option>
-                ))}
+                {data.map((item) => {
+                  const key = `${item.studentId}-${item.termName}-${item.sessionName}`;
+                  return (
+                    <option key={key} value={key}>{item.studentName} - {item.termName || "Current Term"} / {item.sessionName || ""}</option>
+                  );
+                })}
               </select>
             </div>
 

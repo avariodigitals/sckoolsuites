@@ -426,13 +426,74 @@ export function LoginTab({ student, studentId, onUpdate }: { student: any; stude
 export function GuardianTab({ student, data, studentId, onUpdate }: { student: any; data: any; studentId: string; onUpdate: () => void }) {
   const parent = student.parent;
   const additional = data?.additionalGuardians ?? [];
-  const [adding, setAdding] = useState(false);
+  const [mode, setMode] = useState<"none" | "search" | "new">("none");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Array<{ id: number; name: string; email: string; phone: string | null }>>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
+  const [linkRelationship, setLinkRelationship] = useState("Guardian");
+  const [linking, setLinking] = useState(false);
+
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newRelationship, setNewRelationship] = useState("Guardian");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    if (mode !== "search" || searchQuery.trim().length < 1) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`/api/admin/parents/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        const payload = await res.json().catch(() => ({}));
+        setSearchResults(payload.parents ?? []);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, mode]);
+
+  async function linkExistingParent() {
+    if (!selectedParentId) {
+      setMsg("Select a parent to link.");
+      return;
+    }
+    setLinking(true);
+    setMsg("");
+    try {
+      const res = await fetch(`/api/admin/students/${studentId}/guardians`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          parentId: selectedParentId,
+          relationship: linkRelationship.trim() || "Guardian",
+        }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMsg(payload?.error ?? "Failed to link guardian.");
+      } else {
+        setMsg("Guardian linked successfully.");
+        setMode("none");
+        setSelectedParentId(null);
+        setSearchQuery("");
+        setLinkRelationship("Guardian");
+        await onUpdate();
+      }
+    } catch {
+      setMsg("An error occurred.");
+    } finally {
+      setLinking(false);
+    }
+  }
 
   async function addGuardian() {
     if (!newName.trim() || !newEmail.trim()) {
@@ -457,7 +518,7 @@ export function GuardianTab({ student, data, studentId, onUpdate }: { student: a
         setMsg(payload?.error ?? "Failed to add guardian.");
       } else {
         setMsg("Guardian added successfully.");
-        setAdding(false);
+        setMode("none");
         setNewName("");
         setNewEmail("");
         setNewPhone("");
@@ -522,24 +583,78 @@ export function GuardianTab({ student, data, studentId, onUpdate }: { student: a
       </div>
 
       <Section title={`Additional Guardians (${additional.length})`}>
-        <div className="mb-3">
-          {!adding ? (
-            <button onClick={() => setAdding(true)} className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700">+ Add Guardian</button>
-          ) : (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Full name *" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
-                <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Email *" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
-                <input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="Phone" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
-                <input value={newRelationship} onChange={(e) => setNewRelationship(e.target.value)} placeholder="Relationship" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div className="flex gap-2">
-                <button onClick={addGuardian} disabled={saving} className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700 disabled:opacity-50">{saving ? "Adding..." : "Add Guardian"}</button>
-                <button onClick={() => setAdding(false)} className="rounded bg-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-300">Cancel</button>
-              </div>
-            </div>
+        <div className="mb-3 flex flex-wrap gap-2">
+          {mode === "none" && (
+            <>
+              <button onClick={() => setMode("search")} className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700">🔍 Search Existing Guardian</button>
+              <button onClick={() => setMode("new")} className="rounded bg-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-300">+ Add New Guardian</button>
+            </>
           )}
         </div>
+
+        {/* Search Existing Parent */}
+        {mode === "search" && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-slate-700">Search Existing Guardian</h4>
+              <button onClick={() => { setMode("none"); setSearchQuery(""); setSearchResults([]); setSelectedParentId(null); }} className="text-xs text-slate-500 hover:text-slate-700">Cancel</button>
+            </div>
+            <input
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setSelectedParentId(null); }}
+              placeholder="Search by name, email or phone..."
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              autoFocus
+            />
+            {searching && <p className="text-xs text-slate-500">Searching...</p>}
+            {searchResults.length > 0 && (
+              <div className="max-h-60 overflow-y-auto rounded-md border border-slate-200 bg-white">
+                {searchResults.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => { setSelectedParentId(p.id); setSearchQuery(`${p.name} (${p.email})`); }}
+                    className={`flex w-full items-center justify-between border-b border-slate-100 px-3 py-2 text-left text-sm hover:bg-slate-50 ${selectedParentId === p.id ? "bg-indigo-50" : ""}`}
+                  >
+                    <div>
+                      <div className="font-medium text-slate-900">{p.name}</div>
+                      <div className="text-xs text-slate-500">{p.email}{p.phone ? ` · ${p.phone}` : ""}</div>
+                    </div>
+                    {selectedParentId === p.id && <span className="text-xs font-medium text-indigo-600">Selected</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+            {searchQuery.trim().length >= 1 && !searching && searchResults.length === 0 && (
+              <p className="text-xs text-slate-500">No matching guardians found. Try adding a new one instead.</p>
+            )}
+            {selectedParentId && (
+              <div className="flex flex-wrap items-center gap-2">
+                <input value={linkRelationship} onChange={(e) => setLinkRelationship(e.target.value)} placeholder="Relationship" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
+                <button onClick={linkExistingParent} disabled={linking} className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700 disabled:opacity-50">{linking ? "Linking..." : "Link Guardian"}</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Add New Guardian */}
+        {mode === "new" && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-slate-700">Add New Guardian</h4>
+              <button onClick={() => setMode("none")} className="text-xs text-slate-500 hover:text-slate-700">Cancel</button>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Full name *" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
+              <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Email *" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
+              <input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="Phone" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
+              <input value={newRelationship} onChange={(e) => setNewRelationship(e.target.value)} placeholder="Relationship" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={addGuardian} disabled={saving} className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700 disabled:opacity-50">{saving ? "Adding..." : "Add Guardian"}</button>
+              <button onClick={() => setMode("none")} className="rounded bg-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-300">Cancel</button>
+            </div>
+          </div>
+        )}
 
         {additional.length === 0 ? (
           <Empty text="No additional guardians." />
