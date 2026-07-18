@@ -93,6 +93,21 @@ export function ModernPortalShell({
   const [manualExpanded, setManualExpanded] = useState<string[]>([]);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const displaySchoolName = schoolName?.trim() || "School";
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
+        setNotificationsOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Auto-expand parent menu when current route matches a child
   const autoExpanded = useMemo(() => {
@@ -404,7 +419,7 @@ export function ModernPortalShell({
             {/* Right: Notifications & User Profile */}
             <div className="flex items-center gap-1 sm:gap-2 lg:gap-3">
               {/* Notification Bell with Dropdown */}
-              <div className="relative">
+              <div className="relative" ref={notificationRef}>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -421,12 +436,7 @@ export function ModernPortalShell({
 
                 {/* Notification Dropdown */}
                 {notificationsOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setNotificationsOpen(false)}
-                    />
-                    <div className="fixed bottom-0 left-0 right-0 z-50 sm:absolute sm:bottom-auto sm:right-0 sm:left-auto sm:top-full sm:mt-2 sm:w-96 max-w-96 bg-white rounded-t-2xl sm:rounded-xl shadow-2xl sm:shadow-xl border border-slate-200 overflow-hidden">
+                  <div className="fixed bottom-0 left-0 right-0 z-50 sm:absolute sm:bottom-auto sm:right-0 sm:left-auto sm:top-full sm:mt-2 sm:w-96 max-w-96 bg-white rounded-t-2xl sm:rounded-xl shadow-2xl sm:shadow-xl border border-slate-200 overflow-hidden">
                     <div className="sm:hidden flex justify-center pt-2 pb-1">
                       <div className="h-1 w-10 rounded-full bg-slate-300" />
                     </div>
@@ -517,7 +527,6 @@ export function ModernPortalShell({
                       </div>
                     )}
                     </div>
-                  </>
                 )}
               </div>
 
@@ -528,7 +537,7 @@ export function ModernPortalShell({
               <SessionSelector />
 
               {/* User Profile Dropdown */}
-              <div className="relative pl-2 sm:pl-3 lg:border-l lg:border-slate-200">
+              <div className="relative pl-2 sm:pl-3 lg:border-l lg:border-slate-200" ref={userMenuRef}>
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2 rounded-lg p-1 transition hover:bg-slate-50"
@@ -550,11 +559,6 @@ export function ModernPortalShell({
 
                 {/* User Dropdown Menu */}
                 {userMenuOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setUserMenuOpen(false)}
-                    />
                     <div className="absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-1rem)] bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
                       <div className="px-4 py-3 border-b border-slate-100">
                         <p className="text-sm font-semibold text-slate-900 truncate">{userName}</p>
@@ -578,7 +582,6 @@ export function ModernPortalShell({
                         </button>
                       </div>
                     </div>
-                  </>
                 )}
               </div>
             </div>

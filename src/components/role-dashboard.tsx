@@ -12,7 +12,7 @@ import {
   EmptyState 
 } from "@/components/modern-dashboard";
 import { requireRole } from "@/lib/auth-guards";
-import { getDashboardData, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
+import { getDashboardData, getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
 import { buildSchoolRoleModel, buildSuperAdminModel, type RoleScope } from "@/lib/dashboard/role-dashboard-model";
 import { prisma } from "@/lib/db";
 import { getSetupWizardState } from "@/lib/setup-wizard";
@@ -209,10 +209,56 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
 
   const context = await getUserAcademicContext(profile.schoolId, user.id);
 
-  const core = await getDashboardData(profile.schoolId, {
-    sessionId: context.session?.id ?? undefined,
-    termId: context.term?.id ?? undefined,
-  });
+  // For teacher role, use getCoreSchoolDataByContext which returns full arrays
+  // (subjects, lessons, assignments, classes, etc.) needed by buildSchoolRoleModel.
+  // getDashboardData only returns counts for these, resulting in an empty dashboard.
+  const isTeacherRole = roleScope === "teacher";
+
+  const core = isTeacherRole
+    ? await getCoreSchoolDataByContext(profile.schoolId, {
+        sessionId: context.session?.id ?? undefined,
+        termId: context.term?.id ?? undefined,
+      })
+    : await getDashboardData(profile.schoolId, {
+        sessionId: context.session?.id ?? undefined,
+        termId: context.term?.id ?? undefined,
+      });
+
+  // For teachers, filter the school-wide data to only their assigned records
+  // so the dashboard shows teacher-specific stats, not school-wide totals.
+  if (isTeacherRole) {
+    const teacher = (core as any).teachers?.find((t: any) => t.userId === user.id);
+    if (teacher) {
+      const myClasses = ((core as any).classes ?? []).filter((c: any) => c.teacherId === teacher.id);
+      const classIds = new Set(myClasses.map((c: any) => c.id));
+      const mySubjects = ((core as any).subjects ?? []).filter(
+        (s: any) => s.teacherId === teacher.id || (s.classId ? classIds.has(s.classId) : false)
+      );
+      const subjectIds = new Set(mySubjects.map((s: any) => s.id));
+      const myScores = ((core as any).scores ?? []).filter((s: any) => subjectIds.has(s.subjectId));
+      const myLessons = ((core as any).lessons ?? []).filter((l: any) => l.teacherId === teacher.id);
+      const myAssignments = ((core as any).assignments ?? []).filter(
+        (a: any) => a.subjectId && subjectIds.has(a.subjectId)
+      );
+      const myAttendance = ((core as any).attendance ?? []).filter(
+        (a: any) => a.classId && classIds.has(a.classId)
+      );
+      const myStudents = ((core as any).students ?? []).filter(
+        (s: any) => s.classId && classIds.has(s.classId)
+      );
+
+      (core as any).classes = myClasses;
+      (core as any).subjects = mySubjects;
+      (core as any).scores = myScores;
+      (core as any).lessons = myLessons;
+      (core as any).assignments = myAssignments;
+      (core as any).attendance = myAttendance;
+      (core as any).students = myStudents;
+      (core as any).classCount = myClasses.length;
+      (core as any).subjectCount = mySubjects.length;
+      (core as any).studentCount = myStudents.length;
+    }
+  }
 
   // Fetch reception data for admin dashboard only
   let enquiryCount = 0;
@@ -288,11 +334,7 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
     const hour = new Date().getHours();
     const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : hour < 21 ? "Good Evening" : "Good Night";
     const parentName = user.name?.trim() ?? "there";
-    const parentRecord = await prisma.parent.findFirst({
-      where: { userId: user.id, schoolId: profile.schoolId },
-      select: { title: true },
-    });
-    const titlePrefix = parentRecord?.title?.trim() ? parentRecord.title.trim() : "Parent";
+    const titlePrefix = "Parent";
     model.title = `${greeting}, ${titlePrefix} ${parentName}`;
     model.subtitle = "Track child performance, fee balances, and school communication.";
   }
@@ -317,6 +359,8 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
         userName={user.name ?? "User"}
         avatarUrl={profile?.avatarUrl ?? undefined}
         pathname={pathname}
+        primaryColor={core.school?.branding?.primaryColor}
+        secondaryColor={core.school?.branding?.secondaryColor}
       >
         {roleScope === "admin" && (!context.session || !context.term) && (
           <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 p-4">

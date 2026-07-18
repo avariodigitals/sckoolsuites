@@ -36,12 +36,10 @@ export function PushNotificationManager() {
       console.error("[pwa] SW registration failed:", err);
     });
 
-    const installDismissed = localStorage.getItem("pwa-install-dismissed") === "1";
-
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
       setInstallEvent(e as BeforeInstallPromptEvent);
-      if (!standalone && !installDismissed) {
+      if (!standalone) {
         setShowInstallPrompt(true);
       }
     };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { AlertTriangle, Bell, ChevronDown, ChevronRight, FileCheck2, LogOut, Megaphone, MessageSquareText, Moon, Search, Sun, UserCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useRouter, usePathname } from "next/navigation";
@@ -62,6 +62,17 @@ export function PortalTopbar({
   const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
   const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => "light");
   const dark = theme === "dark";
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
+        setShowNotifications(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
@@ -396,7 +407,7 @@ export function PortalTopbar({
           <Input className="h-9 w-32 rounded-lg border-slate-200 bg-white pl-9 text-sm md:w-72 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500" placeholder="Quick search" />
         </div>
 
-        <div className="relative">
+        <div className="relative" ref={notificationRef}>
           <button
             type="button"
             className="relative rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-slate-700 transition hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-600"
@@ -415,8 +426,6 @@ export function PortalTopbar({
           </button>
 
           {showNotifications ? (
-            <>
-            <div className="fixed inset-0 z-30" onClick={() => setShowNotifications(false)} />
             <div className="fixed bottom-0 left-0 right-0 z-40 sm:absolute sm:bottom-auto sm:right-0 sm:left-auto sm:top-full sm:mt-2 sm:w-80 max-w-80 overflow-hidden rounded-t-2xl sm:rounded-xl border border-slate-200 bg-white shadow-2xl sm:shadow-xl dark:border-slate-700 dark:bg-slate-900">
               <div className="sm:hidden flex justify-center pt-2 pb-1">
                 <div className="h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600" />
@@ -494,7 +503,6 @@ export function PortalTopbar({
                   : null}
               </div>
             </div>
-            </>
           ) : null}
         </div>
 

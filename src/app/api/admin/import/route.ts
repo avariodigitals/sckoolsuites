@@ -4,12 +4,13 @@ import { prisma } from "@/lib/db";
 import { hashPassword } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
 import { Prisma } from "@prisma/client";
+import { sendWelcomeEmail } from "@/lib/email";
 
 type ImportType = "students" | "parents" | "staff";
 
 function isAuthorized(role?: string) {
   return role
-    ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(role)
+    ? ["SUPER_ADMIN", "SCHOOL_ADMIN"].includes(role)
     : false;
 }
 
@@ -142,6 +143,15 @@ export async function POST(request: Request) {
                 data: { schoolId, userId: guardianUser.id },
               });
               parentId = parent.id;
+
+              sendWelcomeEmail({
+                schoolId,
+                to: guardianEmail,
+                userName: guardianName,
+                email: guardianEmail,
+                password: guardianPassword,
+                role: "PARENT",
+              }).catch(() => {});
             }
           }
         }
@@ -198,6 +208,15 @@ export async function POST(request: Request) {
           targetId: String(result.student.id),
           metadata: { importBatch: true, name: fullName, email },
         });
+
+        sendWelcomeEmail({
+          schoolId,
+          to: email,
+          userName: fullName,
+          email,
+          password: plaintextPassword,
+          role: "STUDENT",
+        }).catch(() => {});
 
         success++;
       } catch (err) {
@@ -271,6 +290,15 @@ export async function POST(request: Request) {
           metadata: { importBatch: true, name, email },
         });
 
+        sendWelcomeEmail({
+          schoolId,
+          to: email,
+          userName: name,
+          email,
+          password: plaintextPassword,
+          role: "PARENT",
+        }).catch(() => {});
+
         success++;
       } catch (err) {
         errors.push(`${rowLabel}: ${err instanceof Error ? err.message : "Unknown error"}`);
@@ -327,7 +355,7 @@ export async function POST(request: Request) {
               password: hashedPassword,
               isActive: true,
               mustChangePassword: true,
-            },
+            } as any,
           });
 
           const teacher = await tx.teacher.create({
@@ -336,7 +364,7 @@ export async function POST(request: Request) {
               userId: user.id,
               designation: designation as any,
               classGroupId,
-            },
+            } as any,
           });
 
           return { user, teacher };
@@ -350,6 +378,15 @@ export async function POST(request: Request) {
           targetId: String(result.teacher.id),
           metadata: { importBatch: true, name, email },
         });
+
+        sendWelcomeEmail({
+          schoolId,
+          to: email,
+          userName: name,
+          email,
+          password: plaintextPassword,
+          role: "TEACHER",
+        }).catch(() => {});
 
         success++;
       } catch (err) {

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { PortalShell } from "@/components/portal-shell";
+import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TeacherAttendanceForm } from "@/app/teacher/_components/teacher-attendance-form";
@@ -357,19 +357,13 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
   }
 
   return (
-    <PortalShell
+    <ModernPortalShell
       role={user.role}
       schoolName={core.school?.name}
       schoolLogoUrl={core.school?.branding?.logoUrl ?? undefined}
       userName={user.name ?? "Teacher"}
       avatarUrl={dbUser?.avatarUrl ?? undefined}
       pathname={`/teacher/${section}`}
-      currentSessionName={context.session?.name}
-      currentTermName={context.term?.name}
-      sessions={core.sessions.map((item: any) => ({ id: item.id, name: item.name }))}
-      terms={core.terms.map((item: any) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
-      selectedSessionId={context.session?.id != null ? String(context.session.id) : undefined}
-      selectedTermId={context.term?.id != null ? String(context.term.id) : undefined}
       primaryColor={core.school?.branding?.primaryColor}
       secondaryColor={core.school?.branding?.secondaryColor}
     >
@@ -386,6 +380,6 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
       </section>
 
       {renderSection()}
-    </PortalShell>
+    </ModernPortalShell>
   );
 }

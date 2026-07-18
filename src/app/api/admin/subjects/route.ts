@@ -8,6 +8,7 @@ import { createAuditLog } from "@/lib/audit-log";
 const createSchema = z.object({
   name: z.string().min(1).max(100),
   classId: z.coerce.number().optional().nullable(),
+  classIds: z.array(z.coerce.number()).optional(),
   classGroupId: z.coerce.number().optional().nullable(),
   teacherId: z.coerce.number().optional().nullable(),
 });
@@ -65,7 +66,7 @@ export async function GET() {
       teacherName: s.teacher?.user.name ?? null,
       createdAt: s.createdAt.toISOString(),
     })),
-    classes: classes.map((c) => ({ id: c.id, name: c.name })),
+    classes: classes.map((c) => ({ id: c.id, name: c.name, classGroupId: c.classGroupId })),
     classGroups: classGroups.map((g) => ({ id: g.id, name: g.name })),
     teachers: teachers.map((t) => ({ id: t.id, name: t.user.name })),
   });
@@ -90,32 +91,35 @@ export async function POST(request: Request) {
   const schoolId = session.user.schoolId || "default";
   const data = parsed.data;
 
-  // Check if subject name already exists
-  const existing = await prisma.subject.findFirst({
-    where: { name: data.name, schoolId },
-  });
-  if (existing) {
-    return NextResponse.json({ error: "Subject name already exists" }, { status: 409 });
-  }
-
-  // Validate class if provided
-  if (data.classId) {
-    const classExists = await prisma.class.findFirst({
-      where: { id: data.classId, schoolId },
-    });
-    if (!classExists) {
-      return NextResponse.json({ error: "Invalid class selected" }, { status: 400 });
-    }
+  // Determine which class IDs to create subjects for
+  let classIdsToCreate: number[] = [];
+  if (data.classIds && data.classIds.length > 0) {
+    classIdsToCreate = data.classIds;
+  } else if (data.classId) {
+    classIdsToCreate = [data.classId];
   }
 
   // Validate class group if provided
+  let classGroup: { id: number; name: string } | null = null;
   if (data.classGroupId) {
-    const groupExists = await prisma.classGroup.findFirst({
+    classGroup = await prisma.classGroup.findFirst({
       where: { id: data.classGroupId, schoolId },
     });
-    if (!groupExists) {
+    if (!classGroup) {
       return NextResponse.json({ error: "Invalid class group selected" }, { status: 400 });
     }
+  }
+
+  // Validate all classes and fetch their names
+  let classNamesMap: Map<number, string> = new Map();
+  if (classIdsToCreate.length > 0) {
+    const classRecords = await prisma.class.findMany({
+      where: { id: { in: classIdsToCreate }, schoolId },
+    });
+    if (classRecords.length !== classIdsToCreate.length) {
+      return NextResponse.json({ error: "One or more invalid classes selected" }, { status: 400 });
+    }
+    classNamesMap = new Map(classRecords.map((c) => [c.id, c.name]));
   }
 
   // Validate teacher if provided
@@ -129,38 +133,79 @@ export async function POST(request: Request) {
   }
 
   try {
-    const subject = await prisma.subject.create({
-      data: {
-        schoolId,
-        name: data.name.trim(),
-        classId: data.classId ?? null,
-        classGroupId: data.classGroupId ?? null,
-        teacherId: data.teacherId ?? null,
-      },
-      include: {
-        class: true,
-        classGroup: true,
-        teacher: { include: { user: true } },
-      },
-    });
+    const createdSubjects: any[] = [];
+    const classGroupName = classGroup?.name ?? null;
+
+    if (classIdsToCreate.length === 0) {
+      // No classes selected — create a single subject linked to class group only (or general)
+      const existing = await prisma.subject.findFirst({
+        where: { name: data.name.trim(), schoolId, classId: null, classGroupId: data.classGroupId ?? null },
+      });
+      if (existing) {
+        return NextResponse.json({ error: `Subject "${data.name}" already exists for this scope` }, { status: 409 });
+      }
+
+      const subject = await prisma.subject.create({
+        data: {
+          schoolId,
+          name: data.name.trim(),
+          classId: null,
+          classGroupId: data.classGroupId ?? null,
+          classGroupNames: classGroupName,
+          teacherId: data.teacherId ?? null,
+        },
+        include: { class: true, classGroup: true, teacher: { include: { user: true } } },
+      });
+      createdSubjects.push(subject);
+    } else {
+      // Create one subject per selected class
+      for (const classId of classIdsToCreate) {
+        const className = classNamesMap.get(classId) ?? "";
+        const existing = await prisma.subject.findFirst({
+          where: { name: data.name.trim(), schoolId, classId },
+        });
+        if (existing) {
+          // Skip duplicates silently
+          continue;
+        }
+
+        const subject = await prisma.subject.create({
+          data: {
+            schoolId,
+            name: data.name.trim(),
+            classId,
+            classNames: className,
+            classGroupId: data.classGroupId ?? null,
+            classGroupNames: classGroupName,
+            teacherId: data.teacherId ?? null,
+          },
+          include: { class: true, classGroup: true, teacher: { include: { user: true } } },
+        });
+        createdSubjects.push(subject);
+      }
+    }
+
+    if (createdSubjects.length === 0) {
+      return NextResponse.json({ error: "Subjects already exist for all selected classes" }, { status: 409 });
+    }
 
     await createAuditLog({
       schoolId,
       actorUserId: session.user.id,
       action: "SUBJECT_CREATED",
       targetType: "Subject",
-      targetId: String(subject.id),
+      targetId: String(createdSubjects[0].id),
       metadata: {
-        subjectId: subject.id,
         name: data.name,
-        classId: data.classId,
+        classIds: classIdsToCreate,
         classGroupId: data.classGroupId,
         teacherId: data.teacherId,
+        count: createdSubjects.length,
       },
     });
 
     return NextResponse.json({
-      subject: {
+      subjects: createdSubjects.map((subject) => ({
         id: subject.id,
         name: subject.name,
         classId: subject.classId,
@@ -170,7 +215,8 @@ export async function POST(request: Request) {
         teacherId: subject.teacherId,
         teacherName: subject.teacher?.user.name ?? null,
         createdAt: subject.createdAt.toISOString(),
-      },
+      })),
+      created: createdSubjects.length,
     }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create subject";

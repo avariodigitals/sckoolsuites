@@ -55,10 +55,6 @@ export function PortalShell({
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
 
-  console.log("[PortalShell] schoolLogoUrl prop:", schoolLogoUrl);
-  console.log("[PortalShell] normalizedSchoolLogoUrl:", normalizedSchoolLogoUrl);
-  console.log("[PortalShell] avatarUrl prop:", avatarUrl);
-
   return (
     <div
       className="glass-bg min-h-screen"

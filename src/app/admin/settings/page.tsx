@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
 import { BrandingForm } from "./branding/branding-form";
 import { EmailSettingsForm } from "./email/email-settings-form";
+import { ImportWizard } from "../[section]/import-wizard";
 
 export default async function SettingsPage() {
   const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
@@ -20,12 +21,26 @@ export default async function SettingsPage() {
     );
   }
 
+  const canBulkImport = ["SUPER_ADMIN", "SCHOOL_ADMIN"].includes(user.role);
+
   return (
     <div className="space-y-6">
       <DashboardHeader
         title="Branding & School Settings"
         subtitle="Customize school branding, colors, logos, and document templates."
       />
+
+      {canBulkImport && (
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 px-6 py-4">
+            <h2 className="text-lg font-semibold text-slate-900">Bulk Import</h2>
+            <p className="text-sm text-slate-500">Import students, parents, and staff in bulk from Excel files</p>
+          </div>
+          <div className="p-6">
+            <ImportWizard section="students" />
+          </div>
+        </div>
+      )}
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-6 py-4">
