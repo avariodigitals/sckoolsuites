@@ -36,10 +36,12 @@ export function PushNotificationManager() {
       console.error("[pwa] SW registration failed:", err);
     });
 
+    const installDismissed = localStorage.getItem("pwa-install-dismissed") === "1";
+
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
       setInstallEvent(e as BeforeInstallPromptEvent);
-      if (!standalone) {
+      if (!standalone && !installDismissed) {
         setShowInstallPrompt(true);
       }
     };
@@ -55,7 +57,8 @@ export function PushNotificationManager() {
     window.addEventListener("appinstalled", handleAppInstalled);
 
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    if (ios && !standalone) {
+    const iosInstallDismissed = localStorage.getItem("pwa-ios-install-dismissed") === "1";
+    if (ios && !standalone && !iosInstallDismissed) {
       setShowIOSInstall(true);
     }
 
@@ -157,10 +160,12 @@ export function PushNotificationManager() {
 
   function handleInstallDismiss() {
     setShowInstallPrompt(false);
+    localStorage.setItem("pwa-install-dismissed", "1");
   }
 
   function handleIOSInstallDismiss() {
     setShowIOSInstall(false);
+    localStorage.setItem("pwa-ios-install-dismissed", "1");
   }
 
   if (status === "loading") {

@@ -49,17 +49,59 @@ export async function GET(request: Request) {
             name: true,
           },
         },
+        teacher: { include: { user: true } },
       },
       orderBy: { createdAt: "asc" },
     });
+
+    const armIds = arms.map((a) => a.id);
+
+    const [subjectAssignments, studentCounts] = await Promise.all([
+      armIds.length
+        ? prisma.subjectAssignment.findMany({
+            where: { classArmId: { in: armIds } },
+            include: { subject: { include: { teacher: { include: { user: true } } } } },
+          })
+        : Promise.resolve([]),
+      armIds.length
+        ? prisma.student.groupBy({
+            by: ["armId"],
+            where: { armId: { in: armIds }, schoolId },
+            _count: { id: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const subjectsByArm = new Map<number, Array<{ id: string; name: string; teacherId?: string; teacherName?: string }>>();
+    for (const sa of subjectAssignments) {
+      const armId = sa.classArmId;
+      if (!armId) continue;
+      const list = subjectsByArm.get(armId) ?? [];
+      list.push({
+        id: String(sa.subject.id),
+        name: sa.subject.name,
+        teacherId: sa.subject.teacherId ? String(sa.subject.teacherId) : undefined,
+        teacherName: sa.subject.teacher?.user?.name ?? undefined,
+      });
+      subjectsByArm.set(armId, list);
+    }
+
+    const studentCountByArm = new Map<number, number>();
+    for (const sc of studentCounts) {
+      if (sc.armId) studentCountByArm.set(sc.armId, sc._count.id);
+    }
 
     const formattedArms = arms.map((arm) => ({
       id: String(arm.id),
       name: arm.name,
       capacity: arm.capacity ?? null,
-      classId: String(arm.classId),
+      classId: arm.classId ? String(arm.classId) : null,
       className: arm.class?.name || null,
       isActive: arm.isActive,
+      teacherId: arm.teacherId ? String(arm.teacherId) : null,
+      teacherName: arm.teacher?.user?.name ?? null,
+      subjects: subjectsByArm.get(arm.id) ?? [],
+      studentCount: studentCountByArm.get(arm.id) ?? 0,
       createdAt: arm.createdAt,
     }));
 

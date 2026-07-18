@@ -261,9 +261,9 @@ export function ParentBillHub({
           <article key={bill.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
             <div className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] p-4 text-white">
               <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-semibold">Bill #{bill.invoiceNumber}</p>
-                  <p className="text-xs text-white/80">{bill.studentName} • {bill.className ?? "Class"} • {bill.termName} / {bill.sessionName}</p>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">Bill #{bill.invoiceNumber}</p>
+                  <p className="truncate text-xs text-white/80">{bill.studentName} • {bill.className ?? "Class"} • {bill.termName} / {bill.sessionName}</p>
                 </div>
                 <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${billStatusStyle(bill.status)}`}>
                   {paymentStatusLabel(bill.status)}
@@ -272,7 +272,7 @@ export function ParentBillHub({
             </div>
 
             <div className="p-4">
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-3 grid-cols-2 sm:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-700">Outstanding Fee</p>
                   <p className="mt-1 text-base font-bold text-slate-900">{money(bill.balance)}</p>
@@ -311,40 +311,61 @@ export function ParentBillHub({
                     <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-700">Fee Breakdown</h4>
                   </div>
                   {bill.items.length ? (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full text-sm">
-                        <thead>
-                          <tr className="bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-600">
-                            <th className="px-3 py-2">Fee Item</th>
-                            <th className="px-3 py-2 text-right">Amount</th>
-                            <th className="px-3 py-2 text-right">Share</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {groupedEntries.map(([groupName, groupItems]) => (
-                            <Fragment key={`group-${bill.id}-${groupName}`}>
-                              <tr className="bg-slate-100">
-                                <td className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700" colSpan={3}>{groupName}</td>
-                              </tr>
-                              {groupItems.map((item, idx) => {
-                                const share = bill.totalAmount > 0 ? (item.amount / bill.totalAmount) * 100 : 0;
-                                return (
-                                  <tr key={item.id} className={idx % 2 ? "bg-white" : "bg-slate-50/70"}>
-                                    <td className="px-3 py-2 font-medium text-slate-700">
-                                      {item.name}
-                                      {isOptionalItem(item) ? <span className="ml-2 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">Optional</span> : null}
-                                      {removalMap.get(item.id) ? <span className="ml-2 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Removal Requested</span> : null}
-                                    </td>
-                                    <td className="px-3 py-2 text-right font-semibold text-slate-900">{money(item.amount)}</td>
-                                    <td className="px-3 py-2 text-right text-slate-600">{share.toFixed(1)}%</td>
-                                  </tr>
-                                );
-                              })}
-                            </Fragment>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <>
+                      {/* Desktop table */}
+                      <div className="hidden overflow-x-auto sm:block">
+                        <table className="min-w-full text-sm">
+                          <thead>
+                            <tr className="bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-600">
+                              <th className="px-3 py-2">Fee Item</th>
+                              <th className="px-3 py-2 text-right">Amount</th>
+                              <th className="px-3 py-2 text-right">Share</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {groupedEntries.map(([groupName, groupItems]) => (
+                              <Fragment key={`group-${bill.id}-${groupName}`}>
+                                <tr className="bg-slate-100">
+                                  <td className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700" colSpan={3}>{groupName}</td>
+                                </tr>
+                                {groupItems.map((item, idx) => {
+                                  const share = bill.totalAmount > 0 ? (item.amount / bill.totalAmount) * 100 : 0;
+                                  return (
+                                    <tr key={item.id} className={idx % 2 ? "bg-white" : "bg-slate-50/70"}>
+                                      <td className="px-3 py-2 font-medium text-slate-700">
+                                        {item.name}
+                                        {isOptionalItem(item) ? <span className="ml-2 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">Optional</span> : null}
+                                        {removalMap.get(item.id) ? <span className="ml-2 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Removal Requested</span> : null}
+                                      </td>
+                                      <td className="px-3 py-2 text-right font-semibold text-slate-900">{money(item.amount)}</td>
+                                      <td className="px-3 py-2 text-right text-slate-600">{share.toFixed(1)}%</td>
+                                    </tr>
+                                  );
+                                })}
+                              </Fragment>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile card list */}
+                      <div className="divide-y divide-slate-100 sm:hidden">
+                        {groupedEntries.map(([groupName, groupItems]) => (
+                          <div key={`group-${bill.id}-${groupName}`}>
+                            <div className="bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-700">{groupName}</div>
+                            {groupItems.map((item) => (
+                              <div key={item.id} className="flex items-center justify-between gap-2 px-3 py-2">
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-medium text-slate-700">{item.name}</p>
+                                  {isOptionalItem(item) && <span className="ml-1 rounded-full border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-[9px] font-medium text-blue-700">Optional</span>}
+                                </div>
+                                <span className="shrink-0 text-sm font-semibold text-slate-900">{money(item.amount)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   ) : (
                     <p className="px-3 py-3 text-sm text-slate-500">No line items available for this bill.</p>
                   )}

@@ -24,10 +24,8 @@ export default async function BrandingSettingsPage() {
     );
   }
 
-  const branding = await prisma.schoolBranding.findUnique({ where: { schoolId: "default" } });
-  console.log("[branding page] branding row:", branding);
-  console.log("[branding page] profile.school.branding:", (profile.school as any).branding);
-  console.log("[branding page] logoUrl:", branding?.logoUrl);
+  const schoolId = profile.schoolId || "default";
+  const branding = await prisma.schoolBranding.findUnique({ where: { schoolId } });
 
   return (
     <PortalShell

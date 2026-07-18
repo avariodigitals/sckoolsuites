@@ -52,7 +52,7 @@ export const getAdminOverview = cache(async function getAdminOverview(schoolId: 
       schoolId,
     };
 
-    const [students, teachers, parents, classes, bills, paid, attendance, announcements, loanOutstanding, assetValue] = await Promise.all([
+    const [students, teacherTableCount, parents, classes, bills, paid, attendance, announcements, loanOutstanding, assetValue, teacherRoleCount] = await Promise.all([
       hasSession
         ? prisma.studentEnrollment.count({ where: enrollmentWhere })
         : prisma.student.count({ where: { schoolId } }),
@@ -65,7 +65,10 @@ export const getAdminOverview = cache(async function getAdminOverview(schoolId: 
       prisma.announcement.findMany({ where: announcementWhere, select: { title: true, body: true }, take: 1000 }),
       prisma.loan.aggregate({ where: { schoolId, status: "ACTIVE" }, _sum: { outstandingBalance: true } }).catch(() => ({ _sum: { outstandingBalance: 0 } })),
       prisma.asset.aggregate({ where: { schoolId, isActive: true }, _sum: { currentValue: true } }).catch(() => ({ _sum: { currentValue: 0 } })),
+      prisma.user.count({ where: { schoolId, role: { name: "TEACHER" } } }).catch(() => 0),
     ]);
+
+    const teachers = teacherTableCount > 0 ? teacherTableCount : teacherRoleCount;
 
     return {
       students,
@@ -122,7 +125,7 @@ export const getCoreSchoolDataByContext = cache(async function getCoreSchoolData
   };
 
   const [
-    studentCount, parentCount, teacherCount, classCount, subjectCount,
+    studentCount, parentCount, teacherTableCount, classCount, subjectCount,
     students,
     parents,
     teachers,
@@ -262,6 +265,9 @@ export const getCoreSchoolDataByContext = cache(async function getCoreSchoolData
     prisma.term.findMany({ where: { schoolId }, include: { session: true }, orderBy: [{ createdAt: "desc" }] }),
   ]);
 
+  const teacherRoleCount = await prisma.user.count({ where: { schoolId, role: { name: "TEACHER" } } }).catch(() => 0);
+  const teacherCount = teacherTableCount > 0 ? teacherTableCount : teacherRoleCount;
+
   return {
     school,
     students,
@@ -304,7 +310,7 @@ export const getDashboardData = cache(async function getDashboardData(schoolId: 
   };
 
   const [
-    studentCount, parentCount, teacherCount, classCount, subjectCount,
+    studentCount, parentCount, teacherTableCount, classCount, subjectCount,
     sessions, terms,
     bills, payments,
     scores, attendance,
@@ -355,6 +361,9 @@ export const getDashboardData = cache(async function getDashboardData(schoolId: 
     prisma.expenseCategory.count({ where: { schoolId } }),
     prisma.expense.aggregate({ where: { schoolId }, _sum: { amount: true } }),
   ]);
+
+  const teacherRoleCount = await prisma.user.count({ where: { schoolId, role: { name: "TEACHER" } } }).catch(() => 0);
+  const teacherCount = teacherTableCount > 0 ? teacherTableCount : teacherRoleCount;
 
   const selectedSession = sessions.find((s: any) => s.id === context?.sessionId) ?? null;
   const selectedTerm = terms.find((t: any) => t.id === context?.termId) ?? null;

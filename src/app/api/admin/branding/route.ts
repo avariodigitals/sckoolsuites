@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
   if (!schoolId) {
     return NextResponse.json({ error: "No school selected" }, { status: 400 });
   }
@@ -41,42 +41,50 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  await prisma.school.update({
-    where: { id: schoolId },
-    data: {
-      name: parsed.data.schoolName,
-      address: parsed.data.address,
-      email: parsed.data.email,
-      phone: parsed.data.phone,
-      website: parsed.data.website,
-      motto: parsed.data.motto,
-    },
-  });
+  try {
+    await prisma.school.update({
+      where: { id: schoolId },
+      data: {
+        name: parsed.data.schoolName,
+        address: parsed.data.address,
+        email: parsed.data.email,
+        phone: parsed.data.phone,
+        website: parsed.data.website,
+        motto: parsed.data.motto,
+      },
+    });
 
-  await prisma.schoolBranding.upsert({
-    where: { schoolId },
-    update: {
-      logoUrl: parsed.data.logoUrl,
-      primaryColor: parsed.data.primaryColor,
-      secondaryColor: parsed.data.secondaryColor,
-      principalSignature: parsed.data.principalSignature,
-      teacherSignature: parsed.data.teacherSignature,
-      schoolStamp: parsed.data.schoolStamp,
-    },
-    create: {
-      schoolId,
-      logoUrl: parsed.data.logoUrl,
-      primaryColor: parsed.data.primaryColor,
-      secondaryColor: parsed.data.secondaryColor,
-      principalSignature: parsed.data.principalSignature,
-      teacherSignature: parsed.data.teacherSignature,
-      schoolStamp: parsed.data.schoolStamp,
-    },
-  });
+    await prisma.schoolBranding.upsert({
+      where: { schoolId },
+      update: {
+        logoUrl: parsed.data.logoUrl,
+        primaryColor: parsed.data.primaryColor,
+        secondaryColor: parsed.data.secondaryColor,
+        principalSignature: parsed.data.principalSignature,
+        teacherSignature: parsed.data.teacherSignature,
+        schoolStamp: parsed.data.schoolStamp,
+      },
+      create: {
+        schoolId,
+        logoUrl: parsed.data.logoUrl,
+        primaryColor: parsed.data.primaryColor,
+        secondaryColor: parsed.data.secondaryColor,
+        principalSignature: parsed.data.principalSignature,
+        teacherSignature: parsed.data.teacherSignature,
+        schoolStamp: parsed.data.schoolStamp,
+      },
+    });
 
-  // Invalidate cached pages so logo/colors update immediately
-  revalidatePath("/admin", "layout");
-  revalidatePath("/admin/settings", "layout");
+    // Invalidate cached pages so logo/colors update immediately
+    revalidatePath("/admin", "layout");
+    revalidatePath("/admin/settings", "layout");
 
-  return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("[api/admin/branding] Error saving branding:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to save branding settings" },
+      { status: 500 }
+    );
+  }
 }

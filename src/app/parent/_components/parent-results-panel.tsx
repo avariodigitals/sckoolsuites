@@ -178,32 +178,53 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">Subject Performance</p>
                     </div>
                     {item.subjects.length ? (
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full text-sm">
-                          <thead>
-                            <tr className="bg-slate-100 text-left text-[11px] uppercase tracking-wide text-slate-600">
-                              <th className="px-3 py-2">Subject</th>
-                              <th className="px-3 py-2 text-right">Score</th>
-                              <th className="px-3 py-2 text-right">Grade</th>
-                              <th className="px-3 py-2">Progress</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {item.subjects.map((score, index) => (
-                              <tr key={score.id} className={index % 2 ? "bg-white" : "bg-slate-50/70"}>
-                                <td className="px-3 py-2 font-medium text-slate-800">{score.subjectName}</td>
-                                <td className="px-3 py-2 text-right font-semibold text-slate-900">{score.total.toFixed(1)}%</td>
-                                <td className="px-3 py-2 text-right"><span className="rounded-full bg-slate-900 px-2 py-0.5 text-[11px] font-semibold text-white">{score.grade}</span></td>
-                                <td className="px-3 py-2">
-                                  <div className="h-2 rounded-full bg-slate-200">
-                                    <div className="h-2 rounded-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]" style={{ width: `${Math.max(0, Math.min(100, score.total))}%` }} />
-                                  </div>
-                                </td>
+                      <>
+                        {/* Desktop table */}
+                        <div className="hidden overflow-x-auto sm:block">
+                          <table className="min-w-full text-sm">
+                            <thead>
+                              <tr className="bg-slate-100 text-left text-[11px] uppercase tracking-wide text-slate-600">
+                                <th className="px-3 py-2">Subject</th>
+                                <th className="px-3 py-2 text-right">Score</th>
+                                <th className="px-3 py-2 text-right">Grade</th>
+                                <th className="px-3 py-2">Progress</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody>
+                              {item.subjects.map((score, index) => (
+                                <tr key={score.id} className={index % 2 ? "bg-white" : "bg-slate-50/70"}>
+                                  <td className="px-3 py-2 font-medium text-slate-800">{score.subjectName}</td>
+                                  <td className="px-3 py-2 text-right font-semibold text-slate-900">{score.total.toFixed(1)}%</td>
+                                  <td className="px-3 py-2 text-right"><span className="rounded-full bg-slate-900 px-2 py-0.5 text-[11px] font-semibold text-white">{score.grade}</span></td>
+                                  <td className="px-3 py-2">
+                                    <div className="h-2 rounded-full bg-slate-200">
+                                      <div className="h-2 rounded-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]" style={{ width: `${Math.max(0, Math.min(100, score.total))}%` }} />
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Mobile card list */}
+                        <div className="divide-y divide-slate-100 sm:hidden">
+                          {item.subjects.map((score) => (
+                            <div key={score.id} className="px-3 py-2.5">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="truncate text-sm font-medium text-slate-800">{score.subjectName}</p>
+                                <span className="shrink-0 rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold text-white">{score.grade}</span>
+                              </div>
+                              <div className="mt-1 flex items-center gap-2">
+                                <div className="h-2 flex-1 rounded-full bg-slate-200">
+                                  <div className="h-2 rounded-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]" style={{ width: `${Math.max(0, Math.min(100, score.total))}%` }} />
+                                </div>
+                                <span className="shrink-0 text-xs font-semibold text-slate-900">{score.total.toFixed(1)}%</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     ) : <p className="p-3 text-sm text-slate-500">No subject performance records.</p>}
                   </section>
                 </div>

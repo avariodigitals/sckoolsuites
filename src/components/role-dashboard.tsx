@@ -81,15 +81,15 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
 
         {/* Create School Prompt - If no schools exist */}
         {schools.length === 0 && (
-          <div className="mb-6 rounded-xl border border-indigo-200 bg-indigo-50 p-6">
-            <div className="flex items-start gap-4">
-              <div className="rounded-full bg-indigo-100 p-3">
-                <svg className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="mb-6 rounded-xl border border-indigo-200 bg-indigo-50 p-4 sm:p-6">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="rounded-full bg-indigo-100 p-2.5 sm:p-3 shrink-0">
+                <svg className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-indigo-900">Set Up Your School</h3>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base sm:text-lg font-semibold text-indigo-900">Set Up Your School</h3>
                 <p className="mt-1 text-sm text-indigo-700">
                   You are logged in as Super Admin. To start using the system, create your school first. 
                   Once created, you can manage students, teachers, classes, fees, and all other features.
@@ -110,12 +110,12 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
 
         {/* Manage Schools Section - If schools exist */}
         {schools.length > 0 && (
-          <div className="mb-6 rounded-xl border border-slate-200 bg-white p-6">
+          <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-900">Your Schools</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-slate-900">Your Schools</h3>
               <Link 
                 href="/admin/settings/school" 
-                className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                className="text-sm text-indigo-600 hover:text-indigo-700 font-medium shrink-0"
               >
                 + Add School
               </Link>
@@ -123,9 +123,9 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
             <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {schools.map((school: any) => (
                 <div key={school.id} className="p-4 rounded-lg border border-slate-200 hover:border-indigo-300 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="font-medium text-slate-900">{school.name}</h4>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h4 className="font-medium text-slate-900 truncate">{school.name}</h4>
                       <p className="text-sm text-slate-500">{school.students.length} students • {school.teachers.length} teachers</p>
                       <span className={`inline-flex mt-2 px-2 py-1 text-xs rounded-full ${school.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
                         {school.isActive ? 'Active' : 'Inactive'}
@@ -140,7 +140,7 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
                     >
                       <button
                         type="submit"
-                        className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                        className="text-sm text-indigo-600 hover:text-indigo-700 font-medium shrink-0"
                       >
                         Manage →
                       </button>
@@ -364,24 +364,24 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
           <div className="mb-6">
             <SectionCard title="Reception Overview" action={{ label: "View Details", href: "/admin/reception" }}>
               <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-                <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
-                  <p className="text-sm text-blue-600 font-medium">Total Enquiries</p>
-                  <p className="text-2xl font-bold text-blue-900">{enquiryCount}</p>
+                <div className="p-3 sm:p-4 rounded-lg bg-blue-50 border border-blue-100">
+                  <p className="text-xs sm:text-sm text-blue-600 font-medium truncate">Total Enquiries</p>
+                  <p className="text-xl sm:text-2xl font-bold text-blue-900">{enquiryCount}</p>
                   <Link href="/admin/reception/enquiry" className="text-xs text-blue-600 hover:underline">View all →</Link>
                 </div>
-                <div className="p-4 rounded-lg bg-amber-50 border border-amber-100">
-                  <p className="text-sm text-amber-600 font-medium">Visitors Checked In</p>
-                  <p className="text-2xl font-bold text-amber-900">{visitorCount}</p>
+                <div className="p-3 sm:p-4 rounded-lg bg-amber-50 border border-amber-100">
+                  <p className="text-xs sm:text-sm text-amber-600 font-medium truncate">Visitors Checked In</p>
+                  <p className="text-xl sm:text-2xl font-bold text-amber-900">{visitorCount}</p>
                   <Link href="/admin/reception" className="text-xs text-amber-600 hover:underline">View log →</Link>
                 </div>
-                <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-100">
-                  <p className="text-sm text-emerald-600 font-medium">Active Gate Passes</p>
-                  <p className="text-2xl font-bold text-emerald-900">{gatePassCount}</p>
+                <div className="p-3 sm:p-4 rounded-lg bg-emerald-50 border border-emerald-100">
+                  <p className="text-xs sm:text-sm text-emerald-600 font-medium truncate">Active Gate Passes</p>
+                  <p className="text-xl sm:text-2xl font-bold text-emerald-900">{gatePassCount}</p>
                   <Link href="/admin/reception/gate-pass" className="text-xs text-emerald-600 hover:underline">Manage →</Link>
                 </div>
-                <div className="p-4 rounded-lg bg-red-50 border border-red-100">
-                  <p className="text-sm text-red-600 font-medium">Open Complaints</p>
-                  <p className="text-2xl font-bold text-red-900">{complaintCount}</p>
+                <div className="p-3 sm:p-4 rounded-lg bg-red-50 border border-red-100">
+                  <p className="text-xs sm:text-sm text-red-600 font-medium truncate">Open Complaints</p>
+                  <p className="text-xl sm:text-2xl font-bold text-red-900">{complaintCount}</p>
                   <Link href="/admin/reception/complaint" className="text-xs text-red-600 hover:underline">Resolve →</Link>
                 </div>
               </div>

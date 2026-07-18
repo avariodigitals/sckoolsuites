@@ -64,7 +64,7 @@ export function SchoolCalendarView({ events }: SchoolCalendarViewProps) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       {/* header */}
-      <div className="flex items-center justify-between bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] px-5 py-3 text-white">
+      <div className="flex items-center justify-between bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] px-3 sm:px-5 py-3 text-white">
         <button
           onClick={prevMonth}
           className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors text-lg font-bold"
@@ -72,8 +72,8 @@ export function SchoolCalendarView({ events }: SchoolCalendarViewProps) {
         >
           ‹
         </button>
-        <div className="text-center">
-          <p className="text-lg font-bold">{MONTH_NAMES[month]}</p>
+        <div className="text-center min-w-0">
+          <p className="text-base sm:text-lg font-bold truncate">{MONTH_NAMES[month]}</p>
           <p className="text-xs text-white/70">{year}</p>
         </div>
         <button
@@ -88,7 +88,7 @@ export function SchoolCalendarView({ events }: SchoolCalendarViewProps) {
       {/* day-of-week header */}
       <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
         {DAY_LABELS.map((d) => (
-          <div key={d} className={`py-2 text-center text-[11px] font-semibold uppercase tracking-wide ${d === "Sun" || d === "Sat" ? "text-rose-400" : "text-slate-500"}`}>
+          <div key={d} className={`py-1.5 sm:py-2 text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide ${d === "Sun" || d === "Sat" ? "text-rose-400" : "text-slate-500"}`}>
             {d}
           </div>
         ))}
@@ -99,7 +99,7 @@ export function SchoolCalendarView({ events }: SchoolCalendarViewProps) {
         {Array.from({ length: cells }, (_, i) => {
           const dayNum = i - leadBlanks + 1;
           if (dayNum < 1 || dayNum > lastDay.getDate()) {
-            return <div key={i} className="h-20 border-b border-r border-slate-100 bg-slate-50/50" />;
+            return <div key={i} className="h-14 sm:h-20 border-b border-r border-slate-100 bg-slate-50/50" />;
           }
           const ymd = `${year}-${String(month + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
           const dayEvents = eventMap[ymd] ?? [];
@@ -113,14 +113,14 @@ export function SchoolCalendarView({ events }: SchoolCalendarViewProps) {
               key={i}
               onClick={() => setSelected(isSelected ? null : ymd)}
               className={[
-                "relative flex h-20 flex-col border-b border-r border-slate-100 p-1 text-left transition-colors overflow-hidden",
+                "relative flex h-14 sm:h-20 flex-col border-b border-r border-slate-100 p-1 text-left transition-colors overflow-hidden",
                 isWeekend ? "bg-rose-50/40" : "bg-white hover:bg-slate-50",
                 isSelected ? "ring-2 ring-inset ring-blue-400 bg-blue-50" : "",
               ].join(" ")}
             >
               {/* day number */}
               <span className={[
-                "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                "inline-flex h-5 w-5 sm:h-6 sm:w-6 shrink-0 items-center justify-center rounded-full text-[10px] sm:text-xs font-semibold",
                 isToday ? "bg-[var(--brand-primary)] text-white" : isWeekend ? "text-rose-500" : "text-slate-700",
               ].join(" ")}>
                 {dayNum}
@@ -151,17 +151,17 @@ export function SchoolCalendarView({ events }: SchoolCalendarViewProps) {
 
       {/* selected day events panel */}
       {selected && (
-        <div className="border-t border-slate-200 px-5 py-4">
+        <div className="border-t border-slate-200 px-3 sm:px-5 py-3 sm:py-4">
           <p className="mb-2 text-sm font-semibold text-slate-700">
             {new Date(selected + "T12:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
           </p>
           {selectedEvents.length > 0 ? (
             <div className="space-y-2">
               {selectedEvents.map((ev, i) => (
-                <div key={i} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${TYPE_META[ev.type].badge}`}>
+                <div key={i} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${TYPE_META[ev.type].badge} overflow-hidden`}>
                   <span>{TYPE_META[ev.type].emoji}</span>
-                  <span className="font-medium">{TYPE_META[ev.type].text}</span>
-                  <span className="text-slate-600">— {ev.label}</span>
+                  <span className="font-medium shrink-0">{TYPE_META[ev.type].text}</span>
+                  <span className="text-slate-600 truncate">— {ev.label}</span>
                 </div>
               ))}
             </div>
@@ -172,7 +172,7 @@ export function SchoolCalendarView({ events }: SchoolCalendarViewProps) {
       )}
 
       {/* legend */}
-      <div className="flex flex-wrap gap-3 border-t border-slate-100 bg-slate-50 px-5 py-3">
+      <div className="flex flex-wrap gap-2 sm:gap-3 border-t border-slate-100 bg-slate-50 px-3 sm:px-5 py-3">
         {(Object.keys(TYPE_META) as CalendarEvent["type"][]).map((type) => (
           <div key={type} className="flex items-center gap-1.5 text-[11px] text-slate-600">
             <span className={`h-2.5 w-2.5 rounded-full ${TYPE_META[type].dot}`} />

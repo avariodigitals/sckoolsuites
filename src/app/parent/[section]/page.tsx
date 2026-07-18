@@ -5,6 +5,7 @@ import {
   BookOpen,
   CalendarCheck,
   FileBarChart,
+  FileCheck,
   Megaphone,
   Receipt,
   User,
@@ -28,13 +29,14 @@ import { SchoolCalendarView } from "@/app/parent/_components/school-calendar-vie
 import { ParentResultsPanel } from "@/app/parent/_components/parent-results-panel";
 import { ParentLmsPanel } from "@/app/parent/_components/parent-lms-panel";
 import { ParentAttendanceNotify } from "@/app/parent/_components/parent-attendance-notify";
+import { ParentDocumentsPanel } from "@/app/parent/_components/parent-documents-panel";
 import { ParentAttendanceDashboard } from "@/app/parent/_components/parent-attendance-dashboard";
 import { ParentSurveyPanel } from "@/app/parent/_components/parent-survey-panel";
 import { AnnouncementListWithModal } from "@/components/announcement-list-with-modal";
 import { calculateGradeFromBands } from "@/lib/grades";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 
-const allowed = ["profile", "children", "fees", "payments", "attendance", "results", "report-cards", "school-calendar", "messages", "complaints", "announcements", "surveys", "lms"] as const;
+const allowed = ["profile", "children", "fees", "payments", "attendance", "results", "report-cards", "documents", "school-calendar", "messages", "complaints", "announcements", "surveys", "lms"] as const;
 type AllowedSection = (typeof allowed)[number];
 
 const tabs: Record<AllowedSection, { title: string; description: string; icon: React.ReactNode }> = {
@@ -45,6 +47,7 @@ const tabs: Record<AllowedSection, { title: string; description: string; icon: R
   attendance: { title: "Attendance", description: "Attendance calendar/list with percentage and punctuality rating.", icon: <CalendarCheck className="h-4 w-4" /> },
   results: { title: "Results", description: "Term result summaries, GPA, comments, and subject performance tables.", icon: <FileBarChart className="h-4 w-4" /> },
   "report-cards": { title: "Report Cards", description: "Open and print full report cards for each child.", icon: <FileBarChart className="h-4 w-4" /> },
+  documents: { title: "Documents", description: "View and download issued documents (ID Cards, Certificates, Transcripts, Awards, Testimonials).", icon: <FileCheck className="h-4 w-4" /> },
   "school-calendar": { title: "School Calendar", description: "Active session/term timeline and key resumption dates.", icon: <Clock3 className="h-4 w-4" /> },
   messages: { title: "Messages", description: "Send tracked messages to school/admin/teacher and monitor status.", icon: <Megaphone className="h-4 w-4" /> },
   complaints: { title: "Complaints", description: "Submit and track complaints to school management and support desks.", icon: <Megaphone className="h-4 w-4" /> },
@@ -498,10 +501,10 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
           <CardContent className="space-y-2 text-sm">
             {receipts.length ? receipts.map((receipt: any) => (
               <div key={receipt.id} className="glass-soft rounded-xl p-3">
-                <p className="font-medium">{receipt.receiptNumber}</p>
-                <p>{[receipt.student.firstName, receipt.student.middleName, receipt.student.lastName].filter(Boolean).join(" ") || receipt.student.user.name} • {naira(receipt.amount)} • {receipt.paymentMethod}</p>
-                <p>Date: {formatDate(receipt.paymentDate)} • Balance: {naira(receipt.balance)}</p>
-                <Link href={`/receipt/${receipt.id}`} className="text-[var(--brand-primary)] underline">Open Receipt</Link>
+                <p className="truncate font-medium">{receipt.receiptNumber}</p>
+                <p className="truncate text-xs sm:text-sm text-slate-600">{[receipt.student.firstName, receipt.student.middleName, receipt.student.lastName].filter(Boolean).join(" ") || receipt.student.user.name} • {naira(receipt.amount)} • {receipt.paymentMethod}</p>
+                <p className="truncate text-xs text-slate-500">Date: {formatDate(receipt.paymentDate)} • Balance: {naira(receipt.balance)}</p>
+                <Link href={`/receipt/${receipt.id}`} className="text-[var(--brand-primary)] underline text-xs sm:text-sm">Open Receipt</Link>
               </div>
             )) : <p className="text-slate-500">No confirmed receipts yet.</p>}
           </CardContent>
@@ -526,23 +529,23 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
             return (
               <Card key={child.id} className="glass-panel overflow-hidden rounded-2xl border border-slate-200/70">
                 <CardHeader className="bg-gradient-to-r from-slate-900 to-slate-700 text-white">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-start justify-between gap-2 sm:gap-3">
+                    <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                       <Image
                         src={childPhotoUrl(child.passportUrl, child.user.name)}
                         alt={`${child.user.name} profile photo`}
                         width={48}
                         height={48}
                         unoptimized
-                        className="h-12 w-12 rounded-full border border-white/30 bg-white/10 object-cover"
+                        className="h-10 w-10 sm:h-12 sm:w-12 rounded-full border border-white/30 bg-white/10 object-cover shrink-0"
                       />
-                      <div>
-                        <CardTitle className="text-base text-white">{child.user.name}</CardTitle>
-                        <p className="text-xs text-white/80">{child.class?.name ?? "Not assigned"} • Report</p>
+                      <div className="min-w-0">
+                        <CardTitle className="truncate text-sm sm:text-base text-white">{child.user.name}</CardTitle>
+                        <p className="truncate text-xs text-white/80">{child.class?.name ?? "Not assigned"} • Report</p>
                       </div>
                     </div>
-                    <span className="rounded-full border border-white/35 bg-white/10 px-2 py-1 text-[11px] uppercase tracking-wide">
-                      {latest ? `${latest.term.name} • ${latest.session.name}${isUploadedPdf ? " • Uploaded PDF" : ""}` : "No report yet"}
+                    <span className="shrink-0 rounded-full border border-white/35 bg-white/10 px-2 py-1 text-[10px] sm:text-[11px] uppercase tracking-wide whitespace-nowrap">
+                      {latest ? `${latest.term.name} • ${latest.session.name}${isUploadedPdf ? " • PDF" : ""}` : "No report"}
                     </span>
                   </div>
                 </CardHeader>
@@ -569,9 +572,9 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                       <div className="space-y-3">
                         {topSubjects.map((score) => (
                           <div key={score.id} className="space-y-1">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-medium text-slate-700">{score.subject.name}</span>
-                              <span className="text-slate-600">{score.total}% ({score.grade})</span>
+                            <div className="flex items-center justify-between gap-2 text-xs">
+                              <span className="truncate font-medium text-slate-700">{score.subject.name}</span>
+                              <span className="shrink-0 text-slate-600">{score.total}% ({score.grade})</span>
                             </div>
                             <div className="h-2 rounded-full bg-slate-200">
                               <div className="h-2 rounded-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]" style={{ width: `${Math.max(0, Math.min(100, score.total ?? 0))}%` }} />
@@ -682,6 +685,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
           <CardContent><ParentSurveyPanel /></CardContent>
         </Card>
       ) : null}
+      {sectionKey === "documents" ? <ParentDocumentsPanel /> : null}
       {sectionKey === "profile" ? (
         <section className="space-y-4">
           <section className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
@@ -724,10 +728,10 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                 {children.length ? (
                   <div className="grid gap-2 sm:grid-cols-2">
                     {children.map((child: any) => (
-                      <div key={child.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white/70 p-3">
-                        <div>
-                          <p className="font-medium text-slate-900">{child.user?.name}</p>
-                          <p className="text-xs text-slate-500">{child.class?.name ?? "No class"} · {child.gender} · Age {child.age}</p>
+                      <div key={child.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white/70 p-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-slate-900">{child.user?.name}</p>
+                          <p className="truncate text-xs text-slate-500">{child.class?.name ?? "No class"} · {child.gender} · Age {child.age}</p>
                         </div>
                         <Link href={`/parent/children/${child.id}`} className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800">
                           View
@@ -777,10 +781,10 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                 )}
               </div>
               <div className="mt-5">
-                <div className="mb-1 flex justify-between text-xs text-white/70">
-                  <span>{formatDate(context.term?.startDate)}</span>
-                  <span>{termElapsed.toFixed(0)}% elapsed</span>
-                  <span>{formatDate(context.term?.endDate)}</span>
+                <div className="mb-1 flex justify-between gap-1 text-[10px] sm:text-xs text-white/70">
+                  <span className="shrink-0">{formatDate(context.term?.startDate)}</span>
+                  <span className="text-center truncate">{termElapsed.toFixed(0)}% elapsed</span>
+                  <span className="shrink-0">{formatDate(context.term?.endDate)}</span>
                 </div>
                 <div className="h-2.5 rounded-full bg-white/20">
                   <div className="h-2.5 rounded-full bg-white transition-all" style={{ width: `${termElapsed}%` }} />
@@ -790,32 +794,32 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
 
             {/* key dates */}
             <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-              <div className="flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white text-lg">📅</div>
-                <div>
+              <div className="flex items-center gap-2 sm:gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-3 sm:p-4">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-blue-600 text-white text-base sm:text-lg shrink-0">📅</div>
+                <div className="min-w-0">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-600">Term Start</p>
-                  <p className="font-semibold text-slate-900">{formatDate(context.term?.startDate) ?? "—"}</p>
+                  <p className="font-semibold text-slate-900 truncate">{formatDate(context.term?.startDate) ?? "—"}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-600 text-white text-lg">🏁</div>
-                <div>
+              <div className="flex items-center gap-2 sm:gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-3 sm:p-4">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-rose-600 text-white text-base sm:text-lg shrink-0">🏁</div>
+                <div className="min-w-0">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-600">Term End</p>
-                  <p className="font-semibold text-slate-900">{formatDate(context.term?.endDate) ?? "—"}</p>
+                  <p className="font-semibold text-slate-900 truncate">{formatDate(context.term?.endDate) ?? "—"}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white text-lg">🔔</div>
-                <div>
+              <div className="flex items-center gap-2 sm:gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 sm:p-4">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-emerald-600 text-white text-base sm:text-lg shrink-0">🔔</div>
+                <div className="min-w-0">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-600">Resumption</p>
-                  <p className="font-semibold text-slate-900">{formatDate(context.term?.resumptionDate) ?? "—"}</p>
+                  <p className="font-semibold text-slate-900 truncate">{formatDate(context.term?.resumptionDate) ?? "—"}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-600 text-white text-lg">📚</div>
-                <div>
+              <div className="flex items-center gap-2 sm:gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-3 sm:p-4">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-violet-600 text-white text-base sm:text-lg shrink-0">📚</div>
+                <div className="min-w-0">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-600">Terms This Session</p>
-                  <p className="font-semibold text-slate-900">{allTermsForSession.length} term{allTermsForSession.length !== 1 ? "s" : ""}</p>
+                  <p className="font-semibold text-slate-900 truncate">{allTermsForSession.length} term{allTermsForSession.length !== 1 ? "s" : ""}</p>
                 </div>
               </div>
             </div>
@@ -904,7 +908,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
 
             {/* announcements */}
             {recentAnnouncements.length > 0 && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5 shadow-sm">
                 <p className="mb-3 text-sm font-semibold text-amber-800">📢 Latest School Announcements</p>
                 <div className="space-y-2">
                   {recentAnnouncements.map((item: any) => (

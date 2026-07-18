@@ -49,10 +49,10 @@ export function StatCard({ title, value, change, trend = "neutral", iconName, hr
       "rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-slate-200",
       href && "hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer"
     )}>
-      <div className="flex items-start justify-between">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-600">{title}</p>
-          <p className="mt-2 text-2xl sm:text-3xl font-bold text-slate-900 truncate">{value}</p>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs sm:text-sm font-medium text-slate-600 truncate">{title}</p>
+          <p className="mt-1 sm:mt-2 text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 truncate">{value}</p>
           {change && (
             <div className="mt-2 flex items-center gap-1 text-sm">
               {trend === "up" && <TrendingUp className="h-4 w-4 text-emerald-500" />}

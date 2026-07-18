@@ -78,7 +78,12 @@ export function ArmSubjectMappingManager() {
         const teachersData = await teachersRes.json().catch(() => []);
         
         if (!cancelled) {
-          setArms(armsData.arms ?? []);
+          setArms((armsData.arms ?? []).map((a: any) => ({
+            ...a,
+            subjects: a.subjects ?? [],
+            studentCount: a.studentCount ?? 0,
+            className: a.className ?? "Unassigned",
+          })));
           setSubjects(subjectsData.subjects ?? []);
           setTeachers(teachersData.teachers ?? []);
         }

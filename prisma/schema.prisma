@@ -1753,19 +1753,22 @@ model SchoolBankAccount {
 }
 
 model SchoolTemplate {
-  id             Int      @id @default(autoincrement())
-  schoolId       String   @map("school_id")
-  name           String
-  type           String
-  classGroupName String?  @map("class_group_name")
-  termName       String?  @map("term_name")
-  fileUrl        String   @map("file_url")
-  fileType       String   @map("file_type")
-  isActive       Boolean  @default(true) @map("is_active")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  id                   Int      @id @default(autoincrement())
+  schoolId             String   @map("school_id")
+  name                 String
+  type                 String
+  classGroupName       String?  @map("class_group_name")
+  termName             String?  @map("term_name")
+  fileUrl              String   @map("file_url")
+  fileType             String   @map("file_type")
+  fieldConfig          String?  @map("field_config")
+  eligibleClassGroups  String?  @map("eligible_class_groups")
+  isActive             Boolean  @default(true) @map("is_active")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
 
-  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  school              School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  issuedDocuments     StudentDocument[]
 
   @@index([schoolId])
   @@map("school_template")
@@ -1966,26 +1969,33 @@ model PushSubscription {
 }
 
 model StudentDocument {
-  id          Int      @id @default(autoincrement())
-  schoolId    String   @map("school_id")
-  studentId   Int      @map("student_id")
-  title       String
-  documentType String  @map("document_type")
-  fileUrl     String   @map("file_url")
-  fileName    String?  @map("file_name")
-  fileSize    Int?     @map("file_size")
-  mimeType    String?  @map("mime_type")
-  description String?
-  uploadedById Int?    @map("uploaded_by_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+  id                Int      @id @default(autoincrement())
+  schoolId          String   @map("school_id")
+  studentId         Int      @map("student_id")
+  title             String
+  documentType      String   @map("document_type")
+  fileUrl           String   @map("file_url")
+  fileName          String?  @map("file_name")
+  fileSize          Int?     @map("file_size")
+  mimeType          String?  @map("mime_type")
+  description       String?
+  uploadedById      Int?     @map("uploaded_by_id")
+  templateId        Int?     @map("template_id")
+  fieldData         String?  @map("field_data")
+  status            String?  @default("FINALIZED") @map("status")
+  parentViewable    Boolean  @default(false) @map("parent_viewable")
+  parentDownloadable Boolean @default(false) @map("parent_downloadable")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
 
-  school   School   @relation(fields: [schoolId], references: [id])
-  student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  uploadedBy User?  @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  school     School          @relation(fields: [schoolId], references: [id])
+  student    Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  uploadedBy User?           @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  template   SchoolTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
 
   @@index([schoolId])
   @@index([studentId])
+  @@index([templateId])
   @@map("student_document")
 }
 

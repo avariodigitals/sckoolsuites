@@ -21,6 +21,7 @@ import {
   Bus,
   Loader2,
   Camera,
+  IdCard,
 } from "lucide-react";
 import {
   ProfileTab,
@@ -36,6 +37,7 @@ import {
   DialogueTab,
   NoteTab,
   DocumentTab,
+  IssueDocsTab,
   QualificationTab,
   AccountTab,
   TransportTab,
@@ -56,6 +58,7 @@ type TabKey =
   | "dialogue"
   | "note"
   | "document"
+  | "issue-docs"
   | "qualification"
   | "account"
   | "transport";
@@ -74,6 +77,7 @@ const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: "dialogue", label: "Dialogue", icon: <MessageSquare className="h-4 w-4" /> },
   { key: "note", label: "Note", icon: <StickyNote className="h-4 w-4" /> },
   { key: "document", label: "Document", icon: <FileCheck className="h-4 w-4" /> },
+  { key: "issue-docs", label: "Issue Docs", icon: <IdCard className="h-4 w-4" /> },
   { key: "qualification", label: "Qualification", icon: <Award className="h-4 w-4" /> },
   { key: "account", label: "Account", icon: <Landmark className="h-4 w-4" /> },
   { key: "transport", label: "Transport", icon: <Bus className="h-4 w-4" /> },
@@ -181,6 +185,7 @@ export function StudentDetailModal({ studentId, onClose }: { studentId: string; 
       case "dialogue": return <DialogueTab data={data} />;
       case "note": return <NoteTab data={data} />;
       case "document": return <DocumentTab data={data} studentId={studentId} onUpdate={load} />;
+      case "issue-docs": return <IssueDocsTab studentId={studentId} student={data?.student} onUpdate={load} />;
       case "qualification": return <QualificationTab data={data} />;
       case "account": return <AccountTab data={data} />;
       case "transport": return <TransportTab data={data} />;
@@ -189,10 +194,10 @@ export function StudentDetailModal({ studentId, onClose }: { studentId: string; 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-8">
-      <div className="flex h-[calc(100vh-4rem)] w-full max-w-6xl overflow-hidden rounded-xl bg-white shadow-2xl">
-        {/* Left Sidebar Tabs */}
-        <div className="flex w-52 flex-shrink-0 flex-col border-r border-slate-200 bg-slate-50">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-2 sm:p-4 sm:pt-8">
+      <div className="flex h-[calc(100vh-1rem)] sm:h-[calc(100vh-4rem)] w-full max-w-6xl flex-col sm:flex-row overflow-hidden rounded-xl bg-white shadow-2xl">
+        {/* Left Sidebar Tabs — Desktop */}
+        <div className="hidden w-52 flex-shrink-0 flex-col border-r border-slate-200 bg-slate-50 sm:flex">
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Sections</span>
             <button onClick={onClose} className="rounded-md p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-600">
@@ -217,12 +222,33 @@ export function StudentDetailModal({ studentId, onClose }: { studentId: string; 
           </div>
         </div>
 
+        {/* Mobile tab bar — horizontal scroll */}
+        <div className="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-slate-50 px-2 py-2 sm:hidden">
+          <button onClick={onClose} className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-600">
+            <X className="h-4 w-4" />
+          </button>
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              className={`flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors ${
+                activeTab === t.key
+                  ? "bg-indigo-50 font-medium text-indigo-700"
+                  : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {t.icon}
+              <span className="whitespace-nowrap">{t.label}</span>
+            </button>
+          ))}
+        </div>
+
         {/* Right Content */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-            <div className="flex items-center gap-3">
-              <div className="relative">
+          <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              <div className="relative shrink-0">
                 {s?.passportUrl ? (
                   <Image src={s.passportUrl} alt="" width={40} height={40} className="h-10 w-10 rounded-full object-cover" />
                 ) : (
@@ -236,34 +262,36 @@ export function StudentDetailModal({ studentId, onClose }: { studentId: string; 
                 </label>
                 {uploadingAvatar && <Loader2 className="absolute inset-0 m-auto h-4 w-4 animate-spin text-indigo-600" />}
               </div>
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">{s ? [s.firstName, s.middleName, s.lastName].filter(Boolean).join(" ") || s.user?.name : "Student Details"}</h2>
-                <p className="text-xs text-slate-500">
+              <div className="min-w-0">
+                <h2 className="truncate text-sm sm:text-base font-semibold text-slate-900">{s ? [s.firstName, s.middleName, s.lastName].filter(Boolean).join(" ") || s.user?.name : "Student Details"}</h2>
+                <p className="truncate text-xs text-slate-500">
                   {s?.class?.name ?? "No class"} · {s?.gender ?? "-"} · Age {s?.age ?? "-"}
                 </p>
               </div>
             </div>
-            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${s?.user?.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
-              {s?.user?.isActive ? "Active" : "Inactive"}
-            </span>
-            <button
-              type="button"
-              onClick={() => setPromoteOpen(true)}
-              className="ml-3 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
-            >
-              Promote
-            </button>
-            <button
-              onClick={onClose}
-              className="ml-3 rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              title="Close"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              <span className={`hidden sm:inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${s?.user?.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                {s?.user?.isActive ? "Active" : "Inactive"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPromoteOpen(true)}
+                className="rounded-md bg-indigo-600 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+              >
+                Promote
+              </button>
+              <button
+                onClick={onClose}
+                className="hidden sm:block rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                title="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto p-6">{renderContent()}</div>
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">{renderContent()}</div>
         </div>
       </div>
 

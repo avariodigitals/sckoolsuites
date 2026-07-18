@@ -323,10 +323,10 @@ export function TeacherDetailModal({ teacherId, onClose }: { teacherId: string; 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-8">
-      <div className="flex h-[calc(100vh-4rem)] w-full max-w-6xl overflow-hidden rounded-xl bg-white shadow-2xl">
-        {/* Left Sidebar Tabs */}
-        <div className="flex w-52 flex-shrink-0 flex-col border-r border-slate-200 bg-slate-50">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-2 sm:p-4 sm:pt-8">
+      <div className="flex h-[calc(100vh-1rem)] sm:h-[calc(100vh-4rem)] w-full max-w-6xl flex-col sm:flex-row overflow-hidden rounded-xl bg-white shadow-2xl">
+        {/* Left Sidebar Tabs — Desktop */}
+        <div className="hidden w-52 flex-shrink-0 flex-col border-r border-slate-200 bg-slate-50 sm:flex">
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Sections</span>
             <button onClick={onClose} className="rounded-md p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-600">
@@ -351,12 +351,33 @@ export function TeacherDetailModal({ teacherId, onClose }: { teacherId: string; 
           </div>
         </div>
 
+        {/* Mobile tab bar — horizontal scroll */}
+        <div className="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-slate-50 px-2 py-2 sm:hidden">
+          <button onClick={onClose} className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-600">
+            <X className="h-4 w-4" />
+          </button>
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              className={`flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors ${
+                activeTab === t.key
+                  ? "bg-indigo-50 font-medium text-indigo-700"
+                  : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {t.icon}
+              <span className="whitespace-nowrap">{t.label}</span>
+            </button>
+          ))}
+        </div>
+
         {/* Right Content */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-            <div className="flex items-center gap-3">
-              <div className="relative">
+          <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              <div className="relative shrink-0">
                 {t?.user?.avatarUrl ? (
                   <Image src={t.user.avatarUrl} alt="" width={40} height={40} className="h-10 w-10 rounded-full object-cover" />
                 ) : (
@@ -365,20 +386,29 @@ export function TeacherDetailModal({ teacherId, onClose }: { teacherId: string; 
                   </div>
                 )}
               </div>
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">{t?.user?.name ?? "Teacher Details"}</h2>
-                <p className="text-xs text-slate-500">
+              <div className="min-w-0">
+                <h2 className="truncate text-sm sm:text-base font-semibold text-slate-900">{t?.user?.name ?? "Teacher Details"}</h2>
+                <p className="truncate text-xs text-slate-500">
                   {t?.classes?.length ?? 0} classes · {t?.subjects?.length ?? 0} subjects · {t?.students?.length ?? 0} students
                 </p>
               </div>
             </div>
-            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${t?.user?.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
-              {t?.user?.isActive ? "Active" : "Inactive"}
-            </span>
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              <span className={`hidden sm:inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${t?.user?.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                {t?.user?.isActive ? "Active" : "Inactive"}
+              </span>
+              <button
+                onClick={onClose}
+                className="hidden sm:block rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                title="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto p-6">{renderContent()}</div>
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">{renderContent()}</div>
         </div>
       </div>
     </div>

@@ -29,6 +29,7 @@ import { RoleManager } from "./role-manager";
 import { PrivilegeManager } from "./privilege-manager";
 import { ProfileManager } from "./profile-manager";
 import { PasswordResetRequests } from "./password-reset-requests";
+import { ImportWizard } from "./import-wizard";
 import { requireRole } from "@/lib/auth-guards";
 import { getAdminOverview, getDashboardData, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
 import { adminModuleScopeBySection } from "@/lib/module-blueprint";
@@ -643,11 +644,26 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
 
         {section === "revenue" && !setupLocked ? <FinanceManager defaultTab="revenue" /> : null}
 
-        {section === "students" ? <StudentManager sessionId={context.session?.id == null ? null : String(context.session.id)} termId={context.term?.id == null ? null : String(context.term.id)} /> : null}
+        {section === "students" ? (
+          <div className="space-y-4">
+            <ImportWizard section="students" />
+            <StudentManager sessionId={context.session?.id == null ? null : String(context.session.id)} termId={context.term?.id == null ? null : String(context.term.id)} />
+          </div>
+        ) : null}
 
-        {section === "parents" ? <ParentManager /> : null}
+        {section === "parents" ? (
+          <div className="space-y-4">
+            <ImportWizard section="parents" />
+            <ParentManager />
+          </div>
+        ) : null}
 
-        {section === "teachers" ? <TeacherManager /> : null}
+        {section === "teachers" ? (
+          <div className="space-y-4">
+            <ImportWizard section="staff" />
+            <TeacherManager />
+          </div>
+        ) : null}
 
         {section === "academics" ? (
           <div className="space-y-6">

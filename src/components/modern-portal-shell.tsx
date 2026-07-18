@@ -405,42 +405,49 @@ export function ModernPortalShell({
             <div className="flex items-center gap-1 sm:gap-2 lg:gap-3">
               {/* Notification Bell with Dropdown */}
               <div className="relative">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="relative px-2"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="relative h-9 w-9 p-0"
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
                 >
                   <Bell className="h-5 w-5 text-slate-600" />
                   {hasUnread && (
-                    <span className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+                    <span className="absolute top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                      {unreadNotifications.length > 9 ? "9+" : unreadNotifications.length}
+                    </span>
                   )}
                 </Button>
-                
+
                 {/* Notification Dropdown */}
                 {notificationsOpen && (
                   <>
                     <div
-                      className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm"
+                      className="fixed inset-0 z-40"
                       onClick={() => setNotificationsOpen(false)}
                     />
-                    <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+                    <div className="fixed bottom-0 left-0 right-0 z-50 sm:absolute sm:bottom-auto sm:right-0 sm:left-auto sm:top-full sm:mt-2 sm:w-96 max-w-96 bg-white rounded-t-2xl sm:rounded-xl shadow-2xl sm:shadow-xl border border-slate-200 overflow-hidden">
+                    <div className="sm:hidden flex justify-center pt-2 pb-1">
+                      <div className="h-1 w-10 rounded-full bg-slate-300" />
+                    </div>
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                      <h3 className="font-semibold text-slate-900">Notifications</h3>
-                      {hasUnread && (
-                        <span className="text-xs font-medium text-indigo-600">
-                          {unreadNotifications.length} new
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-slate-900 text-sm sm:text-base">Notifications</h3>
+                        {hasUnread && (
+                          <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-600">
+                            {unreadNotifications.length} new
+                          </span>
+                        )}
+                      </div>
                       <button
                         onClick={() => setNotificationsOpen(false)}
-                        className="text-slate-400 hover:text-slate-600"
+                        className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                       >
                         <X className="h-4 w-4" />
                       </button>
                     </div>
 
-                    <div className="max-h-80 overflow-y-auto">
+                    <div className="max-h-[60vh] sm:max-h-80 overflow-y-auto">
                       {unreadNotifications.length === 0 ? (
                         <div className="px-4 py-8 text-center">
                           <div className="mx-auto mb-3 rounded-full bg-slate-100 p-3 w-fit">
@@ -459,7 +466,7 @@ export function ModernPortalShell({
                             <button
                               key={notif.id}
                               onClick={() => handleNotificationClick(notif)}
-                              className="flex w-full items-start gap-3 px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+                              className="flex w-full items-start gap-3 px-3 sm:px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors text-left cursor-pointer"
                             >
                               <div className={cn("rounded-lg p-2 shrink-0", iconColor)}>
                                 <Icon className="h-4 w-4" />
@@ -467,7 +474,7 @@ export function ModernPortalShell({
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-slate-900 line-clamp-1">{notif.title}</p>
                                 <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">{notif.description}</p>
-                                <p className="text-xs text-slate-400 mt-1">
+                                <p className="text-[11px] text-slate-400 mt-1">
                                   {new Date(notif.createdAt).toLocaleDateString()}
                                 </p>
                               </div>
@@ -478,7 +485,7 @@ export function ModernPortalShell({
                     </div>
 
                     {unreadNotifications.length > 0 && (
-                      <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+                      <div className="px-3 sm:px-4 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
                         <button
                           onClick={async () => {
                             const recordIds = unreadNotifications.filter((n) => n.recordId).map((n) => n.recordId!);
@@ -495,13 +502,13 @@ export function ModernPortalShell({
                               }
                             }
                           }}
-                          className="text-sm font-medium text-slate-600 hover:text-slate-800"
+                          className="text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-800"
                         >
                           Mark all read
                         </button>
                         <Link
-                          href="/parent/announcements"
-                          className="flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                          href={role === "PARENT" ? "/parent/announcements" : role === "TEACHER" ? "/teacher/announcements" : role === "STUDENT" ? "/student/announcements" : "/admin/announcements"}
+                          className="flex items-center gap-1 text-xs sm:text-sm font-medium text-indigo-600 hover:text-indigo-700"
                           onClick={() => setNotificationsOpen(false)}
                         >
                           View all

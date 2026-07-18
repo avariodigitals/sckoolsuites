@@ -8,6 +8,7 @@ import { getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicCont
 import { prisma } from "@/lib/db";
 import { formatDate, humanizeEnum, naira, getCloudinaryInlineUrl } from "@/lib/utils";
 import { ChildWorkspaceSwitcher } from "@/app/parent/_components/child-workspace-switcher";
+import { ParentDocumentsPanel } from "@/app/parent/_components/parent-documents-panel";
 
 export default async function ParentChildWorkspacePage({ params }: { params: Promise<{ childId: string }> }) {
   const { childId } = await params;
@@ -130,27 +131,23 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
       primaryColor={core.school?.branding?.primaryColor}
       secondaryColor={core.school?.branding?.secondaryColor}
     >
-      <section className="glass-panel rounded-2xl p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
+      <section className="glass-panel rounded-2xl p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.18em] text-slate-500">My Children / Child Workspace</p>
-            <h2 className="mt-1 text-xl font-semibold text-slate-900">{child.user.name}</h2>
-            <p className="text-sm text-slate-600">{child.class?.name ?? "Not assigned"} • {child.gender} • Age {child.age}</p>
+            <h2 className="mt-1 truncate text-lg sm:text-xl font-semibold text-slate-900">{child.user.name}</h2>
+            <p className="truncate text-sm text-slate-600">{child.class?.name ?? "Not assigned"} • {child.gender} • Age {child.age}</p>
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
             <ChildWorkspaceSwitcher
               childOptions={linkedChildren.map((item: any) => ({ id: item.id, name: item.user.name }))}
               currentChildId={String(child.id)}
             />
-            <Link href="/parent/children" className="rounded-md border border-slate-300 px-4 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">Back to children</Link>
-            <span className="h-8 w-px bg-slate-200" />
-            <Link href="#lessons" className="rounded-md border border-slate-300 px-4 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">Lessons</Link>
-            <span className="h-8 w-px bg-slate-200" />
-            <Link href="#attendance" className="rounded-md border border-slate-300 px-4 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">Attendance</Link>
-            <span className="h-8 w-px bg-slate-200" />
-            <Link href="#fees" className="rounded-md border border-slate-300 px-4 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">Fees</Link>
-            <span className="h-8 w-px bg-slate-200" />
-            <Link href="#results" className="rounded-md border border-slate-300 px-4 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">Results</Link>
+            <Link href="/parent/children" className="rounded-md border border-slate-300 px-3 sm:px-4 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">Back</Link>
+            <Link href="#lessons" className="rounded-md border border-slate-300 px-3 sm:px-4 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">Lessons</Link>
+            <Link href="#attendance" className="rounded-md border border-slate-300 px-3 sm:px-4 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">Attendance</Link>
+            <Link href="#fees" className="rounded-md border border-slate-300 px-3 sm:px-4 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">Fees</Link>
+            <Link href="#results" className="rounded-md border border-slate-300 px-3 sm:px-4 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">Results</Link>
           </div>
         </div>
       </section>
@@ -197,11 +194,11 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
             {childInvoices.length ? childInvoices.map((invoice: any) => (
               <div key={invoice.id} className="rounded-xl border border-slate-200 bg-white/70 p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium text-slate-900">Bill #{invoice.invoiceNumber}</p>
-                    <p className="text-slate-600">{invoice.term.name} / {invoice.session.name}</p>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-slate-900">Bill #{invoice.invoiceNumber}</p>
+                    <p className="truncate text-xs sm:text-sm text-slate-600">{invoice.term.name} / {invoice.session.name}</p>
                   </div>
-                  <p className="text-right text-slate-700">{naira(invoice.amountPaid)} paid / {naira(invoice.totalAmount)}</p>
+                  <p className="text-right text-xs sm:text-sm text-slate-700 shrink-0">{naira(invoice.amountPaid)} paid / {naira(invoice.totalAmount)}</p>
                 </div>
                 <p className="mt-1 text-xs text-slate-500">Balance: {naira(invoice.balance)}</p>
               </div>
@@ -245,9 +242,9 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
               {childScores.length ? (
                 <div className="space-y-2">
                   {childScores.map((score: any) => (
-                    <div key={score.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-2">
-                      <span className="text-slate-700">{score.subject.name}</span>
-                      <span className="text-xs text-slate-600">{score.total.toFixed(1)}% ({score.grade})</span>
+                    <div key={score.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-2">
+                      <span className="truncate text-slate-700">{score.subject.name}</span>
+                      <span className="shrink-0 text-xs text-slate-600">{score.total.toFixed(1)}% ({score.grade})</span>
                     </div>
                   ))}
                 </div>
@@ -261,6 +258,10 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
             </div>
           </CardContent>
         </Card>
+      </section>
+
+      <section className="mt-6">
+        <ParentDocumentsPanel childId={child.id.toString()} />
       </section>
     </ModernPortalShell>
   );

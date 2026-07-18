@@ -515,216 +515,307 @@ export function TeacherManager() {
         <h3 className="mb-3 text-sm font-semibold text-slate-900">
           Teachers ({filteredTeachers.length} of {teachers.length})
         </h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
-                <th className="px-2 py-2">Name</th>
-                <th className="px-2 py-2">Email</th>
-                <th className="px-2 py-2">Designation</th>
-                <th className="px-2 py-2">Reports To</th>
-                <th className="px-2 py-2">Classes</th>
-                <th className="px-2 py-2">Subjects</th>
-                <th className="px-2 py-2">Students</th>
-                <th className="px-2 py-2">Status</th>
-                <th className="px-2 py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTeachers.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-2 py-4 text-center text-slate-500">
-                    No teachers found.
-                  </td>
-                </tr>
-              ) : (
-                filteredTeachers.map((teacher) => (
-                  <tr key={teacher.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="px-2 py-2 font-medium text-slate-900">{teacher.name}</td>
-                    <td className="px-2 py-2 text-slate-600">{teacher.email}</td>
-                    <td className="px-2 py-2">
-                      {teacher.designation ? (
-                        <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{teacher.designation.replace(/_/g, " ")}</span>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-2 py-2 text-slate-600">{teacher.reportsTo?.name ?? <span className="text-slate-400">—</span>}</td>
-                    <td className="px-2 py-2">
-                      {teacher.assignedClasses.length === 0 ? (
-                        <span className="text-slate-400">No classes</span>
-                      ) : (
-                        <div className="flex flex-wrap gap-1">
-                          {teacher.assignedClasses.map((cls) => (
-                            <span key={cls.id} className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-xs">
-                              {cls.name}
-                              <button
-                                onClick={() => handleUnassignClass(teacher.id, cls.id)}
-                                disabled={unassigningClassId === cls.id}
-                                className="text-rose-500 hover:text-rose-700"
-                                title="Unassign class"
-                              >
-                                {unassigningClassId === cls.id ? "..." : "×"}
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-2 py-2">
-                      {teacher.assignedSubjects.length === 0 && teacher.subjectAssignments.length === 0 ? (
-                        <span className="text-slate-400">No subjects</span>
-                      ) : (
-                        <div className="space-y-1">
-                          {teacher.assignedSubjects.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {teacher.assignedSubjects.map((subj) => (
-                                <span key={subj.id} className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-xs">
-                                  {subj.name}
-                                  <button
-                                    onClick={() => handleUnassignSubject(teacher.id, subj.id)}
-                                    disabled={unassigningSubjectId === subj.id}
-                                    className="text-rose-500 hover:text-rose-700"
-                                    title="Unassign subject"
-                                  >
-                                    {unassigningSubjectId === subj.id ? "..." : "×"}
-                                  </button>
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          {teacher.subjectAssignments.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {teacher.subjectAssignments.map((sa) => (
-                                <span key={sa.id} className="inline-flex items-center gap-1 rounded bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">
-                                  {sa.subjectName} → {sa.className}
-                                  <button
-                                    onClick={() => handleUnassignSubjectFromClass(teacher.id, sa.subjectId, sa.classId)}
-                                    className="text-rose-500 hover:text-rose-700"
-                                    title="Unassign subject from class"
-                                  >
-                                    ×
-                                  </button>
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      {allSubjects.length > 0 && allClasses.length > 0 && (
-                        <div className="mt-1 flex gap-1">
-                          <select
-                            className="rounded-md border border-slate-300 px-2 py-1 text-xs"
-                            onChange={(e) => {
-                              const subjectId = e.target.value;
-                              const classSelect = e.target.nextElementSibling as HTMLSelectElement;
-                              if (subjectId && classSelect?.value) {
-                                void handleAssignSubjectToClass(teacher.id, subjectId, classSelect.value);
-                                e.target.value = "";
-                                classSelect.value = "";
-                              }
-                            }}
-                            value=""
-                          >
-                            <option value="">Subject...</option>
-                            {allSubjects.map((s) => (
-                              <option key={s.id} value={s.id}>{s.name}</option>
+
+        {filteredTeachers.length === 0 ? (
+          <p className="py-4 text-center text-sm text-slate-500">No teachers found.</p>
+        ) : (
+          <>
+            {/* Desktop table */}
+            <div className="hidden overflow-x-auto sm:block">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <th className="px-2 py-2">Name</th>
+                    <th className="px-2 py-2">Email</th>
+                    <th className="px-2 py-2">Designation</th>
+                    <th className="px-2 py-2">Reports To</th>
+                    <th className="px-2 py-2">Classes</th>
+                    <th className="px-2 py-2">Subjects</th>
+                    <th className="px-2 py-2">Students</th>
+                    <th className="px-2 py-2">Status</th>
+                    <th className="px-2 py-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTeachers.map((teacher) => (
+                    <tr key={teacher.id} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="px-2 py-2 font-medium text-slate-900">{teacher.name}</td>
+                      <td className="px-2 py-2 text-slate-600">{teacher.email}</td>
+                      <td className="px-2 py-2">
+                        {teacher.designation ? (
+                          <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{teacher.designation.replace(/_/g, " ")}</span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-2 py-2 text-slate-600">{teacher.reportsTo?.name ?? <span className="text-slate-400">—</span>}</td>
+                      <td className="px-2 py-2">
+                        {teacher.assignedClasses.length === 0 ? (
+                          <span className="text-slate-400">No classes</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {teacher.assignedClasses.map((cls) => (
+                              <span key={cls.id} className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-xs">
+                                {cls.name}
+                                <button
+                                  onClick={() => handleUnassignClass(teacher.id, cls.id)}
+                                  disabled={unassigningClassId === cls.id}
+                                  className="text-rose-500 hover:text-rose-700"
+                                  title="Unassign class"
+                                >
+                                  {unassigningClassId === cls.id ? "..." : "×"}
+                                </button>
+                              </span>
                             ))}
-                          </select>
-                          <select
-                            className="rounded-md border border-slate-300 px-2 py-1 text-xs"
-                            value=""
-                          >
-                            <option value="">Class...</option>
-                            {allClasses.map((c) => (
-                              <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-2 py-2">{teacher.studentCount}</td>
-                    <td className="px-2 py-2">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs ${
-                          teacher.isActive
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-slate-100 text-slate-600"
-                        }`}
-                      >
-                        {teacher.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2">
-                      <div className="flex flex-wrap gap-1">
-                        <Button size="sm" variant="outline" onClick={() => setViewingId(teacher.id)}>
-                          View
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => startEdit(teacher)}>
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleResend(teacher.id, teacher.name)}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-2 py-2">
+                        {teacher.assignedSubjects.length === 0 && teacher.subjectAssignments.length === 0 ? (
+                          <span className="text-slate-400">No subjects</span>
+                        ) : (
+                          <div className="space-y-1">
+                            {teacher.assignedSubjects.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {teacher.assignedSubjects.map((subj) => (
+                                  <span key={subj.id} className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-xs">
+                                    {subj.name}
+                                    <button
+                                      onClick={() => handleUnassignSubject(teacher.id, subj.id)}
+                                      disabled={unassigningSubjectId === subj.id}
+                                      className="text-rose-500 hover:text-rose-700"
+                                      title="Unassign subject"
+                                    >
+                                      {unassigningSubjectId === subj.id ? "..." : "×"}
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {teacher.subjectAssignments.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {teacher.subjectAssignments.map((sa) => (
+                                  <span key={sa.id} className="inline-flex items-center gap-1 rounded bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">
+                                    {sa.subjectName} → {sa.className}
+                                    <button
+                                      onClick={() => handleUnassignSubjectFromClass(teacher.id, sa.subjectId, sa.classId)}
+                                      className="text-rose-500 hover:text-rose-700"
+                                      title="Unassign subject from class"
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {allSubjects.length > 0 && allClasses.length > 0 && (
+                          <div className="mt-1 flex gap-1">
+                            <select
+                              className="rounded-md border border-slate-300 px-2 py-1 text-xs"
+                              onChange={(e) => {
+                                const subjectId = e.target.value;
+                                const classSelect = e.target.nextElementSibling as HTMLSelectElement;
+                                if (subjectId && classSelect?.value) {
+                                  void handleAssignSubjectToClass(teacher.id, subjectId, classSelect.value);
+                                  e.target.value = "";
+                                  classSelect.value = "";
+                                }
+                              }}
+                              value=""
+                            >
+                              <option value="">Subject...</option>
+                              {allSubjects.map((s) => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                              ))}
+                            </select>
+                            <select
+                              className="rounded-md border border-slate-300 px-2 py-1 text-xs"
+                              value=""
+                            >
+                              <option value="">Class...</option>
+                              {allClasses.map((c) => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-2 py-2">{teacher.studentCount}</td>
+                      <td className="px-2 py-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs ${
+                            teacher.isActive
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-slate-100 text-slate-600"
+                          }`}
                         >
-                          Resend
-                        </Button>
-                        {teacher.isActive && (
+                          {teacher.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-2 py-2">
+                        <div className="flex flex-wrap gap-1">
+                          <Button size="sm" variant="outline" onClick={() => setViewingId(teacher.id)}>
+                            View
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => startEdit(teacher)}>
+                            Edit
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleDeactivate(teacher.id, teacher.name)}
+                            onClick={() => handleResend(teacher.id, teacher.name)}
                           >
-                            Deactivate
+                            Resend
                           </Button>
-                        )}
-                        {unassignedClasses.length > 0 && (
-                          <select
-                            className="rounded-md border border-slate-300 px-2 py-1 text-xs"
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                void handleAssignClass(teacher.id, e.target.value);
-                                e.target.value = "";
-                              }
-                            }}
-                            value=""
+                          {teacher.isActive && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeactivate(teacher.id, teacher.name)}
+                            >
+                              Deactivate
+                            </Button>
+                          )}
+                          {unassignedClasses.length > 0 && (
+                            <select
+                              className="rounded-md border border-slate-300 px-2 py-1 text-xs"
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  void handleAssignClass(teacher.id, e.target.value);
+                                  e.target.value = "";
+                                }
+                              }}
+                              value=""
+                            >
+                              <option value="">+ Assign class...</option>
+                              {unassignedClasses.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          {unassignedSubjects.length > 0 && (
+                            <select
+                              className="rounded-md border border-slate-300 px-2 py-1 text-xs"
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  void handleAssignSubject(teacher.id, e.target.value);
+                                  e.target.value = "";
+                                }
+                              }}
+                              value=""
+                            >
+                              <option value="">+ Assign subject...</option>
+                              {unassignedSubjects.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                  {s.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile card list */}
+            <div className="space-y-3 sm:hidden">
+              {filteredTeachers.map((teacher) => (
+                <div key={teacher.id} className="rounded-lg border border-slate-200 p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-slate-900">{teacher.name}</p>
+                      <p className="truncate text-xs text-slate-500">{teacher.email}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
+                        teacher.isActive
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      {teacher.isActive ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-600">
+                    {teacher.designation && <span>{teacher.designation.replace(/_/g, " ")}</span>}
+                    {teacher.reportsTo && <span>Reports to: {teacher.reportsTo.name}</span>}
+                    <span>{teacher.studentCount} students</span>
+                  </div>
+                  {teacher.assignedClasses.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {teacher.assignedClasses.map((cls) => (
+                        <span key={cls.id} className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-xs">
+                          {cls.name}
+                          <button
+                            onClick={() => handleUnassignClass(teacher.id, cls.id)}
+                            disabled={unassigningClassId === cls.id}
+                            className="text-rose-500 hover:text-rose-700"
                           >
-                            <option value="">+ Assign class...</option>
-                            {unassignedClasses.map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.name}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                        {unassignedSubjects.length > 0 && (
-                          <select
-                            className="rounded-md border border-slate-300 px-2 py-1 text-xs"
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                void handleAssignSubject(teacher.id, e.target.value);
-                                e.target.value = "";
-                              }
-                            }}
-                            value=""
+                            {unassigningClassId === cls.id ? "..." : "×"}
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {teacher.assignedSubjects.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {teacher.assignedSubjects.map((subj) => (
+                        <span key={subj.id} className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-xs">
+                          {subj.name}
+                          <button
+                            onClick={() => handleUnassignSubject(teacher.id, subj.id)}
+                            disabled={unassigningSubjectId === subj.id}
+                            className="text-rose-500 hover:text-rose-700"
                           >
-                            <option value="">+ Assign subject...</option>
-                            {unassignedSubjects.map((s) => (
-                              <option key={s.id} value={s.id}>
-                                {s.name}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                            {unassigningSubjectId === subj.id ? "..." : "×"}
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {teacher.subjectAssignments.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {teacher.subjectAssignments.map((sa) => (
+                        <span key={sa.id} className="inline-flex items-center gap-1 rounded bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">
+                          {sa.subjectName} → {sa.className}
+                          <button
+                            onClick={() => handleUnassignSubjectFromClass(teacher.id, sa.subjectId, sa.classId)}
+                            className="text-rose-500 hover:text-rose-700"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                    <Button size="sm" variant="outline" onClick={() => setViewingId(teacher.id)}>
+                      View
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => startEdit(teacher)}>
+                      Edit
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleResend(teacher.id, teacher.name)}>
+                      Resend
+                    </Button>
+                    {teacher.isActive && (
+                      <Button size="sm" variant="outline" onClick={() => handleDeactivate(teacher.id, teacher.name)}>
+                        Deactivate
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
       )}
 
@@ -734,62 +825,98 @@ export function TeacherManager() {
           <h3 className="mb-3 text-sm font-semibold text-slate-900">
             Non-Teaching Staff ({filteredStaff.length} of {staff.length})
           </h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
-                  <th className="px-2 py-2">Name</th>
-                  <th className="px-2 py-2">Email</th>
-                  <th className="px-2 py-2">Phone</th>
-                  <th className="px-2 py-2">Role</th>
-                  <th className="px-2 py-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredStaff.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-2 py-4 text-center text-slate-500">
-                      No non-teaching staff found.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredStaff.map((member) => (
-                    <tr key={member.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="px-2 py-2 font-medium text-slate-900">
-                        <div className="flex items-center gap-2">
-                          {member.avatarUrl ? (
-                            <img src={member.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
-                          ) : (
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
-                              {member.name.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                          {member.name}
-                        </div>
-                      </td>
-                      <td className="px-2 py-2 text-slate-600">{member.email}</td>
-                      <td className="px-2 py-2 text-slate-600">{member.phone ?? <span className="text-slate-400">—</span>}</td>
-                      <td className="px-2 py-2">
-                        <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{member.roleLabel}</span>
-                      </td>
-                      <td className="px-2 py-2">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs ${
-                            member.isActive
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-slate-100 text-slate-600"
-                          }`
-                          }
-                        >
-                          {member.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </td>
+
+          {filteredStaff.length === 0 ? (
+            <p className="py-4 text-center text-sm text-slate-500">No non-teaching staff found.</p>
+          ) : (
+            <>
+              {/* Desktop table */}
+              <div className="hidden overflow-x-auto sm:block">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                      <th className="px-2 py-2">Name</th>
+                      <th className="px-2 py-2">Email</th>
+                      <th className="px-2 py-2">Phone</th>
+                      <th className="px-2 py-2">Role</th>
+                      <th className="px-2 py-2">Status</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {filteredStaff.map((member) => (
+                      <tr key={member.id} className="border-b border-slate-100 hover:bg-slate-50">
+                        <td className="px-2 py-2 font-medium text-slate-900">
+                          <div className="flex items-center gap-2">
+                            {member.avatarUrl ? (
+                              <img src={member.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
+                            ) : (
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
+                                {member.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            {member.name}
+                          </div>
+                        </td>
+                        <td className="px-2 py-2 text-slate-600">{member.email}</td>
+                        <td className="px-2 py-2 text-slate-600">{member.phone ?? <span className="text-slate-400">—</span>}</td>
+                        <td className="px-2 py-2">
+                          <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{member.roleLabel}</span>
+                        </td>
+                        <td className="px-2 py-2">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs ${
+                              member.isActive
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-slate-100 text-slate-600"
+                            }`
+                            }
+                          >
+                            {member.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile card list */}
+              <div className="space-y-3 sm:hidden">
+                {filteredStaff.map((member) => (
+                  <div key={member.id} className="rounded-lg border border-slate-200 p-3">
+                    <div className="flex items-start gap-3">
+                      {member.avatarUrl ? (
+                        <img src={member.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover shrink-0" />
+                      ) : (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600 shrink-0">
+                          {member.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate font-medium text-slate-900">{member.name}</p>
+                          <span
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
+                              member.isActive
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            {member.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+                        <p className="truncate text-xs text-slate-500">{member.email}</p>
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-600">
+                          <span className="rounded bg-slate-100 px-1.5 py-0.5">{member.roleLabel}</span>
+                          {member.phone && <span>{member.phone}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
 

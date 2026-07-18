@@ -1540,6 +1540,327 @@ export function DocumentTab({ data, studentId, onUpdate }: { data: any; studentI
   );
 }
 
+export function IssueDocsTab({ studentId, student, onUpdate }: { studentId: string; student: any; onUpdate?: () => void }) {
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [issuedDocs, setIssuedDocs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("");
+  const [generating, setGenerating] = useState<number | null>(null);
+  const [editingDoc, setEditingDoc] = useState<any | null>(null);
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  const s = student;
+  const fullName = s ? [s.firstName, s.middleName, s.lastName].filter(Boolean).join(" ") || s.user?.name : "";
+  const className = s?.class?.name ?? "";
+  const admissionNo = s?.admissionNo ?? "";
+  const gender = s?.gender ?? "";
+  const dateOfBirth = s?.dateOfBirth ? new Date(s.dateOfBirth).toLocaleDateString() : "";
+  const parentName = s?.parent?.user?.name ?? "";
+  const parentPhone = s?.parent?.user?.phone ?? "";
+
+  const autoFillMap: Record<string, string> = {
+    fullName, admissionNo, className, gender, dateOfBirth, parentName, parentPhone,
+  };
+
+  async function loadIssueDocs() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/students/${studentId}/issue-docs`, { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setTemplates(data.templates || []);
+        setIssuedDocs(data.issuedDocs || []);
+      }
+    } catch {
+      setStatus("Failed to load templates.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadIssueDocs();
+  }, [studentId]);
+
+  function autoFillFields(config: any[]) {
+    const vals: Record<string, string> = {};
+    for (const f of config) {
+      if (f.source === "today") {
+        vals[f.key] = new Date().toLocaleDateString();
+      } else if (f.source === "custom") {
+        vals[f.key] = "";
+      } else {
+        vals[f.key] = autoFillMap[f.source] ?? "";
+      }
+    }
+    return vals;
+  }
+
+  async function handleGenerate(template: any) {
+    setGenerating(template.id);
+    setStatus("");
+    try {
+      let config: any[] = [];
+      try {
+        config = template.field_config ? JSON.parse(template.field_config) : [];
+      } catch { config = []; }
+      const autoVals = autoFillFields(config);
+      const title = `${template.name} - ${fullName}`;
+      const res = await fetch(`/api/admin/students/${studentId}/issue-docs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          templateId: template.id,
+          documentType: template.type,
+          title,
+          fieldData: autoVals,
+          status: "DRAFT",
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStatus("Document draft created. Edit and finalize below.");
+        await loadIssueDocs();
+        const newDoc = issuedDocs.find((d) => d.id === data.id);
+        if (!newDoc) {
+          setEditingDoc({ ...template, docId: data.id, fieldData: autoVals, status: "DRAFT", title });
+          setFieldValues(autoVals);
+        }
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setStatus(err?.error ?? "Failed to generate document.");
+      }
+    } catch {
+      setStatus("Error generating document.");
+    } finally {
+      setGenerating(null);
+    }
+  }
+
+  function startEdit(doc: any) {
+    let vals: Record<string, string> = {};
+    try {
+      vals = doc.field_data ? JSON.parse(doc.field_data) : {};
+    } catch { vals = {}; }
+    setFieldValues(vals);
+    setEditingDoc(doc);
+  }
+
+  async function handleSave(docId: number, finalize: boolean) {
+    setSaving(true);
+    setStatus("");
+    try {
+      const res = await fetch(`/api/admin/students/${studentId}/issue-docs`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          docId,
+          fieldData: fieldValues,
+          status: finalize ? "FINALIZED" : "DRAFT",
+          parentViewable: finalize,
+          parentDownloadable: false,
+        }),
+      });
+      if (res.ok) {
+        setStatus(finalize ? "Document finalized and made viewable to parent." : "Draft saved.");
+        setEditingDoc(null);
+        await loadIssueDocs();
+        onUpdate?.();
+      } else {
+        setStatus("Failed to save.");
+      }
+    } catch {
+      setStatus("Error saving document.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleToggleParent(docId: number, viewable: boolean, downloadable: boolean) {
+    try {
+      await fetch(`/api/admin/students/${studentId}/issue-docs`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ docId, parentViewable: viewable, parentDownloadable: downloadable }),
+      });
+      await loadIssueDocs();
+    } catch {
+      setStatus("Failed to update parent access.");
+    }
+  }
+
+  async function handleDelete(docId: number) {
+    if (!confirm("Delete this issued document?")) return;
+    try {
+      await fetch(`/api/admin/students/${studentId}/issue-docs?docId=${docId}`, { method: "DELETE" });
+      await loadIssueDocs();
+      setStatus("Document deleted.");
+    } catch {
+      setStatus("Failed to delete.");
+    }
+  }
+
+  if (loading) return <div className="text-sm text-slate-500">Loading...</div>;
+
+  const docTypeLabels: Record<string, string> = {
+    ID_CARD: "ID Card", CERTIFICATE: "Certificate", TRANSCRIPT: "Transcript",
+    AWARD: "Award", TESTIMONIAL: "Testimonial",
+  };
+
+  return (
+    <div className="space-y-6">
+      {status && (
+        <div className={`rounded-lg border px-4 py-2.5 text-sm ${status.includes("Failed") || status.includes("Error") || status.includes("error") ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+          {status}
+        </div>
+      )}
+
+      {/* Available templates */}
+      <Section title="Generate Document">
+        {templates.length === 0 ? (
+          <Empty text="No document templates available. Upload templates in Settings > Templates first." />
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {templates.map((tmpl: any) => (
+              <div key={tmpl.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-900">{tmpl.name}</p>
+                    <p className="text-xs text-slate-500">{docTypeLabels[tmpl.type] || tmpl.type}</p>
+                  </div>
+                  <span className="text-[10px] uppercase text-slate-400">{tmpl.file_type}</span>
+                </div>
+                <button
+                  onClick={() => handleGenerate(tmpl)}
+                  disabled={generating === tmpl.id}
+                  className="mt-3 w-full rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {generating === tmpl.id ? "Generating..." : "Generate"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      {/* Edit modal */}
+      {editingDoc && (
+        <div className="rounded-lg border-2 border-indigo-200 bg-indigo-50/30 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold text-slate-900">Edit Document Data</h4>
+            <button onClick={() => setEditingDoc(null)} className="text-slate-400 hover:text-slate-600 text-sm">Cancel</button>
+          </div>
+          <div className="space-y-3">
+            {(() => {
+              let config: any[] = [];
+              try {
+                const cfg = editingDoc.field_config || editingDoc.template_type;
+                config = editingDoc.field_config ? JSON.parse(editingDoc.field_config) : [];
+              } catch { config = []; }
+              if (config.length === 0) {
+                return <p className="text-xs text-slate-500">No editable fields configured for this template.</p>;
+              }
+              return config.map((f: any) => (
+                <div key={f.key}>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    {f.label}
+                    {f.fixed && <span className="ml-1.5 text-[10px] text-slate-400">(auto-filled)</span>}
+                  </label>
+                  {f.source === "custom" && f.key?.includes("Text") ? (
+                    <textarea
+                      value={fieldValues[f.key] ?? ""}
+                      onChange={(e) => setFieldValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                      rows={3}
+                      className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm"
+                      disabled={f.fixed}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={fieldValues[f.key] ?? ""}
+                      onChange={(e) => setFieldValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                      className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm"
+                      disabled={f.fixed}
+                    />
+                  )}
+                </div>
+              ));
+            })()}
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => handleSave(editingDoc.docId || editingDoc.id, false)}
+                disabled={saving}
+                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                {saving ? "Saving..." : "Save Draft"}
+              </button>
+              <button
+                onClick={() => handleSave(editingDoc.docId || editingDoc.id, true)}
+                disabled={saving}
+                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              >
+                Finalize
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Issued documents list */}
+      <Section title={`Issued Documents (${issuedDocs.length})`}>
+        {issuedDocs.length === 0 ? (
+          <Empty text="No documents issued yet." />
+        ) : (
+          <div className="space-y-2">
+            {issuedDocs.map((doc: any) => (
+              <div key={doc.id} className="rounded-lg border border-slate-200 bg-white p-3">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-900">{doc.title}</p>
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mt-0.5">
+                      <span className="uppercase">{docTypeLabels[doc.template_type] || doc.document_type}</span>
+                      <span className={`rounded px-1.5 py-0.5 font-medium ${doc.status === "FINALIZED" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                        {doc.status}
+                      </span>
+                      {doc.parent_viewable && <span className="rounded bg-blue-100 px-1.5 py-0.5 text-blue-700">Parent can view</span>}
+                      {doc.parent_downloadable && <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-indigo-700">Downloadable</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {doc.status === "DRAFT" && (
+                      <button onClick={() => startEdit(doc)} className="rounded-md px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50">Edit</button>
+                    )}
+                    {doc.status === "FINALIZED" && (
+                      <button onClick={() => startEdit(doc)} className="rounded-md px-2 py-1 text-xs text-slate-600 hover:bg-slate-100">View/Edit</button>
+                    )}
+                    <a href={doc.template_file_url || doc.file_url} target="_blank" rel="noreferrer" className="rounded-md px-2 py-1 text-xs text-slate-600 hover:bg-slate-100">Preview</a>
+                    <button
+                      onClick={() => handleToggleParent(doc.id, !doc.parent_viewable, false)}
+                      className="rounded-md px-2 py-1 text-xs text-blue-600 hover:bg-blue-50"
+                    >
+                      {doc.parent_viewable ? "Hide from parent" : "Show to parent"}
+                    </button>
+                    {doc.parent_viewable && (
+                      <button
+                        onClick={() => handleToggleParent(doc.id, true, !doc.parent_downloadable)}
+                        className="rounded-md px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50"
+                      >
+                        {doc.parent_downloadable ? "Revoke download" : "Allow download"}
+                      </button>
+                    )}
+                    <button onClick={() => handleDelete(doc.id)} className="rounded-md px-2 py-1 text-xs text-rose-500 hover:bg-rose-50">Delete</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+    </div>
+  );
+}
+
 export function QualificationTab({ data }: { data: any }) {
   const quals = data?.admission?.qualifications ?? [];
   if (quals.length === 0) return <Empty text="No qualifications on file." />;

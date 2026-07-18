@@ -76,12 +76,12 @@ export function ParentLmsPanel({
   return (
     <section className="space-y-6">
       {/* Hero banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--brand-primary)] via-[#1a3a6e] to-[var(--brand-secondary)] p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--brand-primary)] via-[#1a3a6e] to-[var(--brand-secondary)] p-5 sm:p-8 text-white shadow-xl">
         <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
         <div className="absolute bottom-0 left-1/3 h-48 w-48 rounded-full bg-white/5 blur-2xl" />
-        <div className="relative flex flex-col items-center gap-6 text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm ring-1 ring-white/20">
-            <Rocket className="h-10 w-10 text-white" />
+        <div className="relative flex flex-col items-center gap-4 sm:gap-6 text-center">
+          <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm ring-1 ring-white/20">
+            <Rocket className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">Learning Management System</p>
@@ -125,7 +125,7 @@ export function ParentLmsPanel({
       </div>
 
       {/* Notification card */}
-      <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 p-8 text-center">
+      <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 p-5 sm:p-8 text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
           <Clock className="h-6 w-6 text-slate-400" />
         </div>

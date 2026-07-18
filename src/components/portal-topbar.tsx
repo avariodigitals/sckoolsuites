@@ -411,11 +411,16 @@ export function PortalTopbar({
             }}
           >
             <Bell className="h-4 w-4" />
-            {notificationCount ? <span className="absolute -right-1 -top-1 rounded-full bg-rose-500 px-1.5 text-[10px] text-white">{notificationCount}</span> : null}
+            {notificationCount ? <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">{notificationCount > 9 ? "9+" : notificationCount}</span> : null}
           </button>
 
           {showNotifications ? (
-            <div className="absolute right-0 z-30 mt-2 w-[calc(100vw-2rem)] max-w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+            <>
+            <div className="fixed inset-0 z-30" onClick={() => setShowNotifications(false)} />
+            <div className="fixed bottom-0 left-0 right-0 z-40 sm:absolute sm:bottom-auto sm:right-0 sm:left-auto sm:top-full sm:mt-2 sm:w-80 max-w-80 overflow-hidden rounded-t-2xl sm:rounded-xl border border-slate-200 bg-white shadow-2xl sm:shadow-xl dark:border-slate-700 dark:bg-slate-900">
+              <div className="sm:hidden flex justify-center pt-2 pb-1">
+                <div className="h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600" />
+              </div>
               <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2 dark:border-slate-700">
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Latest Notifications</p>
                 <div className="flex items-center gap-2">
@@ -456,7 +461,7 @@ export function PortalTopbar({
                 ))}
               </div>
 
-              <div className="max-h-80 overflow-y-auto p-2">
+              <div className="max-h-[60vh] sm:max-h-80 overflow-y-auto p-2">
                 {loadingNotifications ? <p className="px-2 py-3 text-xs text-slate-500">Loading notifications...</p> : null}
                 {notificationError ? <p className="px-2 py-3 text-xs text-rose-600">{notificationError}</p> : null}
                 {!loadingNotifications && !notificationError && filteredNotifications.length === 0 ? (
@@ -489,6 +494,7 @@ export function PortalTopbar({
                   : null}
               </div>
             </div>
+            </>
           ) : null}
         </div>
 
