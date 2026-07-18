@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
-const REACTION_EMOJIS = ["👍", "❤️", "🎉", "🙏", "💡", "😮"];
+const REACTION_EMOJIS = ["👍", "❤️", "🎉", "🙏", "💡", "😮", "😢", "👎"];
 
 type ReactionData = {
   emoji: string;
@@ -14,6 +14,19 @@ export function AnnouncementReactions({ announcementId }: { announcementId: numb
   const [reactions, setReactions] = useState<ReactionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    }
+    if (pickerOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [pickerOpen]);
 
   const fetchReactions = useCallback(async () => {
     try {
@@ -91,7 +104,7 @@ export function AnnouncementReactions({ announcementId }: { announcementId: numb
         </button>
       ))}
 
-      <div className="relative">
+      <div className="relative" ref={pickerRef}>
         <button
           onClick={() => setPickerOpen(!pickerOpen)}
           className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-50"
@@ -100,8 +113,6 @@ export function AnnouncementReactions({ announcementId }: { announcementId: numb
           😊+
         </button>
         {pickerOpen && (
-          <>
-            <div className="fixed inset-0 z-10" onClick={() => setPickerOpen(false)} />
             <div className="absolute z-20 mt-1 flex gap-1 rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg">
               {REACTION_EMOJIS.map((emoji) => (
                 <button
@@ -113,7 +124,6 @@ export function AnnouncementReactions({ announcementId }: { announcementId: numb
                 </button>
               ))}
             </div>
-          </>
         )}
       </div>
     </div>

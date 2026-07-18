@@ -117,7 +117,6 @@ export function ParentDocumentsPanel({ childId }: { childId?: string }) {
                   {doc.parentDownloadable ? (
                     <a
                       href={getCloudinaryInlineUrl(doc.fileUrl)}
-                      download
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
@@ -147,7 +146,6 @@ export function ParentDocumentsPanel({ childId }: { childId?: string }) {
                 {previewDoc.parentDownloadable && (
                   <a
                     href={getCloudinaryInlineUrl(previewDoc.fileUrl)}
-                    download
                     target="_blank"
                     rel="noopener noreferrer"
                     className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"

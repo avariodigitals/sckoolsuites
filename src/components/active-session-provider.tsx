@@ -98,6 +98,24 @@ export function ActiveSessionProvider({ children }: { children: React.ReactNode 
               status: context.term.status ?? "DRAFT",
             };
           }
+          // If admin endpoint failed (e.g. parents), use sessions/terms from context
+          if (allSessions.length === 0 && context.sessions) {
+            allSessions = (context.sessions as any[]).map((s) => ({
+              id: String(s.id),
+              name: s.name,
+              isCurrent: s.isCurrent ?? false,
+              status: s.status ?? "DRAFT",
+            }));
+          }
+          if (allTerms.length === 0 && context.terms) {
+            allTerms = (context.terms as any[]).map((t) => ({
+              id: String(t.id),
+              name: t.name,
+              sessionId: String(t.sessionId ?? t.session?.id),
+              isCurrent: t.isCurrent ?? false,
+              status: t.status ?? "DRAFT",
+            }));
+          }
         }
 
         if (!currentSession && allSessions.length > 0) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { AlertTriangle, Bell, ChevronDown, ChevronRight, FileCheck2, LogOut, Megaphone, MessageSquareText, Moon, Search, Sun, UserCircle } from "lucide-react";
+import { AlertTriangle, Bell, CalendarCheck, ChevronDown, ChevronRight, FileCheck2, GraduationCap, LogOut, Megaphone, MessageSquareText, Moon, Search, Sun, Trophy, UserCircle, Wallet } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useRouter, usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -146,7 +146,7 @@ export function PortalTopbar({
   function notificationTypeIcon(type: NotificationItem["type"]) {
     switch (type) {
       case "contest":
-        return <FileCheck2 className="h-3.5 w-3.5 text-amber-600" />;
+        return <Trophy className="h-3.5 w-3.5 text-amber-600" />;
       case "announcement":
         return <Megaphone className="h-3.5 w-3.5 text-blue-600" />;
       case "message":
@@ -155,13 +155,13 @@ export function PortalTopbar({
         return <AlertTriangle className="h-3.5 w-3.5 text-rose-600" />;
       case "invoice":
       case "fee_reminder":
-        return <FileCheck2 className="h-3.5 w-3.5 text-orange-600" />;
+        return <Wallet className="h-3.5 w-3.5 text-orange-600" />;
       case "result":
-        return <FileCheck2 className="h-3.5 w-3.5 text-purple-600" />;
+        return <GraduationCap className="h-3.5 w-3.5 text-purple-600" />;
       case "attendance":
-        return <AlertTriangle className="h-3.5 w-3.5 text-yellow-600" />;
+        return <CalendarCheck className="h-3.5 w-3.5 text-teal-600" />;
       case "admission":
-        return <Megaphone className="h-3.5 w-3.5 text-green-600" />;
+        return <FileCheck2 className="h-3.5 w-3.5 text-green-600" />;
       default:
         return <Bell className="h-3.5 w-3.5 text-slate-600" />;
     }

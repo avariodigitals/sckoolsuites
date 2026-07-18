@@ -16,6 +16,11 @@ import {
   ChevronDown,
   CalendarDays,
   UserCircle,
+  FileCheck2,
+  GraduationCap,
+  CalendarCheck,
+  Wallet,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -460,11 +465,19 @@ export function ModernPortalShell({
                         </div>
                       ) : (
                         unreadNotifications.map((notif) => {
-                          const Icon = notif.type === "announcement" ? Megaphone :
-                                       notif.type === "message" ? MessageSquare : AlertTriangle;
-                          const iconColor = notif.type === "announcement" ? "bg-blue-100 text-blue-600" :
-                                           notif.type === "message" ? "bg-emerald-100 text-emerald-600" :
-                                           "bg-rose-100 text-rose-600";
+                          const iconMap: Record<string, { Icon: any; color: string }> = {
+                            announcement: { Icon: Megaphone, color: "bg-blue-100 text-blue-600" },
+                            message: { Icon: MessageSquare, color: "bg-emerald-100 text-emerald-600" },
+                            result: { Icon: GraduationCap, color: "bg-purple-100 text-purple-600" },
+                            invoice: { Icon: Wallet, color: "bg-orange-100 text-orange-600" },
+                            fee_reminder: { Icon: Wallet, color: "bg-amber-100 text-amber-600" },
+                            attendance: { Icon: CalendarCheck, color: "bg-teal-100 text-teal-600" },
+                            admission: { Icon: FileCheck2, color: "bg-green-100 text-green-600" },
+                            contest: { Icon: Trophy, color: "bg-yellow-100 text-yellow-600" },
+                            complaint: { Icon: AlertTriangle, color: "bg-rose-100 text-rose-600" },
+                            general: { Icon: Bell, color: "bg-slate-100 text-slate-600" },
+                          };
+                          const { Icon, color: iconColor } = iconMap[notif.type] ?? iconMap.general;
                           return (
                             <button
                               key={notif.id}

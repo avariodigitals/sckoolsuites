@@ -64,7 +64,7 @@ export async function POST(
       return NextResponse.json({ error: "Emoji is required" }, { status: 400 });
     }
 
-    const allowed = ["👍", "❤️", "🎉", "🙏", "💡", "😮"];
+    const allowed = ["👍", "❤️", "🎉", "🙏", "💡", "😮", "😢", "👎"];
     if (!allowed.includes(emoji)) {
       return NextResponse.json({ error: "Invalid reaction" }, { status: 400 });
     }
