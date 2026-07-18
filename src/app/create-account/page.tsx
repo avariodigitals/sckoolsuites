@@ -9,7 +9,7 @@ export default function CreateAccountPage() {
         <Card className="border-slate-200/20 bg-white/95 backdrop-blur">
           <CardHeader>
             <p className="text-xs uppercase tracking-wide text-slate-500">Sckool Suite Onboarding</p>
-            <CardTitle className="text-3xl">Create Your School Workspace</CardTitle>
+            <CardTitle className="text-2xl sm:text-3xl">Create Your School Workspace</CardTitle>
             <CardDescription>Set up your school account and start running admissions, learning, and fees in one place.</CardDescription>
           </CardHeader>
           <CardContent>

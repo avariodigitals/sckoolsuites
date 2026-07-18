@@ -56,12 +56,12 @@ export function DashboardAnalytics({ incomeData, feeComponents }: DashboardAnaly
   return (
     <div className="space-y-6">
       {/* Filter Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-slate-900">Financial Analytics</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-slate-900">Financial Analytics</h2>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Chart Type Toggle */}
           <div className="flex items-center bg-slate-100 rounded-lg p-1">
             <button
@@ -131,30 +131,30 @@ export function DashboardAnalytics({ incomeData, feeComponents }: DashboardAnaly
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
         <Card className="border-emerald-100 bg-emerald-50/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-emerald-600">Total Income</p>
-                <p className="mt-2 text-2xl font-bold text-emerald-900">₦{totalIncome.toLocaleString()}</p>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-emerald-600">Total Income</p>
+                <p className="mt-2 text-xl sm:text-2xl font-bold text-emerald-900 truncate">₦{totalIncome.toLocaleString()}</p>
               </div>
-              <div className="rounded-full bg-emerald-100 p-3">
-                <TrendingUp className="h-6 w-6 text-emerald-600" />
+              <div className="rounded-full bg-emerald-100 p-2.5 sm:p-3 shrink-0">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-rose-100 bg-rose-50/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-rose-600">Total Expenses</p>
-                <p className="mt-2 text-2xl font-bold text-rose-900">₦{totalExpenses.toLocaleString()}</p>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-rose-600">Total Expenses</p>
+                <p className="mt-2 text-xl sm:text-2xl font-bold text-rose-900 truncate">₦{totalExpenses.toLocaleString()}</p>
               </div>
-              <div className="rounded-full bg-rose-100 p-3">
-                <TrendingUp className="h-6 w-6 text-rose-600 rotate-180" />
+              <div className="rounded-full bg-rose-100 p-2.5 sm:p-3 shrink-0">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-rose-600 rotate-180" />
               </div>
             </div>
           </CardContent>
@@ -164,24 +164,24 @@ export function DashboardAnalytics({ incomeData, feeComponents }: DashboardAnaly
           "border-indigo-100",
           netRevenue >= 0 ? "bg-indigo-50/50" : "bg-amber-50/50 border-amber-100"
         )}>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
                 <p className={cn(
-                  "text-sm font-medium",
+                  "text-xs sm:text-sm font-medium",
                   netRevenue >= 0 ? "text-indigo-600" : "text-amber-600"
                 )}>Net Revenue</p>
                 <p className={cn(
-                  "mt-2 text-2xl font-bold",
+                  "mt-2 text-xl sm:text-2xl font-bold truncate",
                   netRevenue >= 0 ? "text-indigo-900" : "text-amber-900"
                 )}>₦{netRevenue.toLocaleString()}</p>
               </div>
               <div className={cn(
-                "rounded-full p-3",
+                "rounded-full p-2.5 sm:p-3 shrink-0",
                 netRevenue >= 0 ? "bg-indigo-100" : "bg-amber-100"
               )}>
                 <PieIcon className={cn(
-                  "h-6 w-6",
+                  "h-5 w-5 sm:h-6 sm:w-6",
                   netRevenue >= 0 ? "text-indigo-600" : "text-amber-600"
                 )} />
               </div>
@@ -191,14 +191,14 @@ export function DashboardAnalytics({ incomeData, feeComponents }: DashboardAnaly
       </div>
 
       {/* Charts Grid */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         {/* Income vs Expenses Chart */}
         <Card className="border-slate-200">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold text-slate-900">Income vs Expenses</CardTitle>
+            <CardTitle className="text-sm sm:text-base font-semibold text-slate-900">Income vs Expenses</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-80">
+            <div className="h-64 sm:h-80">
               <ResponsiveContainer width="100%" height="100%">
                 {chartType === "bar" ? (
                   <BarChart data={incomeData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -296,10 +296,10 @@ export function DashboardAnalytics({ incomeData, feeComponents }: DashboardAnaly
         {/* Fee Components Pie Chart */}
         <Card className="border-slate-200">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold text-slate-900">Income by Fee Component</CardTitle>
+            <CardTitle className="text-sm sm:text-base font-semibold text-slate-900">Income by Fee Component</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-80">
+            <div className="h-64 sm:h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -340,7 +340,7 @@ export function DashboardAnalytics({ incomeData, feeComponents }: DashboardAnaly
       {/* Fee Components Table */}
       <Card className="border-slate-200">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold text-slate-900">Fee Component Breakdown</CardTitle>
+          <CardTitle className="text-sm sm:text-base font-semibold text-slate-900">Fee Component Breakdown</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

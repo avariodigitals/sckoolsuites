@@ -157,7 +157,7 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
 
                 <div>
                   <h4 className="mb-2 text-sm font-semibold text-slate-900">Assigned Workload</h4>
-                  <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
                     <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
                       <p className="text-[11px] text-slate-500">Classes</p>
                       <p className="font-medium text-slate-900">{myClasses.length}</p>
@@ -315,7 +315,7 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
         );
       case "lms":
         return (
-          <div className="grid gap-3 xl:grid-cols-2">
+          <div className="grid gap-3 lg:grid-cols-2">
             <Card>
               <CardHeader><CardTitle>LMS Lessons</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
@@ -378,11 +378,11 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
         <CardContent className="text-sm text-slate-600">{descriptions[canonical]}</CardContent>
       </Card>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <Card><CardContent className="p-4"><p className="text-xs text-slate-500">Classes</p><p className="text-xl font-semibold">{myClasses.length}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-slate-500">Subjects</p><p className="text-xl font-semibold">{mySubjects.length}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-slate-500">Scores</p><p className="text-xl font-semibold">{myScores.length}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-slate-500">Attendance Logs</p><p className="text-xl font-semibold">{myAttendance.length}</p></CardContent></Card>
+      <section className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+        <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Classes</p><p className="text-lg sm:text-xl font-semibold">{myClasses.length}</p></CardContent></Card>
+        <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Subjects</p><p className="text-lg sm:text-xl font-semibold">{mySubjects.length}</p></CardContent></Card>
+        <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Scores</p><p className="text-lg sm:text-xl font-semibold">{myScores.length}</p></CardContent></Card>
+        <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Attendance Logs</p><p className="text-lg sm:text-xl font-semibold">{myAttendance.length}</p></CardContent></Card>
       </section>
 
       {renderSection()}

@@ -112,7 +112,7 @@ export function ParentAttendanceDashboard({
     <section className="space-y-6">
       {/* Summary: Best performer card */}
       {bestPerformer && childStats.length > 1 && (
-        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-5 shadow-sm">
+        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-4 sm:p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white">
               <Trophy className="h-5 w-5" />
@@ -132,7 +132,7 @@ export function ParentAttendanceDashboard({
 
       {/* Per-child summary cards (when multiple children) */}
       {childStats.length > 1 && (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-2 xl:grid-cols-4">
           {childStats.map((stat) => {
             const isSelected = selectedChildId === stat.id;
             const isBest = bestPerformer?.id === stat.id;
@@ -154,7 +154,7 @@ export function ParentAttendanceDashboard({
                 </div>
                 <p className="text-xs text-slate-500">{stat.className}</p>
                 <div className="mt-2 flex items-end justify-between">
-                  <p className={`text-2xl font-extrabold ${stat.rate >= 80 ? "text-emerald-600" : stat.rate >= 60 ? "text-amber-600" : "text-rose-600"}`}>
+                  <p className={`text-xl sm:text-2xl font-extrabold ${stat.rate >= 80 ? "text-emerald-600" : stat.rate >= 60 ? "text-amber-600" : "text-rose-600"}`}>
                     {stat.rate.toFixed(1)}%
                   </p>
                   <div className="flex gap-2 text-[10px] text-slate-500">
@@ -197,51 +197,51 @@ export function ParentAttendanceDashboard({
       </div>
 
       {/* Hero banner */}
-      <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--brand-primary)] via-[#1a3a6e] to-[var(--brand-secondary)] p-6 text-white shadow-lg">
+      <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--brand-primary)] via-[#1a3a6e] to-[var(--brand-secondary)] p-4 sm:p-6 text-white shadow-lg">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-white/70">Attendance Dashboard</p>
-            <h2 className="mt-1 text-2xl font-bold">
+            <h2 className="mt-1 text-xl sm:text-2xl font-bold truncate">
               {selectedChildId === "all"
                 ? "All Children"
                 : childOptions.find((c) => c.id === selectedChildId)?.name ?? "Child"}
             </h2>
             <p className="text-sm text-white/85">Real-time attendance visibility for your linked children.</p>
           </div>
-          <div className="rounded-xl border border-white/30 bg-white/10 px-4 py-3 text-center backdrop-blur-sm">
-            <p className="text-3xl font-extrabold">{filteredStats.rate.toFixed(1)}%</p>
+          <div className="rounded-xl border border-white/30 bg-white/10 px-4 py-3 text-center backdrop-blur-sm shrink-0">
+            <p className="text-2xl sm:text-3xl font-extrabold">{filteredStats.rate.toFixed(1)}%</p>
             <p className="text-xs text-white/80">attendance rate</p>
           </div>
         </div>
       </div>
 
       {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 xl:grid-cols-5">
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-3 sm:p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">Present Days</p>
-          <p className="mt-1 text-2xl font-extrabold text-slate-900">{filteredStats.present}</p>
+          <p className="mt-1 text-xl sm:text-2xl font-extrabold text-slate-900">{filteredStats.present}</p>
         </div>
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3 sm:p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-700">Absent Days</p>
-          <p className="mt-1 text-2xl font-extrabold text-slate-900">{filteredStats.absent}</p>
+          <p className="mt-1 text-xl sm:text-2xl font-extrabold text-slate-900">{filteredStats.absent}</p>
         </div>
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 sm:p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">Late Days</p>
-          <p className="mt-1 text-2xl font-extrabold text-slate-900">{filteredStats.late}</p>
+          <p className="mt-1 text-xl sm:text-2xl font-extrabold text-slate-900">{filteredStats.late}</p>
         </div>
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 sm:p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Punctuality</p>
-          <p className="mt-1 text-xl font-extrabold text-slate-900">{punctualityRating}</p>
+          <p className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">{punctualityRating}</p>
         </div>
-        <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
+        <div className="rounded-2xl border border-violet-200 bg-violet-50 p-3 sm:p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-700">Records</p>
-          <p className="mt-1 text-2xl font-extrabold text-slate-900">{filteredStats.total}</p>
+          <p className="mt-1 text-xl sm:text-2xl font-extrabold text-slate-900">{filteredStats.total}</p>
         </div>
       </div>
 
       {/* 14-day trend */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+        <div className="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <p className="text-sm font-semibold text-slate-800">Last 14 Days Activity</p>
           <div className="flex items-center gap-2 text-[11px] text-slate-500">
             <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Present</span>
@@ -249,7 +249,7 @@ export function ParentAttendanceDashboard({
             <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500" /> Absent</span>
           </div>
         </div>
-        <div className="grid grid-cols-7 gap-3 sm:grid-cols-14">
+        <div className="grid grid-cols-7 gap-2 sm:gap-3 sm:grid-cols-14">
           {trendDays.map((day) => (
             <div key={day.key} className="rounded-lg border border-slate-200 p-2 text-center">
               <div
@@ -271,7 +271,7 @@ export function ParentAttendanceDashboard({
 
       {/* Attendance records table */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 bg-slate-50 px-5 py-3">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 sm:px-5 py-3">
           <h3 className="text-sm font-semibold text-slate-800">Attendance Records</h3>
         </div>
         {filteredAttendance.length ? (

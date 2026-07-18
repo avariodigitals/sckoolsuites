@@ -46,13 +46,13 @@ export function StatCard({ title, value, change, trend = "neutral", iconName, hr
   
   return (
     <div className={cn(
-      "rounded-xl bg-white p-6 shadow-sm border border-slate-200",
+      "rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-slate-200",
       href && "hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer"
     )}>
       <div className="flex items-start justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-medium text-slate-600">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
+          <p className="mt-2 text-2xl sm:text-3xl font-bold text-slate-900 truncate">{value}</p>
           {change && (
             <div className="mt-2 flex items-center gap-1 text-sm">
               {trend === "up" && <TrendingUp className="h-4 w-4 text-emerald-500" />}
@@ -67,8 +67,8 @@ export function StatCard({ title, value, change, trend = "neutral", iconName, hr
             </div>
           )}
         </div>
-        <div className="rounded-lg bg-indigo-50 p-3">
-          <Icon className="h-6 w-6 text-indigo-600" />
+        <div className="rounded-lg bg-indigo-50 p-2.5 sm:p-3 shrink-0">
+          <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" />
         </div>
       </div>
     </div>
@@ -107,16 +107,16 @@ export function QuickAction({ title, description, href, iconName, color = "indig
   return (
     <Link 
       href={href}
-      className="group flex items-center gap-4 rounded-xl bg-white p-4 shadow-sm border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all"
+      className="group flex items-center gap-3 sm:gap-4 rounded-xl bg-white p-3 sm:p-4 shadow-sm border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all"
     >
-      <div className={cn("rounded-lg p-3 transition-colors", colorClasses[color])}>
-        <Icon className="h-6 w-6" />
+      <div className={cn("rounded-lg p-2.5 sm:p-3 transition-colors shrink-0", colorClasses[color])}>
+        <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
       </div>
-      <div className="flex-1">
-        <h3 className="font-semibold text-slate-900">{title}</h3>
-        <p className="text-sm text-slate-500">{description}</p>
+      <div className="flex-1 min-w-0">
+        <h3 className="font-semibold text-slate-900 truncate">{title}</h3>
+        <p className="text-sm text-slate-500 truncate">{description}</p>
       </div>
-      <ArrowRight className="h-5 w-5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+      <ArrowRight className="h-5 w-5 text-slate-400 group-hover:text-indigo-600 transition-colors shrink-0" />
     </Link>
   );
 }
@@ -133,18 +133,18 @@ export type SectionCardProps = {
 export function SectionCard({ title, children, action }: SectionCardProps) {
   return (
     <div className="rounded-xl bg-white shadow-sm border border-slate-200">
-      <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-        <h2 className="font-semibold text-slate-900">{title}</h2>
+      <div className="flex items-center justify-between border-b border-slate-100 px-4 sm:px-6 py-3 sm:py-4">
+        <h2 className="font-semibold text-slate-900 text-sm sm:text-base">{title}</h2>
         {action && (
           <Link 
             href={action.href}
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+            className="text-xs sm:text-sm font-medium text-indigo-600 hover:text-indigo-700 shrink-0 ml-2"
           >
             {action.label}
           </Link>
         )}
       </div>
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {children}
       </div>
     </div>
@@ -186,9 +186,9 @@ export function EmptyState({ message }: { message: string }) {
 
 export function DashboardHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div className="mb-6">
-      <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
-      {subtitle && <p className="mt-1 text-slate-600">{subtitle}</p>}
+    <div className="mb-4 sm:mb-6">
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{title}</h1>
+      {subtitle && <p className="mt-1 text-sm sm:text-base text-slate-600">{subtitle}</p>}
     </div>
   );
 }

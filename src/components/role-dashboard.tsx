@@ -72,7 +72,7 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
       <ModernPortalShell role={user.role} userName={user.name ?? "Super Admin"} avatarUrl={dbUser?.avatarUrl ?? undefined} pathname={pathname}>
         <DashboardHeader title={model.title} subtitle={model.subtitle} />
         
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4 mb-4 sm:mb-6">
           <StatCard title="Total Schools" value={schools.length} iconName="bookOpen" />
           <StatCard title="Active Subscriptions" value={activeSchools} iconName="calendar" />
           <StatCard title="Total Students" value={totalStudents} iconName="graduationCap" />
@@ -120,7 +120,7 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
                 + Add School
               </Link>
             </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {schools.map((school: any) => (
                 <div key={school.id} className="p-4 rounded-lg border border-slate-200 hover:border-indigo-300 transition-colors">
                   <div className="flex items-start justify-between">
@@ -155,7 +155,7 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
           </div>
         )}
 
-        <div className="grid gap-4 lg:grid-cols-3 mb-6">
+        <div className="grid gap-3 sm:gap-4 lg:grid-cols-3 mb-4 sm:mb-6">
           <SectionCard title="Quick Actions" action={{ label: "View All", href: "/super-admin/dashboard" }}>
             <div className="space-y-3">
               <QuickAction title="Add New School" description="Onboard a new institution" href="/admin/settings/school" iconName="bookOpen" color="indigo" />
@@ -340,7 +340,7 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
         
         <DashboardHeader title={model.title} subtitle={model.subtitle} />
         
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4 mb-4 sm:mb-6">
           {model.stats.slice(0, 4).map((stat) => (
             <StatCard 
               key={stat.label}
@@ -363,7 +363,7 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
         {roleScope === "admin" && (
           <div className="mb-6">
             <SectionCard title="Reception Overview" action={{ label: "View Details", href: "/admin/reception" }}>
-              <div className="grid gap-4 md:grid-cols-4">
+              <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
                 <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
                   <p className="text-sm text-blue-600 font-medium">Total Enquiries</p>
                   <p className="text-2xl font-bold text-blue-900">{enquiryCount}</p>
@@ -389,7 +389,7 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
           </div>
         )}
 
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 lg:grid-cols-3">
           <SectionCard title="Quick Actions">
             <div className="space-y-3">
               {model.quickActions.slice(0, 4).map((action) => (

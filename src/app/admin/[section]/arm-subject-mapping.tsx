@@ -210,14 +210,14 @@ export function ArmSubjectMappingManager() {
             placeholder="Search arms..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 w-64"
+            className="pl-9 w-full sm:w-64"
           />
         </div>
         <Button className="bg-indigo-600 hover:bg-indigo-700">+ Quick Map</Button>
       </div>
 
       {/* Arms Grid */}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
         {filteredArms.length === 0 ? (
           <div className="col-span-full rounded-xl bg-white p-12 text-center border border-slate-200">
             <div className="mx-auto mb-4 rounded-full bg-slate-100 p-4 w-fit">
@@ -229,19 +229,19 @@ export function ArmSubjectMappingManager() {
         ) : (
           filteredArms.map((arm) => (
             <div key={arm.id} className="rounded-xl bg-white shadow-sm border border-slate-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+              <div className="px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/50">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-slate-900">{arm.className} {arm.name}</h3>
                     <p className="text-sm text-slate-500">{arm.studentCount} students</p>
                   </div>
-                  <div className="rounded-lg bg-indigo-50 p-2">
+                  <div className="rounded-lg bg-indigo-50 p-2 shrink-0">
                     <Layers className="h-5 w-5 text-indigo-600" />
                   </div>
                 </div>
               </div>
               
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {arm.subjects.length === 0 ? (
                   <div className="text-center py-4">
                     <AlertCircle className="h-6 w-6 text-slate-300 mx-auto mb-2" />

@@ -212,7 +212,7 @@ export function AdminFinanceManager() {
     <div className="space-y-4">
       {status ? <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">{status}</div> : null}
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-xl border border-slate-200 bg-white p-4">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-900">Fee Groups</h3>
@@ -290,7 +290,7 @@ export function AdminFinanceManager() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={itemForm.feeGroupId} onChange={(event) => setItemForm((prev) => ({ ...prev, feeGroupId: event.target.value }))}>
               <option value="">Select fee group</option>
               {groups.filter((group) => group.isActive).map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}

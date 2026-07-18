@@ -556,12 +556,12 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
         {!setup.status.setupCompleted ? (
           <Card className="border-amber-200 bg-amber-50" data-testid="setup-incomplete-banner">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between gap-2">
-                <CardTitle className="text-amber-900">
+                <CardTitle className="text-sm sm:text-base text-amber-900">
                   School Setup — {setup.completionPercentage}% complete
                 </CardTitle>
                 <span className="rounded-full bg-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-900">
@@ -608,7 +608,7 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
         <DashboardHeader title={blueprint.title} subtitle={blueprint.subtitle} />
 
         {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
           {metrics.slice(0, 4).map((metric) => (
             <StatCard
               key={metric.label}

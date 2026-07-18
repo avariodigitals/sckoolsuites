@@ -370,22 +370,22 @@ export function BillManager() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
           <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Total Bills</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1">{stats.totalBills.toLocaleString()}</p>
+          <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{stats.totalBills.toLocaleString()}</p>
         </div>
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 sm:p-4">
           <p className="text-xs text-emerald-600 font-medium uppercase tracking-wide">Total Collected</p>
-          <p className="text-2xl font-bold text-emerald-700 mt-1">{formatCurrency(stats.totalPaid)}</p>
+          <p className="text-xl sm:text-2xl font-bold text-emerald-700 mt-1">{formatCurrency(stats.totalPaid)}</p>
         </div>
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 sm:p-4">
           <p className="text-xs text-amber-600 font-medium uppercase tracking-wide">Outstanding</p>
-          <p className="text-2xl font-bold text-amber-700 mt-1">{formatCurrency(stats.totalOutstanding)}</p>
+          <p className="text-xl sm:text-2xl font-bold text-amber-700 mt-1">{formatCurrency(stats.totalOutstanding)}</p>
         </div>
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 sm:p-4">
           <p className="text-xs text-rose-600 font-medium uppercase tracking-wide">Overdue</p>
-          <p className="text-2xl font-bold text-rose-700 mt-1">{stats.totalOverdue.toLocaleString()}</p>
+          <p className="text-xl sm:text-2xl font-bold text-rose-700 mt-1">{stats.totalOverdue.toLocaleString()}</p>
         </div>
       </div>
 
@@ -429,7 +429,7 @@ export function BillManager() {
             placeholder="Search bills..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-xs"
+            className="w-full sm:max-w-xs"
           />
           <Button onClick={() => setShowCreateForm(!showCreateForm)}>
             {showCreateForm ? "Cancel" : "+ New Bill"}
@@ -441,7 +441,7 @@ export function BillManager() {
       {showCreateForm && (
         <div className="rounded-xl border border-slate-200 bg-white p-6">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Create New Bill</h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Student *</label>
               <select
@@ -591,7 +591,7 @@ export function BillManager() {
             <p className="text-sm text-slate-600">Student: <span className="font-medium text-slate-900">{selectedBill.studentName}</span></p>
             <p className="text-sm text-slate-600">Outstanding: <span className="font-medium text-rose-700">{formatCurrency(selectedBill.balance)}</span></p>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 mb-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 mb-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Amount *</label>
               <Input
@@ -629,8 +629,8 @@ export function BillManager() {
 
       {/* Bills Table */}
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200">
-          <h3 className="text-lg font-semibold text-slate-900">Bills ({filteredBills.length})</h3>
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-200">
+          <h3 className="text-base sm:text-lg font-semibold text-slate-900">Bills ({filteredBills.length})</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">

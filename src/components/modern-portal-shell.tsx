@@ -260,6 +260,14 @@ export function ModernPortalShell({
             <p className="text-sm font-semibold text-slate-900 truncate">{displaySchoolName}</p>
             <p className="text-xs text-slate-500">{role.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())} Portal</p>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="lg:hidden px-2 -mr-2"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
 
         {/* Navigation */}
@@ -394,7 +402,7 @@ export function ModernPortalShell({
             </div>
 
             {/* Right: Notifications & User Profile */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 sm:gap-2 lg:gap-3">
               {/* Notification Bell with Dropdown */}
               <div className="relative">
                 <Button 
@@ -416,7 +424,7 @@ export function ModernPortalShell({
                       className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm"
                       onClick={() => setNotificationsOpen(false)}
                     />
-                    <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+                    <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
                       <h3 className="font-semibold text-slate-900">Notifications</h3>
                       {hasUnread && (
@@ -513,7 +521,7 @@ export function ModernPortalShell({
               <SessionSelector />
 
               {/* User Profile Dropdown */}
-              <div className="relative pl-3 border-l border-slate-200">
+              <div className="relative pl-2 sm:pl-3 lg:border-l lg:border-slate-200">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2 rounded-lg p-1 transition hover:bg-slate-50"
@@ -540,7 +548,7 @@ export function ModernPortalShell({
                       className="fixed inset-0 z-40"
                       onClick={() => setUserMenuOpen(false)}
                     />
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+                    <div className="absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-1rem)] bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
                       <div className="px-4 py-3 border-b border-slate-100">
                         <p className="text-sm font-semibold text-slate-900 truncate">{userName}</p>
                         <p className="text-xs text-slate-500">{role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</p>
@@ -615,8 +623,24 @@ function SessionSelector() {
     ? `${activeSession.name}${activeTerm ? ` — ${activeTerm.name}` : ""}`
     : "Select Session";
 
+  const shortLabel = activeSession
+    ? `${activeSession.name}${activeTerm ? ` / ${activeTerm.name}` : ""}`
+    : "Session";
+
+
   return (
     <div className="relative" ref={dropdownRef}>
+      {/* Mobile: icon-only button */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="sm:hidden flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-700 transition hover:border-slate-300"
+        title={`Session: ${displayLabel}`}
+      >
+        <CalendarDays className="h-4 w-4 text-slate-500" />
+      </button>
+
+      {/* Desktop: full label button */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -629,7 +653,7 @@ function SessionSelector() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-72 rounded-xl border border-slate-200 bg-white shadow-lg">
+        <div className="absolute right-0 z-50 mt-2 w-[calc(100vw-2rem)] max-w-80 sm:w-72 rounded-xl border border-slate-200 bg-white shadow-lg">
           <div className="px-4 py-3 border-b border-slate-100">
             <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">Academic Session & Term</h3>
             <p className="text-[11px] text-slate-500 mt-0.5">Session controls most data. Term narrows it further.</p>

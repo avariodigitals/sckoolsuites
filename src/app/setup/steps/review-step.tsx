@@ -36,7 +36,7 @@ export function ReviewStep({ school, session, term, adminUser, onActivate, onBac
             <School className="h-5 w-5 text-indigo-600" />
             <h3 className="font-semibold text-slate-900">School Information</h3>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 text-sm">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 text-sm">
             <div>
               <p className="text-slate-500">Name</p>
               <p className="font-medium text-slate-900">{school.name}</p>

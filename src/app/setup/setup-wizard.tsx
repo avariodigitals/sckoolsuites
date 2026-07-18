@@ -146,8 +146,8 @@ export function SetupWizard() {
 
       {/* Progress */}
       <div className="bg-white border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex items-center justify-between overflow-x-auto gap-2 sm:gap-0">
             {steps.map((step, index) => {
               const Icon = step.icon;
               const isActive = step.id === currentStep;
@@ -155,7 +155,7 @@ export function SetupWizard() {
               
               return (
                 <div key={step.id} className="flex items-center">
-                  <div className={`flex items-center gap-3 px-4 py-2 rounded-lg ${
+                  <div className={`flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 rounded-lg shrink-0 ${
                     isActive ? "bg-indigo-50 text-indigo-700" : 
                     isComplete ? "bg-emerald-50 text-emerald-700" : "text-slate-400"
                   }`}>
@@ -169,13 +169,16 @@ export function SetupWizard() {
                         <Icon className="h-5 w-5" />
                       )}
                     </div>
-                    <div>
+                    <div className="hidden sm:block">
                       <p className="text-sm font-medium">Step {step.id}</p>
                       <p className="text-xs">{step.name}</p>
                     </div>
+                    <div className="sm:hidden">
+                      <p className="text-xs font-medium">{step.id}</p>
+                    </div>
                   </div>
                   {index < steps.length - 1 && (
-                    <ChevronRight className="h-5 w-5 mx-4 text-slate-300" />
+                    <ChevronRight className="h-5 w-5 mx-1 sm:mx-4 text-slate-300 shrink-0" />
                   )}
                 </div>
               );

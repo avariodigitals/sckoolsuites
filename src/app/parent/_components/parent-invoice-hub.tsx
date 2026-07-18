@@ -231,7 +231,7 @@ export function ParentBillHub({
     <section className="space-y-3">
       {toast ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{toast}</div> : null}
 
-      <div className="glass-soft grid gap-2 rounded-xl p-3 md:grid-cols-2">
+      <div className="glass-soft grid gap-2 rounded-xl p-3 sm:grid-cols-2">
         <select className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" value={childFilter} onChange={(e) => setChildFilter(e.target.value)}>
           <option value="ALL">All Children</option>
           {childOptions.map((child) => <option key={child.id} value={child.id}>{child.name}</option>)}
@@ -305,7 +305,7 @@ export function ParentBillHub({
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-3 xl:grid-cols-[1.5fr_1fr]">
+              <div className="mt-4 grid gap-3 lg:grid-cols-[1.5fr_1fr]">
                 <section className="overflow-hidden rounded-xl border border-slate-200">
                   <div className="border-b border-slate-200 bg-slate-50 px-3 py-2">
                     <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-700">Fee Breakdown</h4>
@@ -416,7 +416,7 @@ export function ParentBillHub({
                 <div className="mt-3 space-y-2 rounded-xl border border-blue-200 bg-blue-50/60 p-3 text-sm">
                   <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Contest Bill (Optional Fees Removal)</p>
                   {optionalItems.length ? optionalItems.map((item) => (
-                    <div key={item.id} className="grid grid-cols-1 items-center gap-2 md:grid-cols-[1.5fr_1fr_1fr]">
+                    <div key={item.id} className="grid grid-cols-1 items-center gap-2 sm:grid-cols-[1.5fr_1fr_1fr]">
                       <p className="text-xs font-medium text-slate-700">{item.name}</p>
                       <p className="text-xs text-slate-600">Current: {money(item.amount)}</p>
                       <button
@@ -447,7 +447,7 @@ export function ParentBillHub({
               ) : null}
 
               {activeBill === bill.id ? (
-                <div className="mt-3 grid gap-2 rounded-xl border border-slate-200 bg-white/85 p-3 text-sm md:grid-cols-2 dark:bg-slate-900/70">
+                <div className="mt-3 grid gap-2 rounded-xl border border-slate-200 bg-white/85 p-3 text-sm sm:grid-cols-2 dark:bg-slate-900/70">
                   <input className="rounded-md border border-slate-300 px-3 py-2" placeholder="Amount paid" value={formState.amountPaid} onChange={(e) => setFormState((s) => ({ ...s, amountPaid: e.target.value }))} />
                   <select className="rounded-md border border-slate-300 px-3 py-2" value={formState.paymentMethod} onChange={(e) => setFormState((s) => ({ ...s, paymentMethod: e.target.value }))}>
                     <option>Transfer</option>
@@ -463,7 +463,7 @@ export function ParentBillHub({
                     className="rounded-md border border-slate-300 px-3 py-2"
                     onChange={(e) => setProofFile(e.target.files?.[0] ?? null)}
                   />
-                  <button type="button" className="rounded-md bg-emerald-600 px-3 py-2 font-medium text-white md:col-span-2" onClick={() => submitPaymentNotice(bill.id)}>Submit Pending Confirmation</button>
+                  <button type="button" className="rounded-md bg-emerald-600 px-3 py-2 font-medium text-white sm:col-span-2" onClick={() => submitPaymentNotice(bill.id)}>Submit Pending Confirmation</button>
                 </div>
               ) : null}
             </div>

@@ -249,22 +249,22 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
               <p className="text-xs text-white/80">{context.term?.name ?? "-"} / {context.session?.name ?? "-"}</p>
             </CardHeader>
             <CardContent className="space-y-4 p-4">
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">Average Score</p>
-                  <p className="mt-1 text-xl font-extrabold text-slate-900">{avgScore.toFixed(1)}%</p>
+                  <p className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">{avgScore.toFixed(1)}%</p>
                 </div>
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Subjects</p>
-                  <p className="mt-1 text-xl font-extrabold text-slate-900">{myScores.length}</p>
+                  <p className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">{myScores.length}</p>
                 </div>
                 <div className="rounded-xl border border-violet-200 bg-violet-50 p-3">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-700">Top Grade</p>
-                  <p className="mt-1 text-xl font-extrabold text-slate-900">{topScoreMeta?.grade ?? "-"}</p>
+                  <p className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">{topScoreMeta?.grade ?? "-"}</p>
                 </div>
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">Top Score</p>
-                  <p className="mt-1 text-xl font-extrabold text-slate-900">{myScores.length ? `${Math.max(...myScores.map((s: any) => s.total)).toFixed(1)}%` : "-"}</p>
+                  <p className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">{myScores.length ? `${Math.max(...myScores.map((s: any) => s.total)).toFixed(1)}%` : "-"}</p>
                 </div>
               </div>
 
@@ -389,11 +389,11 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
         <CardContent className="text-sm text-slate-600">{descriptions[sectionKey]}</CardContent>
       </Card>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <Card><CardContent className="p-4"><p className="text-xs text-slate-500">Class</p><p className="text-xl font-semibold">{studentProfile.class?.name ?? "N/A"}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-slate-500">Subjects</p><p className="text-xl font-semibold">{mySubjects.length}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-slate-500">Pending Tasks</p><p className="text-xl font-semibold">{pendingAssignments}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-slate-500">Average Score</p><p className="text-xl font-semibold">{avgScore.toFixed(1)}%</p></CardContent></Card>
+      <section className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+        <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Class</p><p className="text-lg sm:text-xl font-semibold truncate">{studentProfile.class?.name ?? "N/A"}</p></CardContent></Card>
+        <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Subjects</p><p className="text-lg sm:text-xl font-semibold">{mySubjects.length}</p></CardContent></Card>
+        <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Pending Tasks</p><p className="text-lg sm:text-xl font-semibold">{pendingAssignments}</p></CardContent></Card>
+        <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Average Score</p><p className="text-lg sm:text-xl font-semibold">{avgScore.toFixed(1)}%</p></CardContent></Card>
       </section>
 
       {renderSection()}

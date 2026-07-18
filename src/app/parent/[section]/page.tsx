@@ -407,28 +407,28 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
       primaryColor={core.school?.branding?.primaryColor}
       secondaryColor={core.school?.branding?.secondaryColor}
     >
-      <section className="glass-panel rounded-2xl p-5">
+      <section className="glass-panel rounded-2xl p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Parent Portal</p>
-            <h2 className="mt-1 flex items-center gap-2 text-xl font-semibold text-slate-900">{tab.icon}{tab.title}</h2>
+            <h2 className="mt-1 flex items-center gap-2 text-lg sm:text-xl font-semibold text-slate-900">{tab.icon}{tab.title}</h2>
             <p className="text-sm text-slate-600">{tab.description}</p>
           </div>
-          <div className="metric-chip text-xs text-slate-600">{context.session?.name ?? "-"} / {context.term?.name ?? "-"}</div>
+          <div className="metric-chip text-xs text-slate-600 shrink-0">{context.session?.name ?? "-"} / {context.term?.name ?? "-"}</div>
         </div>
       </section>
 
       {sectionKey === "children" ? (
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card className="glass-panel"><CardContent className="p-4"><p className="text-xs text-slate-500">Linked Children</p><p className="text-2xl font-semibold text-slate-900">{children.length}</p></CardContent></Card>
-        <Card className="glass-panel"><CardContent className="p-4"><p className="text-xs text-slate-500">Outstanding Fees</p><p className="text-2xl font-semibold text-slate-900">{naira(outstandingTotal)}</p></CardContent></Card>
-        <Card className="glass-panel"><CardContent className="p-4"><p className="text-xs text-slate-500">Attendance %</p><p className="text-2xl font-semibold text-slate-900">{attendancePercent.toFixed(1)}%</p></CardContent></Card>
-        <Card className="glass-panel"><CardContent className="p-4"><p className="text-xs text-slate-500">Punctuality</p><p className="text-2xl font-semibold text-slate-900">{punctualityRating}</p></CardContent></Card>
+      <section className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+        <Card className="glass-panel"><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Linked Children</p><p className="text-xl sm:text-2xl font-semibold text-slate-900">{children.length}</p></CardContent></Card>
+        <Card className="glass-panel"><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Outstanding Fees</p><p className="text-xl sm:text-2xl font-semibold text-slate-900">{naira(outstandingTotal)}</p></CardContent></Card>
+        <Card className="glass-panel"><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Attendance %</p><p className="text-xl sm:text-2xl font-semibold text-slate-900">{attendancePercent.toFixed(1)}%</p></CardContent></Card>
+        <Card className="glass-panel"><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Punctuality</p><p className="text-xl sm:text-2xl font-semibold text-slate-900">{punctualityRating}</p></CardContent></Card>
       </section>
       ) : null}
 
       {sectionKey === "children" ? (
-        <section className="grid gap-5 xl:grid-cols-2">
+        <section className="grid gap-4 lg:grid-cols-2">
           {children.length ? children.map((child: any) => {
             const summary = childCard(child.id);
             return (
@@ -436,24 +436,24 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                 <CardHeader className="bg-gradient-to-r from-slate-900 to-slate-700 text-white">
                   <CardTitle className="text-base">Child Profile</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 p-5 text-sm">
+                <CardContent className="space-y-4 p-4 sm:p-5 text-sm">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] text-sm font-semibold text-white">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] text-sm font-semibold text-white shrink-0">
                         {childInitials(child.user.name) || "ST"}
                       </div>
-                      <div>
-                        <p className="text-base font-semibold text-slate-900">{child.user.name}</p>
+                      <div className="min-w-0">
+                        <p className="text-base font-semibold text-slate-900 truncate">{child.user.name}</p>
                         <p className="text-xs text-slate-500">{child.class?.name ?? "Not assigned"} • {child.gender} • Age {child.age}</p>
                         <p className="text-xs text-slate-500">Adm: {String(child.id).slice(0, 10).toUpperCase()}</p>
                       </div>
                     </div>
-                    <Link href={`/parent/children/${child.id}`} className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800">
+                    <Link href={`/parent/children/${child.id}`} className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 shrink-0">
                       View more
                     </Link>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                     <div className="rounded-lg border border-slate-200 bg-white/70 p-3"><p className="text-[11px] text-slate-500">Attendance</p><p className="font-medium text-slate-900">{summary.attendanceSummary}</p></div>
                     <div className="rounded-lg border border-slate-200 bg-white/70 p-3"><p className="text-[11px] text-slate-500">Fees</p><p className="font-medium text-slate-900">{summary.feeSummary}</p></div>
                     <div className="rounded-lg border border-slate-200 bg-white/70 p-3"><p className="text-[11px] text-slate-500">Results</p><p className="font-medium text-slate-900">{summary.resultSummary}</p></div>
@@ -466,14 +466,11 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                     <p><strong>Teacher Comment:</strong> {summary.teacherComment}</p>
                   </details>
 
-                  <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-3 text-xs">
-                    <Link href={`/parent/children/${child.id}#results`} className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">View Report</Link>
-                    <span className="h-8 w-px bg-slate-200" />
-                    <Link href={`/parent/children/${child.id}#fees`} className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">View Fees</Link>
-                    <span className="h-8 w-px bg-slate-200" />
-                    <Link href={`/parent/children/${child.id}#lessons`} className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">View Lessons</Link>
-                    <span className="h-8 w-px bg-slate-200" />
-                    <Link href={`/parent/children/${child.id}#attendance`} className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">View Attendance</Link>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-t border-slate-200 pt-3 text-xs">
+                    <Link href={`/parent/children/${child.id}#results`} className="flex-1 min-w-[100px] rounded-md border border-slate-300 px-3 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">View Report</Link>
+                    <Link href={`/parent/children/${child.id}#fees`} className="flex-1 min-w-[100px] rounded-md border border-slate-300 px-3 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">View Fees</Link>
+                    <Link href={`/parent/children/${child.id}#lessons`} className="flex-1 min-w-[100px] rounded-md border border-slate-300 px-3 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">View Lessons</Link>
+                    <Link href={`/parent/children/${child.id}#attendance`} className="flex-1 min-w-[100px] rounded-md border border-slate-300 px-3 py-2 text-center font-medium text-slate-700 hover:bg-slate-50">View Attendance</Link>
                   </div>
                 </CardContent>
               </Card>
@@ -514,7 +511,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
       {sectionKey === "results" ? <ParentResultsPanel data={resultPanelData} /> : null}
 
       {sectionKey === "report-cards" ? (
-        <section className="grid gap-5 xl:grid-cols-2">
+        <section className="grid gap-4 lg:grid-cols-2">
           {childrenWithPublishedResults.length ? childrenWithPublishedResults.map((child: any) => {
             const latest = results.find((item: any) => item.studentId === child.id);
             const isUploadedPdf = Boolean(latest?.fileUrl);
@@ -687,11 +684,11 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
       ) : null}
       {sectionKey === "profile" ? (
         <section className="space-y-4">
-          <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <Card className="glass-panel"><CardContent className="p-4"><p className="text-xs text-slate-500">Linked Children</p><p className="text-2xl font-semibold text-slate-900">{children.length}</p></CardContent></Card>
-            <Card className="glass-panel"><CardContent className="p-4"><p className="text-xs text-slate-500">Outstanding Fees</p><p className="text-2xl font-semibold text-slate-900">{naira(outstandingTotal)}</p></CardContent></Card>
-            <Card className="glass-panel"><CardContent className="p-4"><p className="text-xs text-slate-500">Attendance %</p><p className="text-2xl font-semibold text-slate-900">{attendancePercent.toFixed(1)}%</p></CardContent></Card>
-            <Card className="glass-panel"><CardContent className="p-4"><p className="text-xs text-slate-500">Confirmed Receipts</p><p className="text-2xl font-semibold text-slate-900">{receipts.length}</p></CardContent></Card>
+          <section className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+            <Card className="glass-panel"><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Linked Children</p><p className="text-xl sm:text-2xl font-semibold text-slate-900">{children.length}</p></CardContent></Card>
+            <Card className="glass-panel"><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Outstanding Fees</p><p className="text-xl sm:text-2xl font-semibold text-slate-900">{naira(outstandingTotal)}</p></CardContent></Card>
+            <Card className="glass-panel"><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Attendance %</p><p className="text-xl sm:text-2xl font-semibold text-slate-900">{attendancePercent.toFixed(1)}%</p></CardContent></Card>
+            <Card className="glass-panel"><CardContent className="p-3 sm:p-4"><p className="text-xs text-slate-500">Confirmed Receipts</p><p className="text-xl sm:text-2xl font-semibold text-slate-900">{receipts.length}</p></CardContent></Card>
           </section>
 
           <Card className="glass-panel">
@@ -765,16 +762,16 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
         return (
           <section className="space-y-6">
             {/* hero banner */}
-            <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--brand-primary)] via-[#1a3a6e] to-[var(--brand-secondary)] p-6 text-white shadow-lg">
+            <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--brand-primary)] via-[#1a3a6e] to-[var(--brand-secondary)] p-4 sm:p-6 text-white shadow-lg">
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-widest text-white/70">Active Academic Period</p>
-                  <h2 className="mt-1 text-2xl font-bold">{context.session?.name ?? "—"}</h2>
-                  <p className="text-base text-white/90">{context.term?.name ?? "—"}</p>
+                  <h2 className="mt-1 text-xl sm:text-2xl font-bold">{context.session?.name ?? "—"}</h2>
+                  <p className="text-sm sm:text-base text-white/90">{context.term?.name ?? "—"}</p>
                 </div>
                 {daysLeft !== null && (
-                  <div className="rounded-xl border border-white/30 bg-white/10 px-5 py-3 text-center backdrop-blur-sm">
-                    <p className="text-3xl font-extrabold">{daysLeft}</p>
+                  <div className="rounded-xl border border-white/30 bg-white/10 px-4 sm:px-5 py-3 text-center backdrop-blur-sm shrink-0">
+                    <p className="text-2xl sm:text-3xl font-extrabold">{daysLeft}</p>
                     <p className="text-xs text-white/80">days left in term</p>
                   </div>
                 )}
@@ -792,7 +789,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
             </div>
 
             {/* key dates */}
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
               <div className="flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white text-lg">📅</div>
                 <div>
@@ -823,9 +820,9 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
               </div>
             </div>
 
-            <div className="grid gap-5 xl:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2">
               {/* attendance this term */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
                 <p className="mb-4 text-sm font-semibold text-slate-800">📊 Attendance Summary</p>
                 <div className="space-y-3">
                   {[
@@ -847,7 +844,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
               </div>
 
               {/* terms timeline */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
                 <p className="mb-4 text-sm font-semibold text-slate-800">🗓️ Terms in Session</p>
                 {allTermsForSession.length ? (
                   <ol className="relative border-l-2 border-slate-200 pl-5 space-y-4">

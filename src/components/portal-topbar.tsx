@@ -390,10 +390,10 @@ export function PortalTopbar({
         </div>
       </div>
 
-      <div className="glass-soft flex w-full items-center gap-2 rounded-xl border border-slate-200 p-2 dark:border-slate-700">
-        <div className="relative">
+      <div className="glass-soft flex w-full flex-wrap items-center gap-2 rounded-xl border border-slate-200 p-2 dark:border-slate-700">
+        <div className="relative hidden sm:block">
           <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400 dark:text-slate-500" />
-          <Input className="h-9 w-44 rounded-lg border-slate-200 bg-white pl-9 text-sm md:w-72 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500" placeholder="Quick search" />
+          <Input className="h-9 w-32 rounded-lg border-slate-200 bg-white pl-9 text-sm md:w-72 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500" placeholder="Quick search" />
         </div>
 
         <div className="relative">
@@ -415,7 +415,7 @@ export function PortalTopbar({
           </button>
 
           {showNotifications ? (
-            <div className="absolute right-0 z-30 mt-2 w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+            <div className="absolute right-0 z-30 mt-2 w-[calc(100vw-2rem)] max-w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
               <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2 dark:border-slate-700">
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Latest Notifications</p>
                 <div className="flex items-center gap-2">
@@ -503,7 +503,7 @@ export function PortalTopbar({
 
         <details className="group relative ml-auto">
           <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg border border-slate-200 bg-white p-1.5 pr-2 text-sm text-slate-700 transition hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-600">
-            <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-slate-800 text-[11px] font-semibold text-white dark:bg-slate-700">
+            <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-slate-800 text-[11px] font-semibold text-white dark:bg-slate-700 shrink-0">
               {avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={avatarUrl} alt={userName} className="h-8 w-8 object-cover" />
@@ -511,10 +511,10 @@ export function PortalTopbar({
                 userInitials || "U"
               )}
             </span>
-            <span className="max-w-32 truncate font-semibold text-slate-700 dark:text-slate-100">{displayName}</span>
-            <ChevronDown className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+            <span className="max-w-24 sm:max-w-32 truncate font-semibold text-slate-700 dark:text-slate-100 hidden xs:inline sm:inline">{displayName}</span>
+            <ChevronDown className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
           </summary>
-          <div className="absolute right-0 z-20 mt-2 w-44 rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+          <div className="absolute right-0 z-20 mt-2 w-44 max-w-[calc(100vw-1rem)] rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
             <Link
               href={`${currentPathname.split("/").slice(0, 2).join("/")}/profile`}
               className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-slate-700 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"

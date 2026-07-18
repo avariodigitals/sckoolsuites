@@ -294,14 +294,14 @@ export function AdminApprovalActions({
 
               return (
                 <article key={row.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
-                  <div className="grid gap-2 md:grid-cols-2">
+                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
                     <p><strong>Student:</strong> {row.student.name}</p>
                     <p><strong>Parent:</strong> {row.parent?.name ?? "-"}</p>
                     <p><strong>Invoice:</strong> {row.invoice.invoiceNumber}</p>
                     <p><strong>Amount:</strong> {money(row.payment.amount)}</p>
                     <p><strong>Submitted:</strong> {dateTime(row.paymentDate)}</p>
                     <p><strong>Status:</strong> {row.status}</p>
-                    <p className="md:col-span-2"><strong>Proof:</strong> {row.proofUrl ? <a className="text-blue-700 underline" href={row.proofUrl} target="_blank" rel="noreferrer">Open proof file</a> : "No proof file"}</p>
+                    <p className="sm:col-span-2"><strong>Proof:</strong> {row.proofUrl ? <a className="text-blue-700 underline" href={row.proofUrl} target="_blank" rel="noreferrer">Open proof file</a> : "No proof file"}</p>
                   </div>
 
                   <textarea
@@ -339,7 +339,7 @@ export function AdminApprovalActions({
         )
       ) : (
         <>
-          <div className="flex gap-2 border-b border-slate-200 pb-2">
+          <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
             <button
               type="button"
               onClick={() => setResultFilter("pending")}
@@ -382,7 +382,7 @@ export function AdminApprovalActions({
 
             return (
               <article key={row.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
-                <div className="grid gap-2 md:grid-cols-2">
+                <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
                   <p><strong>Student:</strong> {row.student.name}</p>
                   <p><strong>Class:</strong> {row.student.className}</p>
                   <p><strong>Term/Session:</strong> {row.term.name} / {row.session.name}</p>
@@ -390,7 +390,7 @@ export function AdminApprovalActions({
                   <p><strong>Summary:</strong> {row.summary.percentage !== null ? `${row.summary.percentage.toFixed(1)}% • ${row.summary.grade ?? "-"} • GPA ${row.summary.gpa?.toFixed(2) ?? "-"}` : "Uploaded PDF (no computed summary)"}</p>
                   <p><strong>Note:</strong> {row.reviewNote ?? "-"}</p>
                   {row.fileUrl ? (
-                    <p className="md:col-span-2">
+                    <p className="sm:col-span-2">
                       <strong>Uploaded PDF:</strong>{" "}
                       <a className="text-blue-700 underline" href={getCloudinaryInlineUrl(row.fileUrl)} target="_blank" rel="noreferrer">
                         {row.fileName || "Open result PDF"}

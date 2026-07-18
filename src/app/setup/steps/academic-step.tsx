@@ -133,7 +133,7 @@ export function AcademicStep({ schoolId, onComplete, onBack, isLoading }: Academ
             </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Session Name *</label>
               <Input
@@ -203,7 +203,7 @@ export function AcademicStep({ schoolId, onComplete, onBack, isLoading }: Academ
             </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Term Name *</label>
               <Input

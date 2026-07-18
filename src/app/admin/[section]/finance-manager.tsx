@@ -370,7 +370,7 @@ export function FinanceManager({ defaultTab }: { defaultTab?: Tab }) {
         <Card className="border-slate-200">
           <CardHeader className="pb-3"><CardTitle className="text-base">Add {tab === "income" ? "Income" : "Expense"}</CardTitle></CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-4">
+            <form onSubmit={handleSubmit} className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
                 <select className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={formData.categoryId} onChange={(e) => setFormData((s) => ({ ...s, categoryId: e.target.value }))} required>
@@ -394,11 +394,11 @@ export function FinanceManager({ defaultTab }: { defaultTab?: Tab }) {
                   {paymentMethods.length === 0 && <option value="" disabled>No active methods — enable in Settings</option>}
                 </select>
               </div>
-              <div className="md:col-span-4">
+              <div className="sm:col-span-2 lg:col-span-4">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
                 <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={formData.description} onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))} placeholder={`Optional description for this ${tab}...`} />
               </div>
-              <div className="md:col-span-4 flex gap-2">
+              <div className="sm:col-span-2 lg:col-span-4 flex gap-2">
                 <Button type="submit" size="sm" disabled={submitting}>{submitting ? "Saving..." : "Save"}</Button>
                 <Button type="button" variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
               </div>

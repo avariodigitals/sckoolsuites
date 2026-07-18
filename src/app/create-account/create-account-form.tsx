@@ -36,7 +36,7 @@ export function CreateAccountForm() {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium">School Name</label>
           <Input {...register("schoolName")} />
@@ -58,7 +58,7 @@ export function CreateAccountForm() {
           {errors.schoolAddress ? <p className="mt-1 text-xs text-red-600">{errors.schoolAddress.message}</p> : null}
         </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium">Admin Full Name</label>
           <Input {...register("adminName")} />

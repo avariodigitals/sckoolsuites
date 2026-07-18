@@ -226,11 +226,11 @@ export function ArmsManager() {
 
       {/* Module Scope */}
       <div className="rounded-xl bg-white shadow-sm border border-slate-200">
-        <div className="px-6 py-4 border-b border-slate-100">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
           <h2 className="font-semibold text-slate-900">Arms Management Scope</h2>
         </div>
-        <div className="p-6">
-          <div className="grid gap-6 md:grid-cols-3">
+        <div className="p-4 sm:p-6">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">Create Arms</h3>
               <div className="flex flex-wrap gap-2">
@@ -260,53 +260,53 @@ export function ArmsManager() {
       </div>
 
       {/* Analytics Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-slate-200">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm font-medium text-slate-600">Total Arms</p>
-              <p className="mt-2 text-3xl font-bold text-slate-900">{stats.total}</p>
+              <p className="mt-2 text-2xl sm:text-3xl font-bold text-slate-900">{stats.total}</p>
             </div>
-            <div className="rounded-lg bg-indigo-50 p-3">
+            <div className="rounded-lg bg-indigo-50 p-3 shrink-0">
               <UsersRound className="h-6 w-6 text-indigo-600" />
             </div>
           </div>
         </div>
         
-        <div className="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
+        <div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-slate-200">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm font-medium text-slate-600">Active Arms</p>
-              <p className="mt-2 text-3xl font-bold text-slate-900">{stats.active}</p>
+              <p className="mt-2 text-2xl sm:text-3xl font-bold text-slate-900">{stats.active}</p>
               <p className="text-xs text-slate-500 mt-1">{stats.total - stats.active} inactive</p>
             </div>
-            <div className="rounded-lg bg-emerald-50 p-3">
+            <div className="rounded-lg bg-emerald-50 p-3 shrink-0">
               <School className="h-6 w-6 text-emerald-600" />
             </div>
           </div>
         </div>
         
-        <div className="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
+        <div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-slate-200">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm font-medium text-slate-600">With Capacity</p>
-              <p className="mt-2 text-3xl font-bold text-slate-900">{stats.withCapacity}</p>
+              <p className="mt-2 text-2xl sm:text-3xl font-bold text-slate-900">{stats.withCapacity}</p>
               <p className="text-xs text-slate-500 mt-1">arms configured</p>
             </div>
-            <div className="rounded-lg bg-blue-50 p-3">
+            <div className="rounded-lg bg-blue-50 p-3 shrink-0">
               <GraduationCap className="h-6 w-6 text-blue-600" />
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
+        <div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-slate-200">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm font-medium text-slate-600">Total Capacity</p>
-              <p className="mt-2 text-3xl font-bold text-slate-900">{stats.totalCapacity}</p>
+              <p className="mt-2 text-2xl sm:text-3xl font-bold text-slate-900">{stats.totalCapacity}</p>
               <p className="text-xs text-slate-500 mt-1">across all arms</p>
             </div>
-            <div className="rounded-lg bg-purple-50 p-3">
+            <div className="rounded-lg bg-purple-50 p-3 shrink-0">
               <UsersRound className="h-6 w-6 text-purple-600" />
             </div>
           </div>
@@ -337,7 +337,7 @@ export function ArmsManager() {
       {showForm && (
         <div className="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Create New Arm</h3>
-          <div className="grid gap-4 md:grid-cols-3 items-end">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Arm Name</label>
               <Input
@@ -370,7 +370,7 @@ export function ArmsManager() {
       {editingId && (
         <div className="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Edit Arm</h3>
-          <div className="grid gap-4 md:grid-cols-3 items-end">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Arm Name</label>
               <Input
@@ -406,7 +406,7 @@ export function ArmsManager() {
 
       {/* Arms Table */}
         <div className="rounded-xl bg-white shadow-sm border border-slate-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100">
           <h2 className="font-semibold text-slate-900">Preset Arms</h2>
           <span className="text-sm text-slate-500">{filteredArms.length} of {arms.length} arms</span>
         </div>

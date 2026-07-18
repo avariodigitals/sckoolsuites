@@ -76,27 +76,27 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
 
                 {isUploadedPdf ? (
                   <div className="space-y-4 p-4">
-                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
                       <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">Term Percentage</p>
-                        <p className="mt-1 text-xl font-extrabold text-slate-900">{item.termPercentage !== null ? `${item.termPercentage.toFixed(1)}%` : "-"}</p>
+                        <p className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">{item.termPercentage !== null ? `${item.termPercentage.toFixed(1)}%` : "-"}</p>
                       </div>
                       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Term Grade</p>
-                        <p className="mt-1 text-xl font-extrabold text-slate-900">{item.termGrade ?? "-"}</p>
+                        <p className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">{item.termGrade ?? "-"}</p>
                       </div>
                       <div className="rounded-xl border border-violet-200 bg-violet-50 p-3">
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-700">Term GPA</p>
-                        <p className="mt-1 text-xl font-extrabold text-slate-900">{item.termGpa !== null ? item.termGpa.toFixed(2) : "-"}</p>
+                        <p className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">{item.termGpa !== null ? item.termGpa.toFixed(2) : "-"}</p>
                       </div>
                       <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">Subject Average</p>
-                        <p className="mt-1 text-xl font-extrabold text-slate-900">{item.subjects.length ? `${average.toFixed(1)}%` : "-"}</p>
+                        <p className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">{item.subjects.length ? `${average.toFixed(1)}%` : "-"}</p>
                       </div>
                     </div>
 
                     {(item.classTeacherComment || item.principalComment) && (
-                      <div className="grid gap-3 xl:grid-cols-2">
+                      <div className="grid gap-3 lg:grid-cols-2">
                         {item.classTeacherComment && (
                           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-600">Class Teacher Comment</p>
@@ -143,26 +143,26 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
                   </div>
                 ) : (
                   <div className="space-y-5 p-4">
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">Term Percentage</p>
-                      <p className="mt-1 text-xl font-extrabold text-slate-900">{item.termPercentage !== null ? `${item.termPercentage.toFixed(1)}%` : "-"}</p>
+                      <p className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">{item.termPercentage !== null ? `${item.termPercentage.toFixed(1)}%` : "-"}</p>
                     </div>
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Term Grade</p>
-                      <p className="mt-1 text-xl font-extrabold text-slate-900">{item.termGrade ?? "-"}</p>
+                      <p className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">{item.termGrade ?? "-"}</p>
                     </div>
                     <div className="rounded-xl border border-violet-200 bg-violet-50 p-3">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-700">Term GPA</p>
-                      <p className="mt-1 text-xl font-extrabold text-slate-900">{item.termGpa !== null ? item.termGpa.toFixed(2) : "-"}</p>
+                      <p className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">{item.termGpa !== null ? item.termGpa.toFixed(2) : "-"}</p>
                     </div>
                     <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">Subject Average</p>
-                      <p className="mt-1 text-xl font-extrabold text-slate-900">{item.subjects.length ? `${average.toFixed(1)}%` : "-"}</p>
+                      <p className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">{item.subjects.length ? `${average.toFixed(1)}%` : "-"}</p>
                     </div>
                   </div>
 
-                  <div className="grid gap-3 xl:grid-cols-2">
+                  <div className="grid gap-3 lg:grid-cols-2">
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                       <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-600">Class Teacher Comment</p>
                       <p className="text-sm text-slate-700">{item.classTeacherComment ?? "No class teacher comment yet."}</p>
@@ -213,8 +213,8 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
           })}
         </section>
       ) : (
-        <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-end">
+        <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-[1fr_auto_auto] sm:items-end">
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Select Report</label>
               <select
