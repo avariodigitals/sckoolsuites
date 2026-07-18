@@ -419,25 +419,25 @@ export function FeeProfileManager() {
       )}
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
+        <div className="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
           <p className="text-xs text-slate-500 font-medium uppercase">Fee Profiles</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1">{stats.totalProfiles}</p>
+          <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{stats.totalProfiles}</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
           <p className="text-xs text-slate-500 font-medium uppercase">Fee Components</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1">{feeComponents.length}</p>
+          <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{feeComponents.length}</p>
         </div>
-        <div className={`rounded-xl border p-4 ${stats.isActivated ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
+        <div className={`rounded-xl border p-3 sm:p-4 ${stats.isActivated ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
           <p className={`text-xs font-medium uppercase ${stats.isActivated ? "text-emerald-600" : "text-amber-600"}`}>System Status</p>
-          <p className={`text-lg font-bold mt-1 ${stats.isActivated ? "text-emerald-700" : "text-amber-700"}`}>
+          <p className={`text-base sm:text-lg font-bold mt-1 ${stats.isActivated ? "text-emerald-700" : "text-amber-700"}`}>
             {stats.isActivated ? "Activated" : "Pending Setup"}
           </p>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-1 border-b border-slate-200">
+      <div className="flex flex-wrap gap-1 border-b border-slate-200">
         {([
           { key: "profiles", label: "Fee Profiles" },
           { key: "groups", label: "Fee Groups" },
@@ -447,7 +447,7 @@ export function FeeProfileManager() {
           <button
             key={t.key}
             onClick={() => { setActiveTab(t.key); setShowForm(false); setShowComponentForm(false); setShowGroupForm(false); setShowConcessionForm(false); }}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+            className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"}`}
           >
             {t.label}
           </button>
@@ -467,7 +467,7 @@ export function FeeProfileManager() {
       {showForm && step === 1 && (
         <div className="rounded-xl border border-slate-200 bg-white p-6">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Step 1: Profile Details</h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Profile Name *</label>
               <Input
@@ -786,7 +786,7 @@ export function FeeProfileManager() {
           {showGroupForm && (
             <div className="rounded-xl border border-slate-200 bg-white p-6">
               <h3 className="text-lg font-semibold text-slate-900 mb-4">Create Fee Group</h3>
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Group Name *</label>
                   <Input
@@ -866,7 +866,7 @@ export function FeeProfileManager() {
           {showComponentForm && (
             <div className="rounded-xl border border-slate-200 bg-white p-6">
               <h3 className="text-lg font-semibold text-slate-900 mb-4">Add Fee Component</h3>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                 <Input
                   placeholder="Component Name (e.g., Tuition, Sports)"
                   value={componentName}
@@ -919,7 +919,7 @@ export function FeeProfileManager() {
           {showConcessionForm && (
             <div className="rounded-xl border border-slate-200 bg-white p-6">
               <h3 className="text-lg font-semibold text-slate-900 mb-4">Add Fee Concession</h3>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Concession Name *</label>
                   <Input
