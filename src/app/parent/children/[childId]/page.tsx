@@ -229,9 +229,15 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
                 <p className="text-xs text-slate-600">Class teacher: {latestResult.classTeacherComment ?? "No comment yet."}</p>
                 <p className="text-xs text-slate-600">Principal: {latestResult.principalComment ?? "No comment yet."}</p>
                 {latestResult.fileUrl && (
-                  <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-3">
-                    <a href={getCloudinaryInlineUrl(latestResult.fileUrl)} download target="_blank" rel="noopener noreferrer" className="rounded-md bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-slate-800">Download PDF</a>
-                    <a href={getCloudinaryInlineUrl(latestResult.fileUrl)} target="_blank" rel="noopener noreferrer" className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">Open in New Tab</a>
+                  <div className="space-y-3 border-t border-slate-200 pt-3">
+                    <div className="overflow-hidden rounded-lg border border-slate-200">
+                      <div className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">Report Preview</div>
+                      <iframe src={getCloudinaryInlineUrl(latestResult.fileUrl)} title={`${latestResult.term.name} result preview`} className="h-[500px] w-full bg-white" />
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <a href={getCloudinaryInlineUrl(latestResult.fileUrl)} target="_blank" rel="noopener noreferrer" className="rounded-md bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-slate-800">Download PDF</a>
+                      <a href={getCloudinaryInlineUrl(latestResult.fileUrl)} target="_blank" rel="noopener noreferrer" className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">Open in New Tab</a>
+                    </div>
                   </div>
                 )}
               </div>

@@ -179,7 +179,6 @@ export default async function ReportCardPage({ params }: { params: Promise<{ stu
           <div className="flex gap-2">
             <a
               href={previewUrl}
-              download
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-md bg-[var(--report-primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"

@@ -240,13 +240,6 @@ export function ModernPortalShell({
         />
       )}
 
-      {/* Notifications Overlay */}
-      {notificationsOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black/20"
-          onClick={() => setNotificationsOpen(false)}
-        />
-      )}
 
       {/* Sidebar */}
       <aside className={cn(

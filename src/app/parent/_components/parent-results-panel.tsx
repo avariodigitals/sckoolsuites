@@ -124,7 +124,6 @@ export function ParentResultsPanel({ data }: { data: ChildResultSummary[] }) {
                     <div className="flex flex-wrap gap-3">
                       <a
                         href={getCloudinaryInlineUrl(item.fileUrl!)}
-                        download
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex rounded-lg bg-[var(--brand-primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
