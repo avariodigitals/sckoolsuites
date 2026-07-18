@@ -1,12 +1,30 @@
--- AlterTable: Add field_config and eligible_class_groups to school_template
-ALTER TABLE "school_template" ADD COLUMN "field_config" TEXT;
-ALTER TABLE "school_template" ADD COLUMN "eligible_class_groups" TEXT;
+-- AlterTable: Add field_config and eligible_class_groups to school_template (idempotent)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'school_template' AND column_name = 'field_config') THEN
+    ALTER TABLE "school_template" ADD COLUMN "field_config" TEXT;
+  END IF;
+END $$;
 
--- Drop old check constraint and add new one with extended types
-ALTER TABLE "school_template" DROP CONSTRAINT "school_template_type_check";
-ALTER TABLE "school_template" ADD CONSTRAINT "school_template_type_check" CHECK ("type" IN ('REPORT_CARD', 'INVOICE', 'RECEIPT', 'ID_CARD', 'CERTIFICATE', 'TRANSCRIPT', 'AWARD', 'TESTIMONIAL'));
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'school_template' AND column_name = 'eligible_class_groups') THEN
+    ALTER TABLE "school_template" ADD COLUMN "eligible_class_groups" TEXT;
+  END IF;
+END $$;
 
--- CreateTable: student_document (table does not exist yet)
+-- Drop old check constraint and add new one with extended types (idempotent)
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'school_template_type_check') THEN
+    ALTER TABLE "school_template" DROP CONSTRAINT "school_template_type_check";
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'school_template_type_check') THEN
+    ALTER TABLE "school_template" ADD CONSTRAINT "school_template_type_check" CHECK ("type" IN ('REPORT_CARD', 'INVOICE', 'RECEIPT', 'ID_CARD', 'CERTIFICATE', 'TRANSCRIPT', 'AWARD', 'TESTIMONIAL'));
+  END IF;
+END $$;
+
+-- CreateTable: student_document (idempotent)
 CREATE TABLE IF NOT EXISTS "student_document" (
     "id" SERIAL NOT NULL,
     "school_id" TEXT NOT NULL,
@@ -30,13 +48,32 @@ CREATE TABLE IF NOT EXISTS "student_document" (
     CONSTRAINT "student_document_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
+-- CreateIndex (idempotent)
 CREATE INDEX IF NOT EXISTS "student_document_school_id_idx" ON "student_document"("school_id");
 CREATE INDEX IF NOT EXISTS "student_document_student_id_idx" ON "student_document"("student_id");
 CREATE INDEX IF NOT EXISTS "student_document_template_id_idx" ON "student_document"("template_id");
 
--- AddForeignKey
-ALTER TABLE "student_document" ADD CONSTRAINT "student_document_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "school"("id") ON UPDATE CASCADE;
-ALTER TABLE "student_document" ADD CONSTRAINT "student_document_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "student_document" ADD CONSTRAINT "student_document_uploaded_by_id_fkey" FOREIGN KEY ("uploaded_by_id") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "student_document" ADD CONSTRAINT "student_document_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "school_template"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'student_document_school_id_fkey') THEN
+    ALTER TABLE "student_document" ADD CONSTRAINT "student_document_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "school"("id") ON UPDATE CASCADE;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'student_document_student_id_fkey') THEN
+    ALTER TABLE "student_document" ADD CONSTRAINT "student_document_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'student_document_uploaded_by_id_fkey') THEN
+    ALTER TABLE "student_document" ADD CONSTRAINT "student_document_uploaded_by_id_fkey" FOREIGN KEY ("uploaded_by_id") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'student_document_template_id_fkey') THEN
+    ALTER TABLE "student_document" ADD CONSTRAINT "student_document_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "school_template"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;

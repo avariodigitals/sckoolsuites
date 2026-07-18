@@ -59,7 +59,7 @@ export async function GET(request: Request) {
     const [subjectAssignments, studentCounts] = await Promise.all([
       armIds.length
         ? prisma.subjectAssignment.findMany({
-            where: { classArmId: { in: armIds } },
+            where: { classId: { in: armIds } },
             include: { subject: { include: { teacher: { include: { user: true } } } } },
           })
         : Promise.resolve([]),
@@ -74,7 +74,7 @@ export async function GET(request: Request) {
 
     const subjectsByArm = new Map<number, Array<{ id: string; name: string; teacherId?: string; teacherName?: string }>>();
     for (const sa of subjectAssignments) {
-      const armId = sa.classArmId;
+      const armId = sa.classId;
       if (!armId) continue;
       const list = subjectsByArm.get(armId) ?? [];
       list.push({
