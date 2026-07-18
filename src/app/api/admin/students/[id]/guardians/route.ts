@@ -193,6 +193,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Provide either parentId or name+email" }, { status: 400 });
     }
 
+    // If student has no primary parent, or this guardian is marked primary,
+    // set them as the student's parentId so the student is properly connected.
+    if (!student.parentId || data.isPrimary) {
+      await prisma.student.update({
+        where: { id: parsedId },
+        data: { parentId },
+      });
+    }
+
     // Create junction record (if table exists)
     try {
       await prisma.studentGuardian.create({
@@ -200,7 +209,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           studentId: parsedId,
           parentId,
           relationship: data.relationship ?? "Guardian",
-          isPrimary: data.isPrimary,
+          isPrimary: data.isPrimary || !student.parentId,
         },
       });
     } catch {
