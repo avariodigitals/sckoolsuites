@@ -38,3 +38,9 @@ export function getCloudinaryInlineUrl(url: string): string {
   if (!url.includes("cloudinary.com")) return url;
   return `/api/cloudinary/preview?url=${encodeURIComponent(url)}`;
 }
+
+export function getCloudinaryDownloadUrl(url: string): string {
+  if (!url) return url;
+  if (!url.includes("cloudinary.com")) return url;
+  return `/api/cloudinary/preview?url=${encodeURIComponent(url)}&download=1`;
+}

@@ -6,7 +6,7 @@ import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { requireRole } from "@/lib/auth-guards";
 import { getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
 import { prisma } from "@/lib/db";
-import { formatDate, humanizeEnum, naira, getCloudinaryInlineUrl } from "@/lib/utils";
+import { formatDate, humanizeEnum, naira, getCloudinaryInlineUrl, getCloudinaryDownloadUrl } from "@/lib/utils";
 import { ChildWorkspaceSwitcher } from "@/app/parent/_components/child-workspace-switcher";
 import { ParentDocumentsPanel } from "@/app/parent/_components/parent-documents-panel";
 
@@ -235,7 +235,7 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
                       <iframe src={getCloudinaryInlineUrl(latestResult.fileUrl)} title={`${latestResult.term.name} result preview`} className="h-[500px] w-full bg-white" />
                     </div>
                     <div className="flex flex-wrap gap-3">
-                      <a href={getCloudinaryInlineUrl(latestResult.fileUrl)} target="_blank" rel="noopener noreferrer" className="rounded-md bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-slate-800">Download PDF</a>
+                      <a href={getCloudinaryDownloadUrl(latestResult.fileUrl)} target="_blank" rel="noopener noreferrer" className="rounded-md bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-slate-800">Download PDF</a>
                       <a href={getCloudinaryInlineUrl(latestResult.fileUrl)} target="_blank" rel="noopener noreferrer" className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">Open in New Tab</a>
                     </div>
                   </div>

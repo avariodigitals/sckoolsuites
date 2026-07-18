@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileCheck, Download, Eye, Lock } from "lucide-react";
-import { getCloudinaryInlineUrl } from "@/lib/utils";
+import { getCloudinaryInlineUrl, getCloudinaryDownloadUrl } from "@/lib/utils";
 
 type IssuedDoc = {
   id: number;
@@ -116,7 +116,7 @@ export function ParentDocumentsPanel({ childId }: { childId?: string }) {
                   </button>
                   {doc.parentDownloadable ? (
                     <a
-                      href={getCloudinaryInlineUrl(doc.fileUrl)}
+                      href={getCloudinaryDownloadUrl(doc.fileUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
@@ -145,7 +145,7 @@ export function ParentDocumentsPanel({ childId }: { childId?: string }) {
               <div className="flex items-center gap-2">
                 {previewDoc.parentDownloadable && (
                   <a
-                    href={getCloudinaryInlineUrl(previewDoc.fileUrl)}
+                    href={getCloudinaryDownloadUrl(previewDoc.fileUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
