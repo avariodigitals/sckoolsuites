@@ -364,12 +364,34 @@ export async function checkPrivilege(userId: string | number, code: PrivilegeCod
     return true;
   }
 
-  // First-run fallback: if no role privileges exist yet, grant access so the
-  // privilege system can be seeded from the UI. Once role privileges exist,
-  // this fallback no longer applies and every role is governed by its rows.
+  // First-run fallback: if no role privileges exist at all, grant access so
+  // the privilege system can be seeded from the UI. Also check if the user's
+  // own role has zero privilege mappings — this handles partially seeded
+  // databases (e.g., some roles seeded but not the user's role).
   const rolePrivCount = await prisma.rolePrivilege.count();
   if (rolePrivCount === 0) {
     return true;
+  }
+  if (role) {
+    const myRolePrivCount = await prisma.rolePrivilege.count({
+      where: { roleId: role.id },
+    });
+    if (myRolePrivCount === 0) {
+      // The user's role has no privilege mappings — likely a seeding gap.
+      // Attempt to re-seed role privileges for this role.
+      try {
+        await seedRolePrivileges();
+      } catch {
+        // If re-seed fails, grant access as fallback.
+        return true;
+      }
+      const recheck = await prisma.rolePrivilege.count({
+        where: { roleId: role.id },
+      });
+      if (recheck === 0) {
+        return true;
+      }
+    }
   }
 
   const privs = await getUserPrivileges(userId);

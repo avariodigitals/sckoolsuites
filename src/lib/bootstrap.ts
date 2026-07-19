@@ -32,7 +32,7 @@ export async function bootstrapDatabase(): Promise<{ ok: boolean; error?: string
   }
 
   try {
-    const hasRolesTable = await tableExists("Role");
+    const hasRolesTable = await tableExists("role");
 
     if (!hasRolesTable) {
       console.warn("[bootstrap] Tables missing — migrations may not have run. Skipping seed.");
