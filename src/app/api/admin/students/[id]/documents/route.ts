@@ -7,7 +7,7 @@ import { parseNumericId } from "@/lib/id-helpers";
 
 function isAuthorized(role?: string) {
   return role
-    ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN", "TEACHER"].includes(role)
+    ? ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN", "TEACHER", "REGISTRAR"].includes(role)
     : false;
 }
 

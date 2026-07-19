@@ -7,7 +7,7 @@ export async function assignSchoolToUser(_schoolId: string) {
   void _schoolId;
   const user = await requirePrivilege("settings.manage");
   
-  // Single-school mode: user table has no school_id column.
+  // Single-school mode: school switching is not yet implemented.
   // This action is retained for API compatibility but does not mutate the DB.
   revalidatePath("/admin/dashboard");
   return { success: true, userId: user.id };

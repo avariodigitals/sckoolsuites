@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PortalShell } from "@/components/portal-shell";
+import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StudentAssignmentList } from "@/components/student-assignment-list";
 import { requireRole } from "@/lib/auth-guards";
 import { getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
 import { calculateGradeFromBands } from "@/lib/grades";
 import { prisma } from "@/lib/db";
 import { getActiveSchoolConfig } from "@/lib/school-config";
+import { TimetableView } from "@/components/timetable-view";
 import { formatDate, humanizeEnum } from "@/lib/utils";
 import { AnnouncementListWithModal } from "@/components/announcement-list-with-modal";
 
@@ -64,18 +66,12 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
 
   if (!studentProfile) {
     return (
-      <PortalShell
+      <ModernPortalShell
         role={user.role}
         schoolName={core.school?.name}
         schoolLogoUrl={core.school?.branding?.logoUrl ?? undefined}
         userName={user.name ?? "Student"}
         pathname={`/student/${section}`}
-        currentSessionName={context.session?.name}
-        currentTermName={context.term?.name}
-        sessions={core.sessions.map((item: any) => ({ id: item.id, name: item.name }))}
-        terms={core.terms.map((item: any) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
-        selectedSessionId={context.session?.id != null ? String(context.session.id) : undefined}
-        selectedTermId={context.term?.id != null ? String(context.term.id) : undefined}
         primaryColor={core.school?.branding?.primaryColor}
         secondaryColor={core.school?.branding?.secondaryColor}
       >
@@ -85,14 +81,14 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
           </CardHeader>
           <CardContent className="text-sm text-slate-600">No student profile is linked to your account yet.</CardContent>
         </Card>
-      </PortalShell>
+      </ModernPortalShell>
     );
   }
 
   const student = studentProfile;
 
   const mySubjects = core.subjects.filter((subject: any) => subject.classId === student.classId);
-  const myAssignments = core.assignments.filter((assignment: any) => assignment.studentId === student.id);
+  const myAssignments = core.assignments.filter((assignment: any) => assignment.studentId === student.id || (assignment.studentId == null && assignment.classId === student.classId));
   const myAttendance = core.attendance.filter((attendance: any) => attendance.studentId === student.id);
   const myScores = core.scores.filter((score: any) => score.studentId === student.id);
   const approvedResult = await (async () => {
@@ -122,6 +118,7 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
   })() as { fileUrl: string | null; fileName: string | null } | null;
 
   const activeConfig = core.school ? await getActiveSchoolConfig(core.school.id) : null;
+  const timetableTemplates = (activeConfig?.config?.operations?.timetableTemplates ?? []) as any[];
   const gradingBands = (activeConfig?.config.academic.gradingSystem ?? []).map((band) => ({
     min: Number(band.min),
     grade: band.grade,
@@ -175,33 +172,36 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
             <CardHeader>
               <CardTitle>Class Timetable</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {mySubjects.length ? mySubjects.map((subject: any, index: any) => (
-                <div key={subject.id} className="glass-soft rounded-xl p-3">
-                  <p className="font-medium">{subject.name}</p>
-                  <p>Schedule Slot {index + 1} • Teacher: {subject.teacher?.user.name ?? "Not assigned"}</p>
+            <CardContent className="space-y-3 text-sm">
+              <TimetableView templates={timetableTemplates} />
+              {mySubjects.length > 0 && (
+                <div className="mt-3 space-y-1">
+                  <p className="text-xs font-medium text-slate-600">Your subjects:</p>
+                  {mySubjects.map((subject: any) => (
+                    <div key={subject.id} className="glass-soft rounded-xl p-2">
+                      <p className="font-medium text-xs">{subject.name}</p>
+                      <p className="text-xs text-slate-500">Teacher: {subject.teacher?.user.name ?? "Not assigned"}</p>
+                    </div>
+                  ))}
                 </div>
-              )) : <p className="text-slate-500">Timetable entries will appear when subjects are assigned.</p>}
+              )}
             </CardContent>
           </Card>
         );
 
       case "assignments":
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Assignments</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {myAssignments.length ? myAssignments.map((assignment: any) => (
-                <div key={assignment.id} className="glass-soft rounded-xl p-3">
-                  <p className="font-medium">{assignment.title}</p>
-                  <p>{assignment.subject?.name ?? "Subject"} • Due: {formatDate(assignment.dueDate)}</p>
-                  <p>Status: {assignment.submittedAt ? "Submitted" : "Pending"}</p>
-                </div>
-              )) : <p className="text-slate-500">No assignments available.</p>}
-            </CardContent>
-          </Card>
+          <StudentAssignmentList
+            assignments={myAssignments.map((a: any) => ({
+              id: a.id,
+              title: a.title,
+              instruction: a.instruction,
+              dueDate: a.dueDate,
+              submittedAt: a.submittedAt,
+              submissionNote: a.submissionNote,
+              subject: a.subject ? { name: a.subject.name } : null,
+            }))}
+          />
         );
 
       case "attendance":
@@ -367,18 +367,12 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
   }
 
   return (
-    <PortalShell
+    <ModernPortalShell
       role={user.role}
       schoolName={core.school?.name}
       schoolLogoUrl={core.school?.branding?.logoUrl ?? undefined}
       userName={user.name ?? "Student"}
       pathname={`/student/${section}`}
-      currentSessionName={context.session?.name}
-      currentTermName={context.term?.name}
-      sessions={core.sessions.map((item: any) => ({ id: item.id, name: item.name }))}
-      terms={core.terms.map((item: any) => ({ id: item.id, name: item.name, sessionId: item.sessionId }))}
-      selectedSessionId={context.session?.id != null ? String(context.session.id) : undefined}
-      selectedTermId={context.term?.id != null ? String(context.term.id) : undefined}
       primaryColor={core.school?.branding?.primaryColor}
       secondaryColor={core.school?.branding?.secondaryColor}
     >
@@ -397,6 +391,6 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
       </section>
 
       {renderSection()}
-    </PortalShell>
+    </ModernPortalShell>
   );
 }

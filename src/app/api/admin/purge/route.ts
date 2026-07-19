@@ -148,11 +148,12 @@ export async function POST(request: Request) {
   const schoolId = session.user.schoolId || "default";
   const cat = category as PurgeCategory;
 
-  const safeDelete = async (promise: Promise<{ count: number }>): Promise<number> => {
+  const safeDelete = async (promise: Promise<{ count: number }>, label?: string): Promise<number> => {
     try {
       const r = await promise;
       return r.count;
-    } catch {
+    } catch (err: any) {
+      console.error(`[purge:${cat}] Failed to delete ${label ?? "records"}:`, err?.message ?? err);
       return 0;
     }
   };
@@ -169,12 +170,12 @@ export async function POST(request: Request) {
       case "students": {
         const studentUsers = await db.student.findMany({ where: { schoolId }, select: { userId: true } }).catch(() => []);
         const userIds = studentUsers.map((s: any) => s.userId);
+        // StudentEmailAccount, StudentDocument, StudentGuardian, StudentEnrollment,
+        // Invoice, Payment, Receipt, Score, Result, Attendance all cascade
+        // via onDelete: Cascade on the Student relation, so no manual cleanup needed.
+        total = await safeDelete(db.student.deleteMany({ where: { schoolId } }), "students");
         if (userIds.length > 0) {
-          await safeDelete(db.studentEmailAccount.deleteMany({ where: { studentId: { in: userIds } } } as any));
-        }
-        total = await safeDelete(db.student.deleteMany({ where: { schoolId } }));
-        if (userIds.length > 0) {
-          await safeDelete(db.user.deleteMany({ where: { id: { in: userIds } } }));
+          await safeDelete(db.user.deleteMany({ where: { id: { in: userIds } } }), "student users");
         }
         break;
       }
@@ -210,13 +211,18 @@ export async function POST(request: Request) {
       }
 
       case "fees": {
-        await safeDelete(db.feeProfileItem.deleteMany({}));
-        await safeDelete(db.feeProfileClass.deleteMany({}));
-        await safeDelete(db.feeProfileArm.deleteMany({}));
-        await safeDelete(db.feeProfile.deleteMany({ where: { schoolId } }));
-        await safeDelete(db.feeItem.deleteMany({ where: { schoolId } }));
-        await safeDelete(db.feeConcession.deleteMany({ where: { schoolId } }));
-        total = await safeDelete(db.feeGroup.deleteMany({ where: { schoolId } }));
+        // InvoiceItem references FeeItem with onDelete: Restrict, so we must
+        // delete invoice items first to avoid FK constraint errors.
+        await safeDelete(db.invoiceItem.deleteMany({
+          where: { invoice: { schoolId } },
+        }), "invoice items");
+        await safeDelete(db.feeProfileItem.deleteMany({}), "fee profile items");
+        await safeDelete(db.feeProfileClass.deleteMany({}), "fee profile classes");
+        await safeDelete(db.feeProfileArm.deleteMany({}), "fee profile arms");
+        await safeDelete(db.feeProfile.deleteMany({ where: { schoolId } }), "fee profiles");
+        await safeDelete(db.feeItem.deleteMany({ where: { schoolId } }), "fee items");
+        await safeDelete(db.feeConcession.deleteMany({ where: { schoolId } }), "fee concessions");
+        total = await safeDelete(db.feeGroup.deleteMany({ where: { schoolId } }), "fee groups");
         break;
       }
 
@@ -230,16 +236,28 @@ export async function POST(request: Request) {
       }
 
       case "academic": {
-        await safeDelete(db.classAssessment.deleteMany({}));
-        await safeDelete(db.classGroupAssessment.deleteMany({}));
-        await safeDelete(db.assessment.deleteMany({ where: { schoolId } }));
-        await safeDelete(db.subjectAssignment.deleteMany({ where: { schoolId } }));
-        await safeDelete(db.subject.deleteMany({ where: { schoolId } }));
-        await safeDelete(db.classArm.deleteMany({ where: { schoolId } }));
-        await safeDelete(db.class.deleteMany({ where: { schoolId } }));
-        await safeDelete(db.classGroup.deleteMany({ where: { schoolId } }));
-        await safeDelete(db.term.deleteMany({ where: { schoolId } }));
-        total = await safeDelete(db.session.deleteMany({ where: { schoolId } }));
+        // Invoice references Session and Term with onDelete: Restrict, so we
+        // must delete invoices (and their dependents) first to avoid FK errors.
+        // Score, Result, Attendance all cascade on Session/Term deletion.
+        await safeDelete(db.invoiceContestAudit.deleteMany({ where: { schoolId } }), "invoice contest audits");
+        await safeDelete(db.paymentProof.deleteMany({ where: { schoolId } }), "payment proofs");
+        await safeDelete(db.receipt.deleteMany({ where: { schoolId } }), "receipts");
+        await safeDelete(db.payment.deleteMany({ where: { schoolId } }), "payments");
+        await safeDelete(db.invoiceItem.deleteMany({
+          where: { invoice: { schoolId } },
+        }), "invoice items");
+        await safeDelete(db.invoice.deleteMany({ where: { schoolId } }), "invoices");
+        // Now safe to delete academic setup
+        await safeDelete(db.classAssessment.deleteMany({}), "class assessments");
+        await safeDelete(db.classGroupAssessment.deleteMany({}), "class group assessments");
+        await safeDelete(db.assessment.deleteMany({ where: { schoolId } }), "assessments");
+        await safeDelete(db.subjectAssignment.deleteMany({ where: { schoolId } }), "subject assignments");
+        await safeDelete(db.subject.deleteMany({ where: { schoolId } }), "subjects");
+        await safeDelete(db.classArm.deleteMany({ where: { schoolId } }), "class arms");
+        await safeDelete(db.class.deleteMany({ where: { schoolId } }), "classes");
+        await safeDelete(db.classGroup.deleteMany({ where: { schoolId } }), "class groups");
+        await safeDelete(db.term.deleteMany({ where: { schoolId } }), "terms");
+        total = await safeDelete(db.session.deleteMany({ where: { schoolId } }), "sessions");
         break;
       }
 

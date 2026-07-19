@@ -234,6 +234,8 @@ export const navByRole: Record<string, NavItem[]> = {
     { label: "Receipts", href: "/accountant/receipts", icon: Receipt, group: "2. Billing" },
     { label: "Debtors", href: "/accountant/debtors", icon: FileBarChart, group: "3. Financials" },
     { label: "Discounts", href: "/accountant/discounts", icon: CreditCard, group: "3. Financials" },
+    { label: "Income", href: "/accountant/income", icon: TrendingUp, group: "3. Financials" },
+    { label: "Expenses", href: "/accountant/expenses", icon: TrendingDown, group: "3. Financials" },
     { label: "Finance Reports", href: "/accountant/finance-reports", icon: FileBarChart, group: "3. Financials" },
   ],
   TEACHER: [

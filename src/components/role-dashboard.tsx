@@ -32,7 +32,7 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
   const user = await requireRole(roleAliases[roleScope]);
 
   // If Super Admin has a school assigned, treat them as school admin
-  const superAdminWithSchool = roleScope === "superadmin" && "default";
+  const superAdminWithSchool = roleScope === "superadmin" && !!user.schoolId;
 
   // If Super Admin has no school, redirect to setup wizard
   if (roleScope === "superadmin" && !superAdminWithSchool) {

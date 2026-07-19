@@ -1,44 +1,54 @@
 import { notFound } from "next/navigation";
-import { PortalShell } from "@/components/portal-shell";
+import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BillContestReviewPanel } from "@/components/bill-contest-review-panel";
+import { AccountantIncomeManager, AccountantExpenseManager } from "@/components/accountant-finance-manager";
+import { DiscountManagerPanel } from "@/components/discount-manager";
 import { requireRole } from "@/lib/auth-guards";
 import { getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext, statusLabel } from "@/lib/data";
 import { prisma } from "@/lib/db";
 import { formatDate, naira } from "@/lib/utils";
 
-const allowed = ["fee-setup", "invoices", "payments", "receipts", "debtors", "discounts", "finance-reports", "fees"] as const;
+const allowed = ["fee-setup", "invoices", "payments", "receipts", "debtors", "discounts", "income", "expenses", "finance-reports", "fees"] as const;
 type AllowedSection = (typeof allowed)[number];
 
-const aliases: Record<AllowedSection, Exclude<AllowedSection, "fees">> = {
+type CanonicalSection = Exclude<AllowedSection, "fees">;
+
+const aliases: Record<AllowedSection, CanonicalSection> = {
   "fee-setup": "fee-setup",
   invoices: "invoices",
   payments: "payments",
   receipts: "receipts",
   debtors: "debtors",
   discounts: "discounts",
+  income: "income",
+  expenses: "expenses",
   "finance-reports": "finance-reports",
   fees: "fee-setup",
 };
 
-const titles: Record<Exclude<AllowedSection, "fees">, string> = {
+const titles: Record<CanonicalSection, string> = {
   "fee-setup": "Fee Setup",
   invoices: "Bills",
   payments: "Payments",
   receipts: "Receipts",
   debtors: "Debtors",
   discounts: "Discounts",
+  income: "Income",
+  expenses: "Expenses",
   "finance-reports": "Finance Reports",
 };
 
-const descriptions: Record<Exclude<AllowedSection, "fees">, string> = {
+const descriptions: Record<CanonicalSection, string> = {
   "fee-setup": "Configure fee items and billing structure.",
   invoices: "Generate and monitor bill lifecycle.",
   payments: "Review collected, pending, and channel split payments.",
   receipts: "Audit issued receipts and proof of payment records.",
   debtors: "Track outstanding balances and follow-up priority.",
-  discounts: "Manage discounts and partial payment adjustments.",
+  discounts: "Manage fee concessions and discount structures.",
+  income: "Record and track income entries by category.",
+  expenses: "Record and track expense entries by category.",
   "finance-reports": "View financial performance and collection insights.",
 };
 
@@ -156,21 +166,11 @@ export default async function AccountantSectionPage({ params }: { params: Promis
           </Card>
         );
       case "discounts":
-        return (
-          <Card>
-            <CardHeader><CardTitle>Discounts & Adjustments</CardTitle></CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <p>Track bills with partial payments as active discount/adjustment indicators.</p>
-              {core.bills.filter((item: BillRow) => item.status === "PART_PAYMENT").slice(0, 25).map((item: BillRow) => (
-                <div key={item.id} className="glass-soft rounded-xl p-3">
-                  <p className="font-medium">{item.invoiceNumber}</p>
-                  <p>Paid: {naira(item.amountPaid)} • Balance: {naira(item.balance)}</p>
-                </div>
-              ))}
-              {!core.bills.some((item: BillRow) => item.status === "PART_PAYMENT") ? <p className="text-slate-500">No partial-payment adjustments found.</p> : null}
-            </CardContent>
-          </Card>
-        );
+        return <DiscountManagerPanel />;
+      case "income":
+        return <AccountantIncomeManager />;
+      case "expenses":
+        return <AccountantExpenseManager />;
       case "finance-reports":
         return (
           <div className="grid gap-3 xl:grid-cols-2">
@@ -197,19 +197,13 @@ export default async function AccountantSectionPage({ params }: { params: Promis
   }
 
   return (
-    <PortalShell
+    <ModernPortalShell
       role={user.role}
       schoolName={core.school?.name}
       schoolLogoUrl={core.school?.branding?.logoUrl ?? undefined}
       userName={user.name ?? "Accountant"}
       avatarUrl={dbUser?.avatarUrl ?? undefined}
       pathname={`/accountant/${section}`}
-      currentSessionName={context.session?.name}
-      currentTermName={context.term?.name}
-      sessions={core.sessions.map((item: { id: number; name: string }) => ({ id: String(item.id), name: item.name }))}
-      terms={core.terms.map((item: { id: number; name: string; sessionId: number }) => ({ id: String(item.id), name: item.name, sessionId: String(item.sessionId) }))}
-      selectedSessionId={context.session?.id == null ? null : String(context.session.id)}
-      selectedTermId={context.term?.id == null ? null : String(context.term.id)}
       primaryColor={core.school?.branding?.primaryColor}
       secondaryColor={core.school?.branding?.secondaryColor}
     >
@@ -226,6 +220,6 @@ export default async function AccountantSectionPage({ params }: { params: Promis
       </section>
 
       {renderSection()}
-    </PortalShell>
+    </ModernPortalShell>
   );
 }

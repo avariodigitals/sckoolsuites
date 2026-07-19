@@ -8,9 +8,11 @@ import { TeacherResultUploadForm } from "@/app/teacher/_components/teacher-resul
 import { TeacherProfilePanel } from "@/app/teacher/_components/teacher-profile-panel";
 import { TeacherLessonForm } from "@/app/teacher/_components/teacher-lesson-form";
 import { TeacherAssignmentForm } from "@/app/teacher/_components/teacher-assignment-form";
+import { TimetableView } from "@/components/timetable-view";
 import { requireRole } from "@/lib/auth-guards";
 import { getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
 import { prisma } from "@/lib/db";
+import { getActiveSchoolConfig } from "@/lib/school-config";
 import { formatDate, humanizeEnum } from "@/lib/utils";
 import { AnnouncementListWithModal } from "@/components/announcement-list-with-modal";
 
@@ -151,6 +153,9 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
 
   const myScores = core.scores.filter((item: any) => subjectIds.has(item.subjectId));
   const myAttendance = core.attendance.filter((item: any) => item.classId && classIds.has(item.classId));
+
+  const activeConfig = profile.schoolId ? await getActiveSchoolConfig(profile.schoolId) : null;
+  const timetableTemplates = (activeConfig?.config?.operations?.timetableTemplates ?? []) as any[];
 
   const canonical = aliases[section as AllowedSection];
 
@@ -334,25 +339,31 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
             </Card>
           </div>
         );
-      case "timetable":
+      case "timetable": {
+        const mySubjectNames = new Set(mySubjects.map((s: any) => s.name.toLowerCase()));
         return (
           <Card>
             <CardHeader><CardTitle>Teaching Timetable</CardTitle></CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {mySubjects.length ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-slate-500 mb-2">Your assigned subjects and their classes. A formal weekly timetable will be available once the admin configures period scheduling.</p>
+            <CardContent className="space-y-3 text-sm">
+              <TimetableView
+                templates={timetableTemplates}
+                filterSubject={(name) => mySubjectNames.has(name.toLowerCase())}
+              />
+              {mySubjects.length > 0 && (
+                <div className="mt-3 space-y-1">
+                  <p className="text-xs font-medium text-slate-600">Your assigned subjects:</p>
                   {mySubjects.map((item: any) => (
-                    <div key={item.id} className="glass-soft rounded-xl p-3">
-                      <p className="font-medium">{item.name}</p>
-                      <p>Class: {item.class?.name ?? "-"}</p>
+                    <div key={item.id} className="glass-soft rounded-xl p-2">
+                      <p className="font-medium text-xs">{item.name}</p>
+                      <p className="text-xs text-slate-500">Class: {item.class?.name ?? "-"}</p>
                     </div>
                   ))}
                 </div>
-              ) : <p className="text-slate-500">No subjects assigned yet. Your timetable will appear here once subjects are assigned.</p>}
+              )}
             </CardContent>
           </Card>
         );
+      }
       case "student-reports":
         return (
           <Card>
