@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
 import { BrandingForm } from "./branding/branding-form";
 import { EmailSettingsForm } from "./email/email-settings-form";
+import { EmailProviderForm } from "./email-provider-form";
 import { ImportWizard } from "../[section]/import-wizard";
 
 export default async function SettingsPage() {
@@ -71,6 +72,18 @@ export default async function SettingsPage() {
               schoolStamp: profile.school.branding?.schoolStamp ?? "",
             }}
           />
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 px-6 py-4">
+          <h2 className="text-lg font-semibold text-slate-900">Student Email Provider</h2>
+          <p className="text-sm text-slate-500">
+            Configure automatic student email creation on your school&apos;s domain (cPanel, Google Workspace, Microsoft 365, Zoho Mail)
+          </p>
+        </div>
+        <div className="p-6">
+          <EmailProviderForm />
         </div>
       </div>
 
