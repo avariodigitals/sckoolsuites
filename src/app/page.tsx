@@ -7,7 +7,7 @@ import { bootstrapDatabase } from "@/lib/bootstrap";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  await bootstrapDatabase();
+  await bootstrapDatabase().catch(() => {});
 
   let school;
   let admin;
