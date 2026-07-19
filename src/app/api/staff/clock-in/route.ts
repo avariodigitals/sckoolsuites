@@ -7,6 +7,7 @@ import { z } from "zod";
 
 const STAFF_ROLES = [
   "TEACHER",
+  "CLASS_ASSISTANT",
   "SCHOOL_ADMIN",
   "HEAD_OF_SCHOOL",
   "PRINCIPAL",

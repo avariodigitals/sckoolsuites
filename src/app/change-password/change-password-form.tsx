@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,8 @@ export function ChangePasswordForm() {
           setError(data?.error ?? "Failed to change password.");
           return;
         }
-        router.push("/");
+        await signOut({ redirect: false });
+        router.push("/login");
         router.refresh();
       } catch {
         setError("An error occurred.");

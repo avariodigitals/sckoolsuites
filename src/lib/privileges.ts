@@ -232,6 +232,15 @@ export const DEFAULT_ROLE_PRIVILEGES: Record<string, string[]> = {
     "announcements.view",
     "profile.view", "profile.edit", "profile.change_password",
   ],
+  CLASS_ASSISTANT: [
+    "students.view",
+    "classes.view",
+    "subjects.view",
+    "attendance.view", "attendance.manage",
+    "results.view",
+    "announcements.view",
+    "profile.view", "profile.edit", "profile.change_password",
+  ],
   PARENT: [
     "students.view",
     "attendance.view",

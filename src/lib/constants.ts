@@ -11,6 +11,7 @@ export const roleDefaultRoute: Record<string, string> = {
   ACCOUNTANT: "/accountant/dashboard",
   REGISTRAR: "/registrar/dashboard",
   TEACHER: "/teacher/dashboard",
+  CLASS_ASSISTANT: "/teacher/dashboard",
   PARENT: "/parent/dashboard",
   STUDENT: "/student/dashboard",
   RECEPTIONIST: "/admin/dashboard",

@@ -21,6 +21,7 @@ export type NotificationRole =
   | "ACCOUNTANT"
   | "REGISTRAR"
   | "TEACHER"
+  | "CLASS_ASSISTANT"
   | "PARENT"
   | "STUDENT"
   | "RECEPTIONIST";
@@ -33,6 +34,7 @@ const roleAudienceGroups: Record<NotificationRole, string[]> = {
   ACCOUNTANT: ["ALL", "ACCOUNTANT", "STAFF", "ADMIN"],
   REGISTRAR: ["ALL", "STAFF", "ADMIN"],
   TEACHER: ["ALL", "TEACHER", "STAFF"],
+  CLASS_ASSISTANT: ["ALL", "TEACHER", "STAFF"],
   PARENT: ["ALL", "PARENT", "PARENT_STUDENT", "FAMILY"],
   STUDENT: ["ALL", "STUDENT", "PARENT_STUDENT"],
   RECEPTIONIST: ["ALL", "STAFF", "ADMIN"],

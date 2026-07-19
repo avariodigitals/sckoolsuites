@@ -78,7 +78,7 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
   const { section } = await params;
   if (!(allowed as readonly string[]).includes(section)) notFound();
 
-  const user = await requireRole(["TEACHER"]);
+  const user = await requireRole(["TEACHER", "CLASS_ASSISTANT"]);
   const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
   const profile = await getCurrentSchoolByUser(user.id);
   if (!profile?.schoolId || !profile.school) {

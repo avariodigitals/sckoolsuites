@@ -609,6 +609,18 @@ export const navByRole: Record<string, NavItem[]> = {
     { label: "LMS", href: "/teacher/lms", icon: BookOpen, group: "3. Teaching" },
     { label: "Announcements", href: "/teacher/announcements", icon: Megaphone, group: "4. Communication" },
   ],
+  CLASS_ASSISTANT: [
+    { label: "Dashboard", href: "/teacher/dashboard", icon: LayoutDashboard, group: "1. Overview" },
+    { label: "My Profile", href: "/teacher/profile", icon: Users, group: "1. Overview" },
+    { label: "My Classes", href: "/teacher/my-classes", icon: Building2, group: "2. Academics" },
+    { label: "My Subjects", href: "/teacher/my-subjects", icon: BookOpen, group: "2. Academics" },
+    { label: "Attendance", href: "/teacher/attendance", icon: CalendarCheck, group: "2. Academics" },
+    { label: "Assignments", href: "/teacher/assignments", icon: BookOpen, group: "3. Teaching" },
+    { label: "Lesson Notes", href: "/teacher/lesson-notes", icon: BookOpen, group: "3. Teaching" },
+    { label: "Timetable", href: "/teacher/timetable", icon: CalendarCheck, group: "3. Teaching" },
+    { label: "LMS", href: "/teacher/lms", icon: BookOpen, group: "3. Teaching" },
+    { label: "Announcements", href: "/teacher/announcements", icon: Megaphone, group: "4. Communication" },
+  ],
   PARENT: [
     { label: "Dashboard", href: "/parent/dashboard", icon: LayoutDashboard, group: "1. Overview" },
     { label: "My Children", href: "/parent/children", icon: Users, group: "1. Overview" },
