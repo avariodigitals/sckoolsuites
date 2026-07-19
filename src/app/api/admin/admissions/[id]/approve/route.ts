@@ -7,6 +7,7 @@ import { createAuditLog } from "@/lib/audit-log";
 import { sendTemplatedEmail } from "@/lib/email";
 import { createNotification } from "@/lib/notification-helpers";
 import { parseNumericId } from "@/lib/id-helpers";
+import { createStudentEmailAccount } from "@/lib/email-providers/email-service";
 import { Prisma } from "@prisma/client";
 
 function isAuthorized(role?: string) {
@@ -272,6 +273,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       }
     }
 
+    // Auto-create student email account if provider is configured
+    let studentEmail: { emailAddress: string; provider: string } | null = null;
+    try {
+      const emailResult = await createStudentEmailAccount({
+        schoolId,
+        studentId: result.student.id,
+        firstName: result.student.firstName,
+        lastName: result.student.lastName,
+        displayName: result.user.name,
+        admissionNo: result.student.admissionNo,
+      });
+      if (emailResult.created) {
+        studentEmail = { emailAddress: emailResult.emailAddress, provider: emailResult.provider };
+      }
+    } catch (err) {
+      console.error("[admission-approve] Auto email creation failed:", err);
+    }
+
     return NextResponse.json({
       ok: true,
       student: {
@@ -279,6 +298,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         name: result.user.name,
         email: result.user.email,
       },
+      studentEmail,
       guardians: result.guardianUsers,
     });
   } catch (error) {

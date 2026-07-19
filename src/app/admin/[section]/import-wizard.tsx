@@ -20,7 +20,7 @@ const STUDENT_FIELDS: FieldDef[] = [
   { key: "firstName", label: "First Name", required: true, aliases: ["firstname", "fname", "givenname", "first"] },
   { key: "middleName", label: "Middle Name", required: false, aliases: ["middlename", "mname", "middle"] },
   { key: "lastName", label: "Last Name", required: true, aliases: ["lastname", "lname", "surname", "last"] },
-  { key: "email", label: "Email", required: true, aliases: ["email", "emailaddress", "emailaddress"] },
+  { key: "email", label: "Email (auto-generated if blank & provider configured)", required: false, aliases: ["email", "emailaddress", "emailaddress"] },
   { key: "gender", label: "Gender (MALE/FEMALE/OTHER)", required: true, aliases: ["gender", "sex"] },
   { key: "dateOfBirth", label: "Date of Birth (YYYY-MM-DD)", required: false, aliases: ["dateofbirth", "dob", "birthdate", "birthday"] },
   { key: "age", label: "Age", required: false, aliases: ["age"] },

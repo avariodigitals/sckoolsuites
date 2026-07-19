@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { hashPassword } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
 import { sendWelcomeEmail, sendTemplatedEmail } from "@/lib/email";
+import { createStudentEmailAccount } from "@/lib/email-providers/email-service";
 import { Prisma } from "@prisma/client";
 
 const guardianSchema = z.object({
@@ -437,6 +438,24 @@ export async function POST(request: Request) {
       }
     }
 
+    // Auto-create student email account if provider is configured
+    let studentEmail: { emailAddress: string; provider: string } | null = null;
+    try {
+      const emailResult = await createStudentEmailAccount({
+        schoolId,
+        studentId: result.student.id,
+        firstName: result.student.firstName,
+        lastName: result.student.lastName,
+        displayName: result.user.name,
+        admissionNo: result.student.admissionNo,
+      });
+      if (emailResult.created) {
+        studentEmail = { emailAddress: emailResult.emailAddress, provider: emailResult.provider };
+      }
+    } catch (err) {
+      console.error("[student-create] Auto email creation failed:", err);
+    }
+
     return NextResponse.json({
       student: {
         id: result.student.id,
@@ -456,6 +475,7 @@ export async function POST(request: Request) {
         isActive: true,
         createdAt: result.student.createdAt.toISOString(),
       },
+      studentEmail,
       emailStatus,
       guardianEmailStatus,
       message: emailStatus.sent

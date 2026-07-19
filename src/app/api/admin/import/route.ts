@@ -3,8 +3,10 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
-import { Prisma } from "@prisma/client";
 import { sendWelcomeEmail } from "@/lib/email";
+import { createStudentEmailAccount, getActiveEmailProviderConfig } from "@/lib/email-providers/email-service";
+import { generateLocalPart, type EmailPattern } from "@/lib/email-providers";
+import { Prisma } from "@prisma/client";
 
 type ImportType = "students" | "parents" | "staff";
 
@@ -72,13 +74,30 @@ export async function POST(request: Request) {
       try {
         const firstName = String(row.firstName ?? "").trim();
         const lastName = String(row.lastName ?? "").trim();
-        const email = String(row.email ?? "").trim().toLowerCase();
+        let email = String(row.email ?? "").trim().toLowerCase();
         const gender = String(row.gender ?? "").trim().toUpperCase() as "MALE" | "FEMALE" | "OTHER";
 
-        if (!firstName || !lastName || !email || !gender) {
-          errors.push(`${rowLabel}: Missing required fields`);
+        if (!firstName || !lastName || !gender) {
+          errors.push(`${rowLabel}: Missing required fields (firstName, lastName, gender)`);
           failed++;
           continue;
+        }
+
+        // If no email provided, auto-generate from configured email provider
+        if (!email) {
+          const providerConfig = await getActiveEmailProviderConfig(schoolId);
+          if (!providerConfig) {
+            errors.push(`${rowLabel}: No email provided and no email provider configured. Either add an email column or configure an email provider in settings.`);
+            failed++;
+            continue;
+          }
+          const admissionNo = row.admissionNo ? String(row.admissionNo).trim() : null;
+          const localPart = generateLocalPart(firstName, lastName, {
+            admissionNo,
+            pattern: providerConfig.emailPattern as EmailPattern | undefined,
+            customPattern: providerConfig.customPattern,
+          });
+          email = `${localPart}@${providerConfig.domain}`;
         }
         if (!["MALE", "FEMALE", "OTHER"].includes(gender)) {
           errors.push(`${rowLabel}: Invalid gender "${gender}"`);
@@ -217,6 +236,20 @@ export async function POST(request: Request) {
           password: plaintextPassword,
           role: "STUDENT",
         }).catch(() => {});
+
+        // Auto-create student email account via provider if configured
+        try {
+          await createStudentEmailAccount({
+            schoolId,
+            studentId: result.student.id,
+            firstName,
+            lastName,
+            displayName: fullName,
+            admissionNo: row.admissionNo ? String(row.admissionNo).trim() : null,
+          });
+        } catch (err) {
+          console.error(`[import] Row ${i + 1}: Auto email creation failed:`, err);
+        }
 
         success++;
       } catch (err) {

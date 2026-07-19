@@ -130,6 +130,8 @@ model School {
   studentDocuments      StudentDocument[]
   loans                 Loan[]
   assets                Asset[]
+  emailProviderConfigs  EmailProviderConfig[]
+  studentEmailAccounts  StudentEmailAccount[]
 
   @@map("school")
 }
@@ -329,6 +331,7 @@ model Student {
   assignments          Assignment[]
   admissionApplication AdmissionApplication? @relation("ConvertedStudent")
   documents            StudentDocument[]
+  studentEmailAccount  StudentEmailAccount?
 
   @@index([userId])
   @@index([parentId])
@@ -2045,4 +2048,45 @@ model Asset {
   @@index([schoolId])
   @@index([assetType])
   @@map("asset")
+}
+
+model EmailProviderConfig {
+  id              Int      @id @default(autoincrement())
+  schoolId        String   @map("school_id")
+  provider        String   // "cpanel" | "google" | "microsoft" | "zoho"
+  domain          String   // e.g. "school.com"
+  isActive        Boolean  @default(true) @map("is_active")
+  config          Json     @default("{}") // encrypted credentials, API keys, etc.
+  defaultPassword String?  @map("default_password") // initial password for new accounts
+  passwordPolicy  String?  @map("password_policy") // e.g. "fixed" | "random" | "firstname+year"
+  emailPattern    String?  @map("email_pattern") // e.g. "firstname.lastinitial" | "custom"
+  customPattern   String?  @map("custom_pattern") // custom template like "{firstname}.{firstinitial}{lastinitial}"
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, provider])
+  @@index([schoolId])
+  @@map("email_provider_config")
+}
+
+model StudentEmailAccount {
+  id           Int      @id @default(autoincrement())
+  schoolId     String   @map("school_id")
+  studentId    Int      @map("student_id")
+  emailAddress String   @map("email_address")
+  password     String?  // stored encrypted or null if provider manages it
+  status       String   @default("ACTIVE") // "ACTIVE" | "SUSPENDED" | "DELETED"
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  school  School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId])
+  @@unique([emailAddress])
+  @@index([schoolId])
+  @@index([studentId])
+  @@map("student_email_account")
 }
