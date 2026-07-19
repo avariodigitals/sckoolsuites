@@ -214,10 +214,10 @@ export function EmailProviderForm() {
         body: JSON.stringify({ provider: selectedProvider }),
       });
       const data = await res.json();
-      if (res.ok && data.success) {
+      if (res.ok && data.ok) {
         setStatus({ type: "success", message: `Connection test successful: ${data.message || "Provider is reachable"}` });
       } else {
-        setStatus({ type: "error", message: `Connection test failed: ${data.error || "Unknown error"}` });
+        setStatus({ type: "error", message: `Connection test failed: ${data.message || data.error || "Unknown error"}` });
       }
     } catch {
       setStatus({ type: "error", message: "Network error while testing connection" });
