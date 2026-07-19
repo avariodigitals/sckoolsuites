@@ -148,178 +148,167 @@ export async function POST(request: Request) {
   const schoolId = session.user.schoolId || "default";
   const cat = category as PurgeCategory;
 
+  const safeDelete = async (promise: Promise<{ count: number }>): Promise<number> => {
+    try {
+      const r = await promise;
+      return r.count;
+    } catch {
+      return 0;
+    }
+  };
+
   try {
-    const deleted = await db.$transaction(async (tx: any) => {
-      let total = 0;
+    let total = 0;
 
-      switch (cat) {
-        case "admissions": {
-          const r = await tx.admissionApplication.deleteMany({ where: { schoolId } });
-          total = r.count;
-          break;
-        }
-
-        case "students": {
-          const studentUsers = await tx.student.findMany({ where: { schoolId }, select: { userId: true } });
-          const userIds = studentUsers.map((s: any) => s.userId);
-          if (userIds.length > 0) {
-            await tx.studentEmailAccount.deleteMany({ where: { studentId: { in: userIds } } }).catch(() => {});
-          }
-          const r = await tx.student.deleteMany({ where: { schoolId } });
-          total = r.count;
-          if (userIds.length > 0) {
-            await tx.user.deleteMany({ where: { id: { in: userIds } } }).catch(() => {});
-          }
-          break;
-        }
-
-        case "parents": {
-          const parentUsers = await tx.parent.findMany({ where: { schoolId }, select: { userId: true } });
-          const userIds = parentUsers.map((p: any) => p.userId);
-          const r = await tx.parent.deleteMany({ where: { schoolId } });
-          total = r.count;
-          if (userIds.length > 0) {
-            await tx.user.deleteMany({ where: { id: { in: userIds } } }).catch(() => {});
-          }
-          break;
-        }
-
-        case "teachers": {
-          await tx.subjectAssignment.deleteMany({ where: { schoolId } });
-          const teacherUsers = await tx.teacher.findMany({ where: { schoolId }, select: { userId: true } });
-          const userIds = teacherUsers.map((t: any) => t.userId);
-          const r = await tx.teacher.deleteMany({ where: { schoolId } });
-          total = r.count;
-          if (userIds.length > 0) {
-            await tx.user.deleteMany({ where: { id: { in: userIds } } }).catch(() => {});
-          }
-          break;
-        }
-
-        case "finance": {
-          await tx.invoiceContestAudit.deleteMany({ where: { schoolId } });
-          await tx.paymentProof.deleteMany({ where: { schoolId } });
-          await tx.receipt.deleteMany({ where: { schoolId } });
-          await tx.payment.deleteMany({ where: { schoolId } });
-          const r = await tx.invoice.deleteMany({ where: { schoolId } });
-          total = r.count;
-          break;
-        }
-
-        case "fees": {
-          await tx.feeProfileItem.deleteMany({});
-          await tx.feeProfileClass.deleteMany({});
-          await tx.feeProfileArm.deleteMany({});
-          await tx.feeProfile.deleteMany({ where: { schoolId } });
-          await tx.feeItem.deleteMany({ where: { schoolId } });
-          await tx.feeConcession.deleteMany({ where: { schoolId } });
-          const r = await tx.feeGroup.deleteMany({ where: { schoolId } });
-          total = r.count;
-          break;
-        }
-
-        case "income_expenses": {
-          await tx.income.deleteMany({ where: { schoolId } });
-          await tx.expense.deleteMany({ where: { schoolId } });
-          const ic = await tx.incomeCategory.deleteMany({ where: { schoolId } });
-          const ec = await tx.expenseCategory.deleteMany({ where: { schoolId } });
-          total = ic.count + ec.count;
-          break;
-        }
-
-        case "academic": {
-          await tx.classAssessment.deleteMany({});
-          await tx.classGroupAssessment.deleteMany({});
-          await tx.assessment.deleteMany({ where: { schoolId } });
-          await tx.subjectAssignment.deleteMany({ where: { schoolId } });
-          await tx.subject.deleteMany({ where: { schoolId } });
-          await tx.classArm.deleteMany({ where: { schoolId } });
-          await tx.class.deleteMany({ where: { schoolId } });
-          await tx.classGroup.deleteMany({ where: { schoolId } });
-          await tx.term.deleteMany({ where: { schoolId } });
-          const r = await tx.session.deleteMany({ where: { schoolId } });
-          total = r.count;
-          break;
-        }
-
-        case "results": {
-          await tx.score.deleteMany({ where: { schoolId } });
-          const r = await tx.result.deleteMany({ where: { schoolId } });
-          total = r.count;
-          break;
-        }
-
-        case "attendance": {
-          await tx.attendance.deleteMany({ where: { schoolId } });
-          const r = await tx.staffAttendance.deleteMany({ where: { schoolId } });
-          total = r.count;
-          break;
-        }
-
-        case "lms": {
-          await tx.assignment.deleteMany({ where: { schoolId } });
-          await tx.quiz.deleteMany({ where: { schoolId } });
-          await tx.onlineClass.deleteMany({ where: { schoolId } });
-          const r = await tx.lesson.deleteMany({ where: { schoolId } });
-          total = r.count;
-          break;
-        }
-
-        case "communication": {
-          await tx.announcementReaction.deleteMany({});
-          await tx.announcement.deleteMany({ where: { schoolId } });
-          await tx.surveyAnswer.deleteMany({});
-          await tx.surveyResponse.deleteMany({});
-          await tx.surveyQuestion.deleteMany({});
-          await tx.survey.deleteMany({ where: { schoolId } });
-          const r = await tx.schoolEvent.deleteMany({ where: { schoolId } });
-          total = r.count;
-          break;
-        }
-
-        case "transport": {
-          await tx.routeStop.deleteMany({});
-          await tx.route.deleteMany({ where: { schoolId } });
-          await tx.vehicle.deleteMany({ where: { schoolId } });
-          const r = await tx.driver.deleteMany({ where: { schoolId } });
-          total = r.count;
-          break;
-        }
-
-        case "reception": {
-          await tx.visitor.deleteMany({ where: { schoolId } });
-          await tx.enquiry.deleteMany({ where: { schoolId } });
-          await tx.gatePass.deleteMany({ where: { schoolId } });
-          await tx.receptionComplaint.deleteMany({ where: { schoolId } });
-          await tx.callLog.deleteMany({ where: { schoolId } });
-          await tx.correspondence.deleteMany({ where: { schoolId } });
-          const r = await tx.query.deleteMany({ where: { schoolId } });
-          total = r.count;
-          break;
-        }
-
-        case "loans_assets": {
-          await tx.loan.deleteMany({ where: { schoolId } });
-          const r = await tx.asset.deleteMany({ where: { schoolId } });
-          total = r.count;
-          break;
-        }
-
-        case "audit_logs": {
-          const r = await tx.auditLog.deleteMany({ where: { schoolId } });
-          total = r.count;
-          break;
-        }
-
-        case "notifications": {
-          const r = await tx.notificationRecord.deleteMany({ where: { schoolId } });
-          total = r.count;
-          break;
-        }
+    switch (cat) {
+      case "admissions": {
+        total = await safeDelete(db.admissionApplication.deleteMany({ where: { schoolId } }));
+        break;
       }
 
-      return total;
-    });
+      case "students": {
+        const studentUsers = await db.student.findMany({ where: { schoolId }, select: { userId: true } }).catch(() => []);
+        const userIds = studentUsers.map((s: any) => s.userId);
+        if (userIds.length > 0) {
+          await safeDelete(db.studentEmailAccount.deleteMany({ where: { studentId: { in: userIds } } } as any));
+        }
+        total = await safeDelete(db.student.deleteMany({ where: { schoolId } }));
+        if (userIds.length > 0) {
+          await safeDelete(db.user.deleteMany({ where: { id: { in: userIds } } }));
+        }
+        break;
+      }
+
+      case "parents": {
+        const parentUsers = await db.parent.findMany({ where: { schoolId }, select: { userId: true } }).catch(() => []);
+        const userIds = parentUsers.map((p: any) => p.userId);
+        total = await safeDelete(db.parent.deleteMany({ where: { schoolId } }));
+        if (userIds.length > 0) {
+          await safeDelete(db.user.deleteMany({ where: { id: { in: userIds } } }));
+        }
+        break;
+      }
+
+      case "teachers": {
+        await safeDelete(db.subjectAssignment.deleteMany({ where: { schoolId } }));
+        const teacherUsers = await db.teacher.findMany({ where: { schoolId }, select: { userId: true } }).catch(() => []);
+        const userIds = teacherUsers.map((t: any) => t.userId);
+        total = await safeDelete(db.teacher.deleteMany({ where: { schoolId } }));
+        if (userIds.length > 0) {
+          await safeDelete(db.user.deleteMany({ where: { id: { in: userIds } } }));
+        }
+        break;
+      }
+
+      case "finance": {
+        await safeDelete(db.invoiceContestAudit.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.paymentProof.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.receipt.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.payment.deleteMany({ where: { schoolId } }));
+        total = await safeDelete(db.invoice.deleteMany({ where: { schoolId } }));
+        break;
+      }
+
+      case "fees": {
+        await safeDelete(db.feeProfileItem.deleteMany({}));
+        await safeDelete(db.feeProfileClass.deleteMany({}));
+        await safeDelete(db.feeProfileArm.deleteMany({}));
+        await safeDelete(db.feeProfile.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.feeItem.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.feeConcession.deleteMany({ where: { schoolId } }));
+        total = await safeDelete(db.feeGroup.deleteMany({ where: { schoolId } }));
+        break;
+      }
+
+      case "income_expenses": {
+        await safeDelete(db.income.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.expense.deleteMany({ where: { schoolId } }));
+        const ic = await safeDelete(db.incomeCategory.deleteMany({ where: { schoolId } }));
+        const ec = await safeDelete(db.expenseCategory.deleteMany({ where: { schoolId } }));
+        total = ic + ec;
+        break;
+      }
+
+      case "academic": {
+        await safeDelete(db.classAssessment.deleteMany({}));
+        await safeDelete(db.classGroupAssessment.deleteMany({}));
+        await safeDelete(db.assessment.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.subjectAssignment.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.subject.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.classArm.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.class.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.classGroup.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.term.deleteMany({ where: { schoolId } }));
+        total = await safeDelete(db.session.deleteMany({ where: { schoolId } }));
+        break;
+      }
+
+      case "results": {
+        await safeDelete(db.score.deleteMany({ where: { schoolId } }));
+        total = await safeDelete(db.result.deleteMany({ where: { schoolId } }));
+        break;
+      }
+
+      case "attendance": {
+        await safeDelete(db.attendance.deleteMany({ where: { schoolId } }));
+        total = await safeDelete(db.staffAttendance.deleteMany({ where: { schoolId } }));
+        break;
+      }
+
+      case "lms": {
+        await safeDelete(db.assignment.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.quiz.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.onlineClass.deleteMany({ where: { schoolId } }));
+        total = await safeDelete(db.lesson.deleteMany({ where: { schoolId } }));
+        break;
+      }
+
+      case "communication": {
+        await safeDelete(db.announcementReaction.deleteMany({}));
+        await safeDelete(db.announcement.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.surveyAnswer.deleteMany({}));
+        await safeDelete(db.surveyResponse.deleteMany({}));
+        await safeDelete(db.surveyQuestion.deleteMany({}));
+        await safeDelete(db.survey.deleteMany({ where: { schoolId } }));
+        total = await safeDelete(db.schoolEvent.deleteMany({ where: { schoolId } }));
+        break;
+      }
+
+      case "transport": {
+        await safeDelete(db.routeStop.deleteMany({}));
+        await safeDelete(db.route.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.vehicle.deleteMany({ where: { schoolId } }));
+        total = await safeDelete(db.driver.deleteMany({ where: { schoolId } }));
+        break;
+      }
+
+      case "reception": {
+        await safeDelete(db.visitor.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.enquiry.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.gatePass.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.receptionComplaint.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.callLog.deleteMany({ where: { schoolId } }));
+        await safeDelete(db.correspondence.deleteMany({ where: { schoolId } }));
+        total = await safeDelete(db.query.deleteMany({ where: { schoolId } }));
+        break;
+      }
+
+      case "loans_assets": {
+        await safeDelete(db.loan.deleteMany({ where: { schoolId } }));
+        total = await safeDelete(db.asset.deleteMany({ where: { schoolId } }));
+        break;
+      }
+
+      case "audit_logs": {
+        total = await safeDelete(db.auditLog.deleteMany({ where: { schoolId } }));
+        break;
+      }
+
+      case "notifications": {
+        total = await safeDelete(db.notificationRecord.deleteMany({ where: { schoolId } }));
+        break;
+      }
+    }
 
     await createAuditLog({
       schoolId,
@@ -327,10 +316,10 @@ export async function POST(request: Request) {
       action: "DATA_PURGE",
       targetType: "Purge",
       targetId: cat,
-      metadata: { category: cat, recordsDeleted: deleted },
+      metadata: { category: cat, recordsDeleted: total },
     });
 
-    return NextResponse.json({ ok: true, category: cat, deleted });
+    return NextResponse.json({ ok: true, category: cat, deleted: total });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Purge failed";
     return NextResponse.json({ error: message }, { status: 500 });
