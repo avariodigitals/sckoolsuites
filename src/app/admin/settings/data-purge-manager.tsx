@@ -116,7 +116,7 @@ export function DataPurgeManager() {
         <div className="flex items-center gap-2">
           <Lock className="h-5 w-5 text-red-600" />
           <div>
-            <p className="text-sm font-medium text-slate-700">Restricted to SUPER_ADMIN</p>
+            <p className="text-sm font-medium text-slate-700">Requires settings.manage privilege</p>
             <p className="text-xs text-slate-500">All purge actions are logged in the audit trail</p>
           </div>
         </div>

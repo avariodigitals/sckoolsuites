@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { crudPrivilege } from "@/lib/route-auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { checkPrivilege } from "@/lib/privileges";
 
 const schema = z.object({
   schoolName: z.string().min(2),
@@ -29,17 +29,14 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   const session = await auth();
-  const allowed = await crudPrivilege(session, "POST", "branding");
-  if (!allowed) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-    const schoolId = session.user.schoolId || "default";
-  if (!schoolId) {
-    return NextResponse.json({ error: "No school selected" }, { status: 400 });
+  const allowed = await checkPrivilege(session.user.id, "branding.manage");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden — branding.manage privilege required" }, { status: 403 });
   }
+  const schoolId = session.user.schoolId || "default";
 
   const json = await request.json();
   const parsed = schema.safeParse(json);
