@@ -1,5 +1,3 @@
-import { PDFParse } from "pdf-parse";
-
 export type ExtractedComments = {
   classTeacherComment: string | null;
   principalComment: string | null;
@@ -92,6 +90,7 @@ export async function extractCommentsFromPdf(
   buffer: Buffer
 ): Promise<ExtractedComments> {
   try {
+    const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: buffer });
     const result = await parser.getText();
     const text = result.text || "";

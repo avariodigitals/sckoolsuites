@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const allowedRoles = new Set(["TEACHER", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"]);
+  const allowedRoles = new Set(["TEACHER", "CLASS_ASSISTANT", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"]);
   if (!allowedRoles.has(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
