@@ -7,11 +7,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user || !["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"].includes(session.user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  try {
+    try {
     const formData = await request.formData();
     const file = formData.get("file");
     const folder = String(formData.get("folder") ?? "general").trim() || "general";

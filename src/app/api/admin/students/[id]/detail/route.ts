@@ -140,6 +140,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     let additionalGuardians: Array<{
       id: number;
       userId: number;
+      title: string | null;
       name: string;
       email: string | null;
       phone: string | null;
@@ -155,7 +156,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         additionalGuardians = rows.map((row) => ({
           id: row.parent.id,
           userId: row.parent.userId,
-          name: row.parent.user.name,
+          title: row.parent.title ?? null,
+          name: [row.parent.title, row.parent.user.name].filter(Boolean).join(" "),
           email: row.parent.user.email,
           phone: row.parent.user.phone,
           address: row.parent.user.address,

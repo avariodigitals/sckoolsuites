@@ -4,16 +4,13 @@ import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 import { parseNumericId } from "@/lib/id-helpers";
 
-const allowedRoles = ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"];
-
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
-    if (!session?.user || !allowedRoles.includes(session.user.role)) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const { id } = await params;
+        const { id } = await params;
     const parsedId = parseNumericId(id, "event id");
 
     const deleted = await prisma.schoolEvent.deleteMany({

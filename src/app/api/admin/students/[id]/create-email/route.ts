@@ -14,12 +14,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const adminRoles = ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "REGISTRAR", "PRINCIPAL"];
-  if (!adminRoles.includes(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const schoolId = session.user.schoolId || "default";
+    const schoolId = session.user.schoolId || "default";
   const parsed = createSchema.safeParse(await request.json());
 
   if (!parsed.success) {
@@ -74,12 +69,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const adminRoles = ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "REGISTRAR", "PRINCIPAL"];
-  if (!adminRoles.includes(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const schoolId = session.user.schoolId || "default";
+    const schoolId = session.user.schoolId || "default";
   const url = new URL(request.url);
   const studentId = Number(url.searchParams.get("studentId"));
 

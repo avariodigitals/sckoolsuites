@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { requireRole } from "@/lib/auth-guards";
+import { requirePrivilege } from "@/lib/auth-guards";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
-// POST - Create new school (Super Admin or School Admin for setup)
+// POST - Create new school (requires settings.manage)
 export async function POST(request: Request) {
   try {
-    const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN"]);
+    const user = await requirePrivilege("settings.manage");
     void user;
     
     const formData = await request.formData();
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 // PUT - Update existing school
 export async function PUT(request: Request) {
   try {
-    const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
+    const user = await requirePrivilege("settings.manage");
     void user;
     
     const formData = await request.formData();

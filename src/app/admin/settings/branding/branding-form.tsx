@@ -80,12 +80,21 @@ export function BrandingForm({ defaults }: { defaults: FormValues }) {
 
   const onSubmit = async (values: FormValues) => {
     setMessage("Saving...");
-    const response = await fetch("/api/admin/branding", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
-    setMessage(response.ok ? "Saved successfully." : "Could not save settings.");
+    try {
+      const response = await fetch("/api/admin/branding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      if (response.ok) {
+        setMessage("Saved successfully.");
+      } else {
+        const data = await response.json().catch(() => ({}));
+        setMessage(data?.error ?? `Could not save settings (HTTP ${response.status}).`);
+      }
+    } catch (err: any) {
+      setMessage(err?.message ?? "Network error while saving settings.");
+    }
   };
 
   return (
@@ -163,6 +172,53 @@ export function BrandingForm({ defaults }: { defaults: FormValues }) {
           <Input type="file" accept="image/png,image/jpeg,image/webp" onChange={onFileChange("schoolStamp")} disabled={uploadingField === "schoolStamp"} className="max-w-[280px]" />
         </div>
         {schoolStamp ? <Image src={schoolStamp} alt="School stamp preview" width={64} height={64} unoptimized className="mt-2 h-16 w-16 rounded border border-slate-200 bg-white p-1 object-contain" /> : null}
+      </div>
+
+      <div className="md:col-span-2">
+        <h3 className="text-sm font-semibold text-slate-900">Bank Details (for invoices & receipts)</h3>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium">Bank Name</label>
+        <Input {...register("bankName")} placeholder="e.g. First Bank" />
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium">Account Name</label>
+        <Input {...register("bankAccountName")} placeholder="e.g. School Name" />
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium">Account Number</label>
+        <Input {...register("bankAccountNumber")} placeholder="e.g. 0123456789" />
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium">Payment Instructions</label>
+        <Input {...register("bankInstructions")} placeholder="e.g. Sort code, branch, etc." />
+      </div>
+
+      <div className="md:col-span-2">
+        <h3 className="text-sm font-semibold text-slate-900">Document Themes</h3>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium">Report Card Theme</label>
+        <select {...register("reportCardTheme")} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+          <option value="classic">Classic</option>
+          <option value="modern">Modern</option>
+          <option value="minimal">Minimal</option>
+        </select>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium">Invoice Theme</label>
+        <select {...register("invoiceTheme")} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+          <option value="clean">Clean</option>
+          <option value="bold">Bold</option>
+          <option value="compact">Compact</option>
+        </select>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium">Receipt Theme</label>
+        <select {...register("receiptTheme")} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+          <option value="simple">Simple</option>
+          <option value="detailed">Detailed</option>
+        </select>
       </div>
       <div className="md:col-span-2">
         <Button type="submit" disabled={formState.isSubmitting}>

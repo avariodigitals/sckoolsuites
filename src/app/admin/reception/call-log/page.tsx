@@ -1,11 +1,11 @@
 import { ModernPortalShell } from "@/components/modern-portal-shell";
-import { requireRole } from "@/lib/auth-guards";
+import { requirePrivilege } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
 import { prisma } from "@/lib/db";
 import { CallLogClient } from "./call-log-client";
 
 export default async function CallLogPage() {
-  const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "RECEPTIONIST"]);
+  const user = await requirePrivilege("reception.view");
   const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
   const profile = await getCurrentSchoolByUser(user.id);
 

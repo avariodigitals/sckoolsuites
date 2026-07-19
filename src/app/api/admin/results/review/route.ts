@@ -48,10 +48,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN", "HEAD_TEACHER", "HEAD_OF_DEPARTMENT"].includes(session.user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const url = new URL(request.url);
   const parsedQuery = querySchema.safeParse({
     status: url.searchParams.get("status") ?? undefined,
@@ -161,12 +157,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const approverRoles = ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN", "HEAD_TEACHER", "HEAD_OF_DEPARTMENT"];
-  if (!approverRoles.includes(session.user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const parsed = schema.safeParse(await request.json());
+    const parsed = schema.safeParse(await request.json());
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
@@ -447,7 +438,7 @@ export async function POST(request: Request) {
             templateKey: "results_published",
             vars: {
               schoolName: school?.name ?? "Sckool Suite",
-              parentName: studentForNotify.parent.user.name ?? "Parent",
+              parentName: [studentForNotify.parent.title, studentForNotify.parent.user.name].filter(Boolean).join(" ") ?? "Parent",
               studentName: studentForNotify.user.name,
               sessionName: sessionForNotify?.name ?? "",
               termName: termForNotify?.name ?? "",

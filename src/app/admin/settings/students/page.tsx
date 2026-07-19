@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/auth-guards";
+import { requirePrivilege } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
 import { prisma } from "@/lib/db";
 import { ModernPortalShell } from "@/components/modern-portal-shell";
@@ -6,7 +6,7 @@ import { DashboardHeader } from "@/components/modern-dashboard";
 import { StudentSettingsClient } from "./student-settings-client";
 
 export default async function StudentSettingsPage() {
-  const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
+  const user = await requirePrivilege("settings.view");
   const profile = await getCurrentSchoolByUser(user.id);
   const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
 

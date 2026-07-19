@@ -2,17 +2,19 @@ export const dynamic = "force-dynamic";
 
 import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { DashboardHeader } from "@/components/modern-dashboard";
-import { requireRole } from "@/lib/auth-guards";
+import { requirePrivilege } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
 import { prisma } from "@/lib/db";
+import { checkPrivilege } from "@/lib/privileges";
 import { SchoolForm } from "./school-form";
 
 export default async function SchoolPage() {
-  const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
+  const user = await requirePrivilege("settings.view");
   const profile = await getCurrentSchoolByUser(user.id);
   
-  // Check if schools already exist (for Super Admin)
-  const schools = user.role === "SUPER_ADMIN" 
+  // Check if schools already exist (for users with settings.manage)
+  const canManageSettings = await checkPrivilege(user.id, "settings.manage");
+  const schools = canManageSettings
     ? await prisma.school.findMany({})
     : [];
   
@@ -49,7 +51,7 @@ export default async function SchoolPage() {
           <div className="p-6">
             <SchoolForm 
               school={profile?.school ?? null} 
-              isSuperAdmin={user.role === "SUPER_ADMIN"}
+              isSuperAdmin={canManageSettings}
             />
           </div>
         </div>

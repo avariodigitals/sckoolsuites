@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { requireRole } from "@/lib/auth-guards";
+import { requirePrivilege } from "@/lib/auth-guards";
 import { prisma } from "@/lib/db";
 
 export async function POST() {
   try {
-    const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN"]);
+    const user = await requirePrivilege("settings.manage");
     
     // Get the school (should already be created)
     const school = await prisma.school.findFirst();

@@ -2,13 +2,13 @@ export const dynamic = "force-dynamic";
 
 import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
-import { requireRole } from "@/lib/auth-guards";
+import { requirePrivilege } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
 import { prisma } from "@/lib/db";
 import { AcademicCalendarClient } from "@/app/admin/settings/academic-calendar/academic-calendar-client";
 
 export default async function AcademicCalendarPage() {
-  const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
+  const user = await requirePrivilege("sessions.manage");
   const profile = await getCurrentSchoolByUser(user.id);
 
   if (!profile?.school) {

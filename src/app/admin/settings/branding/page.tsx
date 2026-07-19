@@ -3,13 +3,13 @@ export const dynamic = "force-dynamic";
 import { PortalShell } from "@/components/portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { requireRole } from "@/lib/auth-guards";
+import { requirePrivilege } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
 import { prisma } from "@/lib/db";
 import { BrandingForm } from "@/app/admin/settings/branding/branding-form";
 
 export default async function BrandingSettingsPage() {
-  const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
+  const user = await requirePrivilege("branding.manage");
   const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
   const profile = await getCurrentSchoolByUser(user.id);
 
@@ -54,6 +54,13 @@ export default async function BrandingSettingsPage() {
               logoUrl: branding?.logoUrl ?? "",
               primaryColor: branding?.primaryColor ?? "#0B1F4D",
               secondaryColor: branding?.secondaryColor ?? "#0E9F6E",
+              reportCardTheme: branding?.reportCardTheme ?? "classic",
+              invoiceTheme: branding?.invoiceTheme ?? "clean",
+              receiptTheme: branding?.receiptTheme ?? "simple",
+              bankName: branding?.bankName ?? "",
+              bankAccountName: branding?.bankAccountName ?? "",
+              bankAccountNumber: branding?.bankAccountNumber ?? "",
+              bankInstructions: branding?.bankInstructions ?? "",
               principalSignature: branding?.principalSignature ?? "",
               teacherSignature: branding?.teacherSignature ?? "",
               schoolStamp: branding?.schoolStamp ?? "",

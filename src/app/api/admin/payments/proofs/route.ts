@@ -19,11 +19,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(session.user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const url = new URL(request.url);
+    const url = new URL(request.url);
   const parsedQuery = querySchema.safeParse({
     status: url.searchParams.get("status") ?? undefined,
     take: url.searchParams.get("take") ?? undefined,
@@ -91,7 +87,7 @@ export async function GET(request: Request) {
       parent: proof.payment.invoice.parent
         ? {
             id: proof.payment.invoice.parent.id,
-            name: proof.payment.invoice.parent.user.name,
+            name: [proof.payment.invoice.parent.title, proof.payment.invoice.parent.user.name].filter(Boolean).join(" "),
             email: proof.payment.invoice.parent.user.email,
           }
         : null,

@@ -125,7 +125,7 @@ export default async function ParentChildWorkspacePage({ params }: { params: Pro
       role={user.role}
       schoolName={core.school?.name}
       schoolLogoUrl={core.school?.branding?.logoUrl ?? undefined}
-      userName={user.name ?? "Parent"}
+      userName={[parentProfile.title, user.name].filter(Boolean).join(" ") ?? "Parent"}
       avatarUrl={dbUser?.avatarUrl ?? undefined}
       pathname="/parent/children"
       primaryColor={core.school?.branding?.primaryColor}

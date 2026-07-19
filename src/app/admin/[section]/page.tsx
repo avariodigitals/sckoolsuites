@@ -29,13 +29,14 @@ import { RoleManager } from "./role-manager";
 import { PrivilegeManager } from "./privilege-manager";
 import { ProfileManager } from "./profile-manager";
 import { PasswordResetRequests } from "./password-reset-requests";
-import { requireRole } from "@/lib/auth-guards";
+import { requirePrivilege } from "@/lib/auth-guards";
 import { getAdminOverview, getDashboardData, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
 import { adminModuleScopeBySection } from "@/lib/module-blueprint";
 import { getActiveSchoolConfig } from "@/lib/school-config";
 import { getSetupWizardState } from "@/lib/setup-wizard";
 import { naira } from "@/lib/utils";
 import { prisma } from "@/lib/db";
+import { SECTION_PRIVILEGE_MAP, type PrivilegeCode } from "@/lib/privileges";
 
 const allowed = [
   "dashboard",
@@ -280,7 +281,9 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
   const { section } = await params;
   if (!(allowed as readonly string[]).includes(section)) notFound();
 
-  const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
+  const requiredPriv = SECTION_PRIVILEGE_MAP[section] as PrivilegeCode | undefined;
+  if (!requiredPriv) notFound();
+  const user = await requirePrivilege(requiredPriv);
   const profile = await getCurrentSchoolByUser(user.id);
   if (!profile?.schoolId || !profile.school) {
     return null;

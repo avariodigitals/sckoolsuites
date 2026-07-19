@@ -4,6 +4,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
 import { prisma } from "@/lib/db";
+import { checkPrivilege } from "@/lib/privileges";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
 
 const schema = z.object({
@@ -17,8 +18,12 @@ const calendarService = new AcademicCalendarService();
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.id || !["TEACHER", "CLASS_ASSISTANT"].includes(session.user.role)) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const allowed = await checkPrivilege(session.user.id, "attendance.manage");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const payload = await request.json();

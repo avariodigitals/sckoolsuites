@@ -18,11 +18,10 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   if (!allowed) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  if (!session?.user || !["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"].includes(session.user.role)) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const { id } = await params;
+    const { id } = await params;
 
   let parsedId: number;
   try {

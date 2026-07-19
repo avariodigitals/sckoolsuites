@@ -44,11 +44,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(session.user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { paymentId: rawPaymentId } = await params;
+    const { paymentId: rawPaymentId } = await params;
   const paymentIdInt = parseInt(rawPaymentId, 10);
   if (isNaN(paymentIdInt)) {
     return NextResponse.json({ error: "Invalid payment id" }, { status: 400 });

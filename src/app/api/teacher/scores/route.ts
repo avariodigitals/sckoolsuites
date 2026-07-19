@@ -6,6 +6,7 @@ import { getClassGroupGradingProfiles, resolveClassGroupProfile } from "@/lib/cl
 import { calculateGradeFromBands } from "@/lib/grades";
 import { prisma } from "@/lib/db";
 import { getActiveSchoolConfig } from "@/lib/school-config";
+import { checkPrivilege } from "@/lib/privileges";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
 
 const schema = z.object({
@@ -17,12 +18,14 @@ const schema = z.object({
 
 const calendarService = new AcademicCalendarService();
 
-const allowedRoles = new Set(["TEACHER", "CLASS_ASSISTANT", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"]);
-
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.id || !allowedRoles.has(session.user.role)) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const allowed = await checkPrivilege(session.user.id, "results.manage");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const payload = await request.json();
@@ -35,7 +38,7 @@ export async function POST(request: Request) {
   const subjectId = parsed.data.subjectId;
   const studentId = parsed.data.studentId;
 
-  const isAdmin = ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(session.user.role);
+  const isAdmin = await checkPrivilege(session.user.id, "students.manage");
   const teacher = isAdmin
     ? null
     : await prisma.teacher.findFirst({ where: { schoolId, userId: session.user.id } });

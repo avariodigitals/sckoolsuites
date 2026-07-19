@@ -2,12 +2,12 @@ export const dynamic = "force-dynamic";
 
 import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
-import { requireRole } from "@/lib/auth-guards";
+import { requirePrivilege } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
 import { ReceptionSettingsClient } from "./reception-settings-client";
 
 export default async function ReceptionSettingsPage() {
-  const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
+  const user = await requirePrivilege("settings.view");
   const profile = await getCurrentSchoolByUser(user.id);
 
   if (!profile?.school) {

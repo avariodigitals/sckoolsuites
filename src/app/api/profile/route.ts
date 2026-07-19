@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/auth";
 import { humanizeEnum } from "@/lib/utils";
+import { checkPrivilege } from "@/lib/privileges";
 
 const updateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -63,9 +64,9 @@ export async function PUT(request: Request) {
 
     const data = parsed.data;
 
-    // Only admins can change email address
-    const isAdmin = session.user.role === "SUPER_ADMIN" || session.user.role === "SCHOOL_ADMIN";
-    if (data.email !== undefined && data.email !== session.user.email && !isAdmin) {
+    // Only users with users.manage privilege can change email address
+    const canManageUsers = await checkPrivilege(session.user.id, "users.manage");
+    if (data.email !== undefined && data.email !== session.user.email && !canManageUsers) {
       return NextResponse.json(
         { error: "Only administrators can change email addresses. Contact an admin for assistance." },
         { status: 403 }

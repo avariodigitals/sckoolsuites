@@ -86,7 +86,7 @@ const religions = ["Christianity","Islam","Traditional","Other"];
 const guardianRelationships = ["Father","Mother","Sibling","Spouse","Others"];
 const idDocumentTypes = ["Passport","National ID","Driver's License","Voter's Card","Birth Certificate","Other"];
 
-export function AdmissionsManager({ userRole }: { userRole?: string }) {
+export function AdmissionsManager({ canManage }: { canManage?: boolean }) {
   const [applications, setApplications] = useState<Application[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [sessions, setSessions] = useState<SessionOption[]>([]);
@@ -304,8 +304,7 @@ export function AdmissionsManager({ userRole }: { userRole?: string }) {
     } catch { setStatus("An error occurred."); }
   }
 
-  const isAdmin = userRole === "SCHOOL_ADMIN" || userRole === "SUPER_ADMIN";
-  const isPrincipal = userRole === "PRINCIPAL";
+  const canApprove = canManage;
   const tabs: { key: TabKey; label: string }[] = [
     { key: "basic", label: "Basic" }, { key: "photo", label: "Photo" }, { key: "contact", label: "Contact" },
     { key: "guardian", label: "Guardian" }, { key: "document", label: "Document" }, { key: "qualification", label: "Qualification" },
@@ -499,10 +498,10 @@ export function AdmissionsManager({ userRole }: { userRole?: string }) {
                     <div className="mt-2 flex flex-wrap gap-1">
                       <button onClick={() => setViewingApp(app)} className="rounded bg-slate-200 px-2 py-1 text-[10px] font-medium text-slate-700 hover:bg-slate-300">View</button>
                       <button onClick={() => { populateForm(app); setShowForm(true); }} className="rounded bg-indigo-100 px-2 py-1 text-[10px] font-medium text-indigo-700 hover:bg-indigo-200">Edit</button>
-                      {isAdmin && app.status === "PENDING" && <button onClick={() => handleStatusUpdate(app.id, "TESTED")} className="rounded bg-blue-100 px-2 py-1 text-[10px] font-medium text-blue-700 hover:bg-blue-200">Route to Test</button>}
+                      {canManage && app.status === "PENDING" && <button onClick={() => handleStatusUpdate(app.id, "TESTED")} className="rounded bg-blue-100 px-2 py-1 text-[10px] font-medium text-blue-700 hover:bg-blue-200">Route to Test</button>}
                       {app.status === "PENDING" && <button onClick={() => { setSelectedApp(app); setTestScoreInput(app.testScore ? String(app.testScore) : ""); setInterviewNotesInput(app.interviewNotes ?? ""); }} className="rounded bg-violet-100 px-2 py-1 text-[10px] font-medium text-violet-700 hover:bg-violet-200">Test / Interview</button>}
-                      {(isAdmin || isPrincipal) && (app.status === "TESTED" || app.status === "INTERVIEWED") && <button onClick={() => handleApprove(app.id)} className="rounded bg-emerald-100 px-2 py-1 text-[10px] font-medium text-emerald-700 hover:bg-emerald-200">Approve</button>}
-                      {(isAdmin || isPrincipal) && app.status === "APPROVED" && !app.convertedStudentId && <button onClick={() => handleApprove(app.id)} className="rounded bg-emerald-100 px-2 py-1 text-[10px] font-medium text-emerald-700 hover:bg-emerald-200">Create Student</button>}
+                      {canApprove && (app.status === "TESTED" || app.status === "INTERVIEWED") && <button onClick={() => handleApprove(app.id)} className="rounded bg-emerald-100 px-2 py-1 text-[10px] font-medium text-emerald-700 hover:bg-emerald-200">Approve</button>}
+                      {canApprove && app.status === "APPROVED" && !app.convertedStudentId && <button onClick={() => handleApprove(app.id)} className="rounded bg-emerald-100 px-2 py-1 text-[10px] font-medium text-emerald-700 hover:bg-emerald-200">Create Student</button>}
                       {app.status !== "WITHDRAWN" && app.status !== "APPROVED" && app.status !== "REJECTED" && <button onClick={() => handleWithdraw(app.id)} className="rounded bg-rose-100 px-2 py-1 text-[10px] font-medium text-rose-700 hover:bg-rose-200">Withdraw</button>}
                       {app.status !== "WITHDRAWN" && app.status !== "APPROVED" && app.status !== "REJECTED" && <button onClick={() => handleStatusUpdate(app.id, "REJECTED")} className="rounded bg-rose-100 px-2 py-1 text-[10px] font-medium text-rose-700 hover:bg-rose-200">Reject</button>}
                     </div>

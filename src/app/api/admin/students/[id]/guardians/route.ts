@@ -63,7 +63,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     ? {
         id: student.parent.id,
         userId: student.parent.userId,
-        name: student.parent.user.name,
+        title: student.parent.title ?? null,
+        name: [student.parent.title, student.parent.user.name].filter(Boolean).join(" "),
         email: student.parent.user.email,
         phone: student.parent.user.phone,
         address: student.parent.user.address,
@@ -76,6 +77,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   let additional: Array<{
     id: number;
     userId: number;
+    title: string | null;
     name: string;
     email: string | null;
     phone: string | null;
@@ -92,7 +94,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       additional = rows.map((row) => ({
         id: row.parent.id,
         userId: row.parent.userId,
-        name: row.parent.user.name,
+        title: row.parent.title ?? null,
+        name: [row.parent.title, row.parent.user.name].filter(Boolean).join(" "),
         email: row.parent.user.email,
         phone: row.parent.user.phone,
         address: row.parent.user.address,

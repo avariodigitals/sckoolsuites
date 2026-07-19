@@ -1,13 +1,13 @@
 export const dynamic = "force-dynamic";
 
-import { requireRole } from "@/lib/auth-guards";
+import { requirePrivilege } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
 import { ModernPortalShell } from "@/components/modern-portal-shell";
 import { DashboardHeader } from "@/components/modern-dashboard";
 import { GradingManager } from "./grading-manager";
 
 export default async function GradingSettingsPage() {
-  const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
+  const user = await requirePrivilege("settings.view");
   const profile = await getCurrentSchoolByUser(user.id);
 
   return (

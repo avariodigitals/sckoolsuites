@@ -325,11 +325,13 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
   }
 
   // For parents, filter data to only their children
+  let parentTitle: string | null = null;
   if (roleScope === "parent") {
     const parent = await prisma.parent.findFirst({
       where: { schoolId: profile.schoolId, userId: user.id },
     });
     if (parent) {
+      parentTitle = parent.title;
       const myChildren = await prisma.student.findMany({
         where: { schoolId: profile.schoolId, parentId: parent.id },
         include: { user: true, class: true },
@@ -356,7 +358,7 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
     const hour = new Date().getHours();
     const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : hour < 21 ? "Good Evening" : "Good Night";
     const parentName = user.name?.trim() ?? "there";
-    const titlePrefix = "Parent";
+    const titlePrefix = parentTitle?.trim() || "Parent";
     model.title = `${greeting}, ${titlePrefix} ${parentName}`;
     model.subtitle = "Track child performance, fee balances, and school communication.";
   }

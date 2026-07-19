@@ -9,12 +9,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const adminRoles = ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL"];
-  if (!adminRoles.includes(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const schoolId = session.user.schoolId || "default";
+    const schoolId = session.user.schoolId || "default";
   const body = await request.json().catch(() => ({}));
   const provider = body.provider as string | undefined;
 

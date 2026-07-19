@@ -5,6 +5,7 @@ import { uploadToCloudinary } from "@/lib/cloudinary";
 import { createAuditLog } from "@/lib/audit-log";
 import { extractCommentsFromPdf } from "@/lib/pdf-comment-extractor";
 import { createNotificationsForRoles } from "@/lib/notification-helpers";
+import { checkPrivilege } from "@/lib/privileges";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
 
 const ALLOWED_TYPES = new Set(["application/pdf"]);
@@ -17,10 +18,9 @@ export async function POST(request: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const allowedRoles = new Set(["TEACHER", "CLASS_ASSISTANT", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"]);
-  if (!allowedRoles.has(session.user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const allowed = await checkPrivilege(session.user.id, "results.manage");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const schoolId = session.user.schoolId || "default";
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Academic context is not selected" }, { status: 400 });
     }
 
-    const isAdmin = ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(session.user.role);
+    const isAdmin = await checkPrivilege(session.user.id, "students.manage");
     const teacher = isAdmin
       ? null
       : await prisma.teacher.findFirst({ where: { schoolId, userId: session.user.id } });

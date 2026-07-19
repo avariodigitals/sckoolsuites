@@ -404,7 +404,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
       role={user.role}
       schoolName={core.school?.name}
       schoolLogoUrl={core.school?.branding?.logoUrl ?? undefined}
-      userName={user.name ?? "Parent"}
+      userName={[parentProfile.title, user.name].filter(Boolean).join(" ") ?? "Parent"}
       avatarUrl={dbUser?.avatarUrl ?? undefined}
       pathname={`/parent/${section}`}
       primaryColor={core.school?.branding?.primaryColor}
@@ -707,7 +707,7 @@ export default async function ParentSectionPage({ params }: { params: Promise<{ 
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
                   <p className="text-[11px] text-slate-500">Full Name</p>
-                  <p className="font-medium text-slate-900">{parentProfile.user?.name}</p>
+                  <p className="font-medium text-slate-900">{parentProfile.title ? `${parentProfile.title} ` : ""}{parentProfile.user?.name}</p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
                   <p className="text-[11px] text-slate-500">Email</p>

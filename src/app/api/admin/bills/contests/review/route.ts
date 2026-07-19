@@ -27,12 +27,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const user = session?.user;
-  if (!user?.id || !user.role) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const allowedRoles = ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "ACCOUNTANT"];
-  if (!allowedRoles.includes(user.role)) {
+  if (!user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

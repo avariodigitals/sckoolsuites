@@ -9,7 +9,7 @@ function isAuthorized(role?: string) {
   return role === "SUPER_ADMIN";
 }
 
-export const PURGE_CATEGORIES = [
+const PURGE_CATEGORIES = [
   "admissions",
   "students",
   "parents",
@@ -29,7 +29,7 @@ export const PURGE_CATEGORIES = [
   "notifications",
 ] as const;
 
-export type PurgeCategory = (typeof PURGE_CATEGORIES)[number];
+type PurgeCategory = (typeof PURGE_CATEGORIES)[number];
 
 export async function GET() {
   const session = await auth();

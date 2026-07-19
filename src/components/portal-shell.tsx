@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { APP_POWERED_BY } from "@/lib/constants";
-import { navByRole } from "@/lib/navigation";
+import { navByRole, filterNavByPrivileges } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import { AcademicContextSwitcher } from "@/components/academic-context-switcher";
 import { PortalTopbar } from "@/components/portal-topbar";
@@ -22,6 +22,7 @@ export function PortalShell({
   selectedTermId,
   primaryColor,
   secondaryColor,
+  privileges,
   children,
 }: {
   role: string;
@@ -38,9 +39,11 @@ export function PortalShell({
   selectedTermId?: string | null;
   primaryColor?: string;
   secondaryColor?: string;
+  privileges?: Record<string, boolean> | null;
   children: React.ReactNode;
 }) {
-  const nav = navByRole[role] ?? [];
+  const rawNav = navByRole[role] ?? [];
+  const nav = privileges ? filterNavByPrivileges(rawNav, privileges) : rawNav;
   const activeTermLabel = currentSessionName || currentTermName ? `${currentSessionName ?? "-"} / ${currentTermName ?? "-"}` : "No academic context selected";
   const displaySchoolName = schoolName?.trim() || "School";
   const normalizedSchoolLogoUrl = schoolLogoUrl

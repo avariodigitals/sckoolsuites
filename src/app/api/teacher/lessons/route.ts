@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
 import { prisma } from "@/lib/db";
+import { checkPrivilege } from "@/lib/privileges";
 
 const createSchema = z.object({
   subjectId: z.coerce.number().int().min(1),
@@ -11,12 +12,14 @@ const createSchema = z.object({
   note: z.string().max(10000).optional(),
 });
 
-const allowedRoles = new Set(["TEACHER", "CLASS_ASSISTANT", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"]);
-
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.id || !allowedRoles.has(session.user.role)) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const allowed = await checkPrivilege(session.user.id, "lms.manage");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const payload = await request.json();
@@ -26,7 +29,7 @@ export async function POST(request: Request) {
   }
 
   const schoolId = session.user.schoolId || "default";
-  const isAdmin = ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(session.user.role);
+  const isAdmin = await checkPrivilege(session.user.id, "students.manage");
 
   const teacher = isAdmin
     ? null
@@ -84,8 +87,12 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const session = await auth();
-  if (!session?.user?.id || !allowedRoles.has(session.user.role)) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const delAllowed = await checkPrivilege(session.user.id, "lms.manage");
+  if (!delAllowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const url = new URL(request.url);
@@ -100,7 +107,7 @@ export async function DELETE(request: Request) {
   }
 
   const schoolId = session.user.schoolId || "default";
-  const isAdmin = ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(session.user.role);
+  const isAdmin = await checkPrivilege(session.user.id, "students.manage");
 
   const lesson = await prisma.lesson.findFirst({
     where: { id: lessonId, schoolId },

@@ -747,7 +747,7 @@ export function GuardianTab({ student, data, studentId, onUpdate }: { student: a
         <Section title="Primary Guardian">
           {parent ? (
             <>
-              <InfoRow label="Name" value={parent.user?.name} />
+              <InfoRow label="Name" value={[parent.title, parent.user?.name].filter(Boolean).join(" ")} />
               <InfoRow label="Email" value={parent.user?.email} />
               <InfoRow label="Phone" value={parent.user?.phone} />
               <InfoRow label="Address" value={parent.user?.address} />

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
 import { prisma } from "@/lib/db";
+import { checkPrivilege } from "@/lib/privileges";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
 
 const entrySchema = z.object({
@@ -24,10 +25,9 @@ export async function POST(request: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const allowedRoles = new Set(["TEACHER", "CLASS_ASSISTANT", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"]);
-  if (!allowedRoles.has(session.user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const allowed = await checkPrivilege(session.user.id, "attendance.manage");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const payload = await request.json();
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   }
 
   const schoolId = session.user.schoolId || "default";
-  const isAdmin = ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(session.user.role);
+  const isAdmin = await checkPrivilege(session.user.id, "students.manage");
 
   const teacher = isAdmin
     ? null

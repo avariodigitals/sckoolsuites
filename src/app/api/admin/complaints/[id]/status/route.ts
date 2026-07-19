@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { createAuditLog } from "@/lib/audit-log";
 import { prisma } from "@/lib/db";
 import { parseNumericId } from "@/lib/id-helpers";
+import { checkPrivilege } from "@/lib/privileges";
 
 const schema = z.object({
   status: z.nativeEnum(ComplaintStatus),
@@ -13,11 +14,14 @@ const schema = z.object({
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.id || !["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "ACCOUNTANT", "SUPER_ADMIN"].includes(session.user.role)) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const payload = await request.json();
+  const allowed = await checkPrivilege(session.user.id, "announcements.manage");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+    const payload = await request.json();
   const parsed = schema.safeParse(payload);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });

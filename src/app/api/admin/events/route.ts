@@ -4,8 +4,6 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
 
-const allowedRoles = ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"];
-
 const createSchema = z.object({
   title: z.string().min(2),
   description: z.string().optional(),
@@ -48,11 +46,10 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const session = await auth();
-    if (!session?.user || !allowedRoles.includes(session.user.role)) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const parsed = createSchema.safeParse(await request.json());
+        const parsed = createSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }

@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/auth-guards";
+import { requirePrivilege } from "@/lib/auth-guards";
 import { getCurrentSchoolByUser } from "@/lib/data";
 import { prisma } from "@/lib/db";
 import { ModernPortalShell } from "@/components/modern-portal-shell";
@@ -6,7 +6,7 @@ import { DashboardHeader } from "@/components/modern-dashboard";
 import { ArmsManager } from "../[section]/arms-manager";
 
 export default async function ArmsPage() {
-  const user = await requireRole(["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"]);
+  const user = await requirePrivilege("classes.manage");
   const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
   const profile = await getCurrentSchoolByUser(user.id);
 

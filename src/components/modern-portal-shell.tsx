@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ActiveSessionProvider, useActiveSession } from "@/components/active-session-provider";
 import { signOut } from "next-auth/react";
-import { navByRole, type NavItem as RoleNavItem } from "@/lib/navigation";
+import { navByRole, filterNavByPrivileges, type NavItem as RoleNavItem } from "@/lib/navigation";
 import { StaffClockInButton } from "@/components/staff-clock-in-button";
 
 type Notification = {
@@ -52,8 +52,9 @@ type NavItem = {
 
 const IsInsideShell = createContext(false);
 
-function getNavItems(role: string): NavItem[] {
-  const items = navByRole[role] ?? [];
+function getNavItems(role: string, privileges?: Record<string, boolean> | null): NavItem[] {
+  const raw = navByRole[role] ?? [];
+  const items = privileges ? filterNavByPrivileges(raw, privileges) : raw;
   return items.map((item: RoleNavItem) => ({
     label: item.label,
     href: item.href,
@@ -76,6 +77,7 @@ export function ModernPortalShell({
   primaryColor,
   secondaryColor,
   pathname: pathnameProp,
+  privileges,
   children,
 }: {
   role: string;
@@ -86,6 +88,7 @@ export function ModernPortalShell({
   primaryColor?: string;
   secondaryColor?: string;
   pathname?: string;
+  privileges?: Record<string, boolean> | null;
   children: React.ReactNode;
 }) {
   const isNested = useContext(IsInsideShell);
@@ -116,11 +119,12 @@ export function ModernPortalShell({
 
   // Auto-expand parent menu when current route matches a child
   const autoExpanded = useMemo(() => {
-    const items = navByRole[role] ?? [];
+    const raw = navByRole[role] ?? [];
+    const items = privileges ? filterNavByPrivileges(raw, privileges) : raw;
     return items
       .filter((item) => item.children?.some((child) => pathname.startsWith(child.href)))
       .map((item) => item.href);
-  }, [pathname, role]);
+  }, [pathname, role, privileges]);
 
   const expandedMenus = useMemo(() => {
     const merged = new Set(autoExpanded);
@@ -286,7 +290,7 @@ export function ModernPortalShell({
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {(() => {
-            const items = getNavItems(role);
+            const items = getNavItems(role, privileges);
             const groups: { label: string | null; items: NavItem[] }[] = [];
             const groupMap = new Map<string | null, NavItem[]>();
             for (const item of items) {

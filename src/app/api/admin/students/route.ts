@@ -426,7 +426,7 @@ export async function POST(request: Request) {
             templateKey: "guardian_notification",
             vars: {
               schoolName: school?.name ?? "Sckool Suite",
-              parentName: existingParent.user.name ?? "Parent",
+              parentName: [existingParent.title, existingParent.user.name].filter(Boolean).join(" ") ?? "Parent",
               studentName: fullName,
               portalUrl: process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "",
             },

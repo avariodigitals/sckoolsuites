@@ -1,9 +1,11 @@
-import { requireRole } from "@/lib/auth-guards";
+import { requirePrivilege } from "@/lib/auth-guards";
+import { getUserPrivileges } from "@/lib/privileges";
 import { DashboardHeader } from "@/components/modern-dashboard";
 import { AdmissionsManager } from "./admissions-manager-new";
 
 export default async function AdmissionsPage() {
-  const user = await requireRole(["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"]);
+  const user = await requirePrivilege("admissions.view");
+  const privileges = await getUserPrivileges(user.id);
 
   return (
     <div className="space-y-6">
@@ -11,7 +13,7 @@ export default async function AdmissionsPage() {
         title="Student Admissions"
         subtitle="Receive applications, conduct tests, interview and enroll students"
       />
-      <AdmissionsManager userRole={user.role} />
+      <AdmissionsManager canManage={privileges["admissions.manage"] === true} />
     </div>
   );
 }

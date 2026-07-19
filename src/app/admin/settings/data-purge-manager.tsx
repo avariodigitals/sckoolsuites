@@ -201,7 +201,7 @@ export function DataPurgeManager() {
                       disabled={!canConfirm || isPurging !== null}
                       className="inline-flex items-center gap-1 rounded-md bg-red-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      {isPurging === cat.key ? (
+                      {purging === cat.key ? (
                         <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                       ) : (
                         <AlertTriangle className="h-3.5 w-3.5" />

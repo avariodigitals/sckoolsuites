@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { checkPrivilege } from "@/lib/privileges";
 
 export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const allowedRoles = new Set(["TEACHER", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"]);
-  if (!allowedRoles.has(session.user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const allowed = await checkPrivilege(session.user.id, "results.view");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const schoolId = session.user.schoolId || "default";
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const sessionId = Number(url.searchParams.get("sessionId") ?? "NaN");
     const termId = Number(url.searchParams.get("termId") ?? "NaN");
 
-    const isAdmin = ["SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"].includes(session.user.role);
+    const isAdmin = await checkPrivilege(session.user.id, "students.manage");
     const teacher = isAdmin
       ? null
       : await prisma.teacher.findFirst({ where: { schoolId, userId: session.user.id } });

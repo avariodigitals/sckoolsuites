@@ -50,7 +50,8 @@ export async function GET() {
     parents: parents.map((parent: any) => ({
       id: parent.id,
       userId: parent.userId,
-      name: parent.user.name,
+      title: parent.title ?? "",
+      name: [parent.title, parent.user.name].filter(Boolean).join(" "),
       email: parent.user.email,
       isActive: parent.user.isActive,
       createdAt: parent.createdAt.toISOString(),
