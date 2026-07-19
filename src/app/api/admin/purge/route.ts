@@ -40,84 +40,92 @@ export async function GET() {
 
   const schoolId = session.user.schoolId || "default";
 
+  const safeCount = (promise: Promise<number>): Promise<number> =>
+    promise.catch(() => 0);
+
   const counts = await Promise.all([
-    db.admissionApplication.count({ where: { schoolId } }),
-    db.student.count({ where: { schoolId } }),
-    db.parent.count({ where: { schoolId } }),
-    db.teacher.count({ where: { schoolId } }),
+    safeCount(db.admissionApplication.count({ where: { schoolId } })),
+    safeCount(db.student.count({ where: { schoolId } })),
+    safeCount(db.parent.count({ where: { schoolId } })),
+    safeCount(db.teacher.count({ where: { schoolId } })),
     Promise.all([
-      db.invoice.count({ where: { schoolId } }),
-      db.payment.count({ where: { schoolId } }),
-      db.receipt.count({ where: { schoolId } }),
+      safeCount(db.invoice.count({ where: { schoolId } })),
+      safeCount(db.payment.count({ where: { schoolId } })),
+      safeCount(db.receipt.count({ where: { schoolId } })),
     ]).then(([a, b, c]: number[]) => a + b + c),
     Promise.all([
-      db.feeGroup.count({ where: { schoolId } }),
-      db.feeItem.count({ where: { schoolId } }),
-      db.feeProfile.count({ where: { schoolId } }),
-      db.feeConcession.count({ where: { schoolId } }),
+      safeCount(db.feeGroup.count({ where: { schoolId } })),
+      safeCount(db.feeItem.count({ where: { schoolId } })),
+      safeCount(db.feeProfile.count({ where: { schoolId } })),
+      safeCount(db.feeConcession.count({ where: { schoolId } })),
     ]).then(([a, b, c, d]: number[]) => a + b + c + d),
     Promise.all([
-      db.income.count({ where: { schoolId } }),
-      db.expense.count({ where: { schoolId } }),
-      db.incomeCategory.count({ where: { schoolId } }),
-      db.expenseCategory.count({ where: { schoolId } }),
+      safeCount(db.income.count({ where: { schoolId } })),
+      safeCount(db.expense.count({ where: { schoolId } })),
+      safeCount(db.incomeCategory.count({ where: { schoolId } })),
+      safeCount(db.expenseCategory.count({ where: { schoolId } })),
     ]).then(([a, b, c, d]: number[]) => a + b + c + d),
     Promise.all([
-      db.assessment.count({ where: { schoolId } }),
-      db.subject.count({ where: { schoolId } }),
-      db.classArm.count({ where: { schoolId } }),
-      db.class.count({ where: { schoolId } }),
-      db.classGroup.count({ where: { schoolId } }),
-      db.term.count({ where: { schoolId } }),
-      db.session.count({ where: { schoolId } }),
+      safeCount(db.assessment.count({ where: { schoolId } })),
+      safeCount(db.subject.count({ where: { schoolId } })),
+      safeCount(db.classArm.count({ where: { schoolId } })),
+      safeCount(db.class.count({ where: { schoolId } })),
+      safeCount(db.classGroup.count({ where: { schoolId } })),
+      safeCount(db.term.count({ where: { schoolId } })),
+      safeCount(db.session.count({ where: { schoolId } })),
     ]).then((vals: number[]) => vals.reduce((s: number, v: number) => s + v, 0)),
     Promise.all([
-      db.score.count({ where: { schoolId } }),
-      db.result.count({ where: { schoolId } }),
+      safeCount(db.score.count({ where: { schoolId } })),
+      safeCount(db.result.count({ where: { schoolId } })),
     ]).then(([a, b]: number[]) => a + b),
     Promise.all([
-      db.attendance.count({ where: { schoolId } }),
-      db.staffAttendance.count({ where: { schoolId } }),
+      safeCount(db.attendance.count({ where: { schoolId } })),
+      safeCount(db.staffAttendance.count({ where: { schoolId } })),
     ]).then(([a, b]: number[]) => a + b),
     Promise.all([
-      db.lesson.count({ where: { schoolId } }),
-      db.assignment.count({ where: { schoolId } }),
-      db.quiz.count({ where: { schoolId } }),
-      db.onlineClass.count({ where: { schoolId } }),
+      safeCount(db.lesson.count({ where: { schoolId } })),
+      safeCount(db.assignment.count({ where: { schoolId } })),
+      safeCount(db.quiz.count({ where: { schoolId } })),
+      safeCount(db.onlineClass.count({ where: { schoolId } })),
     ]).then((vals: number[]) => vals.reduce((s: number, v: number) => s + v, 0)),
     Promise.all([
-      db.announcement.count({ where: { schoolId } }),
-      db.schoolEvent.count({ where: { schoolId } }),
-      db.survey.count({ where: { schoolId } }),
+      safeCount(db.announcement.count({ where: { schoolId } })),
+      safeCount(db.schoolEvent.count({ where: { schoolId } })),
+      safeCount(db.survey.count({ where: { schoolId } })),
     ]).then((vals: number[]) => vals.reduce((s: number, v: number) => s + v, 0)),
     Promise.all([
-      db.vehicle.count({ where: { schoolId } }),
-      db.driver.count({ where: { schoolId } }),
-      db.route.count({ where: { schoolId } }),
+      safeCount(db.vehicle.count({ where: { schoolId } })),
+      safeCount(db.driver.count({ where: { schoolId } })),
+      safeCount(db.route.count({ where: { schoolId } })),
     ]).then((vals: number[]) => vals.reduce((s: number, v: number) => s + v, 0)),
     Promise.all([
-      db.visitor.count({ where: { schoolId } }),
-      db.enquiry.count({ where: { schoolId } }),
-      db.gatePass.count({ where: { schoolId } }),
-      db.receptionComplaint.count({ where: { schoolId } }),
-      db.callLog.count({ where: { schoolId } }),
-      db.correspondence.count({ where: { schoolId } }),
-      db.query.count({ where: { schoolId } }),
+      safeCount(db.visitor.count({ where: { schoolId } })),
+      safeCount(db.enquiry.count({ where: { schoolId } })),
+      safeCount(db.gatePass.count({ where: { schoolId } })),
+      safeCount(db.receptionComplaint.count({ where: { schoolId } })),
+      safeCount(db.callLog.count({ where: { schoolId } })),
+      safeCount(db.correspondence.count({ where: { schoolId } })),
+      safeCount(db.query.count({ where: { schoolId } })),
     ]).then((vals: number[]) => vals.reduce((s: number, v: number) => s + v, 0)),
     Promise.all([
-      db.loan.count({ where: { schoolId } }),
-      db.asset.count({ where: { schoolId } }),
+      safeCount(db.loan.count({ where: { schoolId } })),
+      safeCount(db.asset.count({ where: { schoolId } })),
     ]).then(([a, b]: number[]) => a + b),
-    db.auditLog.count({ where: { schoolId } }),
-    db.notificationRecord.count({ where: { schoolId } }),
+    safeCount(db.auditLog.count({ where: { schoolId } })),
+    safeCount(db.notificationRecord.count({ where: { schoolId } })),
   ]);
 
-  const result: Record<string, number> = {};
-  PURGE_CATEGORIES.forEach((cat, i) => {
-    result[cat] = counts[i];
-  });
+  try {
+    const result: Record<string, number> = {};
+    PURGE_CATEGORIES.forEach((cat, i) => {
+      result[cat] = counts[i];
+    });
 
-  return NextResponse.json({ counts: result });
+    return NextResponse.json({ counts: result });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to load counts";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {

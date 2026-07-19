@@ -11,7 +11,12 @@ import { DataPurgeManager } from "./data-purge-manager";
 
 export default async function SettingsPage() {
   const user = await requirePrivilege("settings.view");
-  const profile = await getCurrentSchoolByUser(user.id);
+  let profile;
+  try {
+    profile = await getCurrentSchoolByUser(user.id);
+  } catch {
+    // Database may be partially migrated
+  }
 
   if (!profile?.school) {
     return (
