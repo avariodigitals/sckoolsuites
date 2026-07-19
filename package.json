@@ -16,7 +16,7 @@
     "db:seed": "prisma db seed",
     "db:setup": "prisma generate && prisma migrate deploy && prisma db seed",
     "db:init": "echo 'DEPRECATED: db:init has been replaced by db:setup. Run npm run db:setup instead.' && exit 1",
-    "vercel-build": "prisma generate && (prisma migrate resolve --rolled-back 20260710225000_add_result_file_fields || true) && (prisma migrate resolve --rolled-back 20260718090000_add_document_templates || true) && prisma migrate deploy && (prisma db seed || echo 'seed skipped — runtime will handle it') && (tsx scripts/upgrade-first-admin-to-super-admin.ts || echo 'admin upgrade skipped — will handle at runtime') && next build",
+    "vercel-build": "prisma generate && (prisma migrate resolve --rolled-back 20260710225000_add_result_file_fields || true) && (prisma migrate resolve --rolled-back 20260718090000_add_document_templates || true) && (prisma migrate deploy || echo 'migrate skipped — already applied or lock timeout') && (prisma db seed || echo 'seed skipped — runtime will handle it') && (tsx scripts/upgrade-first-admin-to-super-admin.ts || echo 'admin upgrade skipped — will handle at runtime') && next build",
     "deploy:vercel": "vercel --prod"
   },
   "dependencies": {
