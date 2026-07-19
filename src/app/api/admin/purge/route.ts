@@ -2,12 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit-log";
+import { checkPrivilege } from "@/lib/privileges";
 
 const db = prisma as any;
-
-function isAuthorized(role?: string) {
-  return role === "SUPER_ADMIN";
-}
 
 const PURGE_CATEGORIES = [
   "admissions",
@@ -33,11 +30,15 @@ type PurgeCategory = (typeof PURGE_CATEGORIES)[number];
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user || !isAuthorized(session.user.role)) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const allowed = await checkPrivilege(session.user.id, "settings.manage");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden — settings.manage privilege required" }, { status: 403 });
+  }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
 
   const counts = await Promise.all([
     db.admissionApplication.count({ where: { schoolId } }),
@@ -121,8 +122,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user || !isAuthorized(session.user.role)) {
-    return NextResponse.json({ error: "Unauthorized — SUPER_ADMIN only" }, { status: 401 });
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const allowed = await checkPrivilege(session.user.id, "settings.manage");
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden — settings.manage privilege required" }, { status: 403 });
   }
 
   const body = await request.json();
@@ -132,7 +137,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid purge category" }, { status: 400 });
   }
 
-  const schoolId = "default";
+  const schoolId = session.user.schoolId || "default";
   const cat = category as PurgeCategory;
 
   try {
