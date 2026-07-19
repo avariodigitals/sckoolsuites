@@ -79,7 +79,6 @@ export function PortalShell({
                   src={normalizedSchoolLogoUrl}
                   alt={`${displaySchoolName} logo`}
                   className="h-14 w-14 rounded-xl border border-slate-200 bg-white object-contain p-2 dark:border-slate-700 dark:bg-slate-900"
-                  onError={(e) => { console.error("[PortalShell] logo failed to load:", normalizedSchoolLogoUrl, e); }}
                 />
               ) : (
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
