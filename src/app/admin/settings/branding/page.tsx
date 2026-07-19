@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { redirect } from "next/navigation";
 import { PortalShell } from "@/components/portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,9 +10,42 @@ import { prisma } from "@/lib/db";
 import { BrandingForm } from "@/app/admin/settings/branding/branding-form";
 
 export default async function BrandingSettingsPage() {
-  const user = await requirePrivilege("branding.manage");
-  const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
-  const profile = await getCurrentSchoolByUser(user.id);
+  let user: Awaited<ReturnType<typeof requirePrivilege>> | null = null;
+  try {
+    user = await requirePrivilege("branding.manage");
+  } catch {
+    redirect("/login");
+  }
+  if (!user) redirect("/login");
+
+  let dbUser = null;
+  let profile = null;
+  try {
+    dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
+    profile = await getCurrentSchoolByUser(user.id);
+  } catch (error) {
+    console.error("[branding/page] Database error:", error);
+    return (
+      <PortalShell
+        role={user.role}
+        schoolName="School"
+        userName={user.name ?? "Admin"}
+        pathname="/admin/settings/branding"
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>School Branding & Settings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-slate-600">
+              Unable to load branding data. This usually means the database needs migrations.
+              Please run migrations and try again.
+            </p>
+          </CardContent>
+        </Card>
+      </PortalShell>
+    );
+  }
 
   if (!profile?.school) {
     return (
