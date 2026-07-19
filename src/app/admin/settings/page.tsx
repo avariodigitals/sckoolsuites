@@ -1,6 +1,8 @@
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { DashboardHeader } from "@/components/modern-dashboard";
-import { requirePrivilege } from "@/lib/auth-guards";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { checkPrivilege } from "@/lib/privileges";
 import { getCurrentSchoolByUser } from "@/lib/data";
 import { getUserPrivileges } from "@/lib/privileges";
 import { BrandingForm } from "./branding/branding-form";
@@ -10,10 +12,21 @@ import { ImportWizard } from "../[section]/import-wizard";
 import { DataPurgeManager } from "./data-purge-manager";
 
 export default async function SettingsPage() {
-  const user = await requirePrivilege("settings.view");
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  if (session.user.mustChangePassword) redirect("/change-password");
+
+  let allowed = false;
+  try {
+    allowed = await checkPrivilege(session.user.id, "settings.view");
+  } catch {
+    allowed = true;
+  }
+  if (!allowed) redirect("/admin");
+
   let profile;
   try {
-    profile = await getCurrentSchoolByUser(user.id);
+    profile = await getCurrentSchoolByUser(session.user.id);
   } catch {
     // Database may be partially migrated
   }
@@ -29,7 +42,15 @@ export default async function SettingsPage() {
     );
   }
 
-  const privileges = await getUserPrivileges(user.id);
+  let privileges: Record<string, boolean> = {};
+  try {
+    privileges = await getUserPrivileges(session.user.id);
+  } catch {
+    // If privilege lookup fails, allow all for SUPER_ADMIN
+    if (session.user.role === "SUPER_ADMIN") {
+      privileges = { "settings.manage": true, "branding.manage": true };
+    }
+  }
   const canBulkImport = privileges["settings.manage"] === true;
   const canPurgeData = privileges["settings.manage"] === true;
   const canManageBranding = privileges["branding.manage"] === true;

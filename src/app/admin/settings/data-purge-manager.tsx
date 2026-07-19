@@ -180,7 +180,7 @@ export function DataPurgeManager() {
                 {!isConfirming ? (
                   <button
                     onClick={() => startConfirm(cat.key)}
-                    disabled={loading || isPurging !== null}
+                    disabled={isPurging !== null}
                     className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-white px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
