@@ -11,11 +11,22 @@ import { prisma } from "@/lib/db";
 import { BrandingForm } from "@/app/admin/settings/branding/branding-form";
 
 export default async function BrandingSettingsPage() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[branding/page] auth() error:", error);
+    redirect("/login");
+  }
   if (!session?.user) redirect("/login");
   if (session.user.mustChangePassword) redirect("/change-password");
 
-  const allowed = await checkPrivilege(session.user.id, "branding.manage");
+  let allowed = false;
+  try {
+    allowed = await checkPrivilege(session.user.id, "branding.manage");
+  } catch (error) {
+    console.error("[branding/page] checkPrivilege error:", error);
+  }
   if (!allowed) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center p-8">
