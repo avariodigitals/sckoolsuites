@@ -6,6 +6,7 @@ import { BrandingForm } from "./branding/branding-form";
 import { EmailSettingsForm } from "./email/email-settings-form";
 import { EmailProviderForm } from "./email-provider-form";
 import { ImportWizard } from "../[section]/import-wizard";
+import { DataPurgeManager } from "./data-purge-manager";
 
 export default async function SettingsPage() {
   const user = await requireRole(["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"]);
@@ -23,6 +24,7 @@ export default async function SettingsPage() {
   }
 
   const canBulkImport = ["SUPER_ADMIN", "SCHOOL_ADMIN"].includes(user.role);
+  const canPurgeData = user.role === "SUPER_ADMIN";
 
   return (
     <div className="space-y-6">
@@ -96,6 +98,20 @@ export default async function SettingsPage() {
           <EmailSettingsForm />
         </div>
       </div>
+
+      {canPurgeData && (
+        <div id="data-purge" className="rounded-xl border border-red-200 bg-white shadow-sm scroll-mt-20">
+          <div className="border-b border-red-200 px-6 py-4">
+            <h2 className="text-lg font-semibold text-red-900">Data Purge</h2>
+            <p className="text-sm text-red-600">
+              Permanently delete school data by category. This action cannot be undone.
+            </p>
+          </div>
+          <div className="p-6">
+            <DataPurgeManager />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

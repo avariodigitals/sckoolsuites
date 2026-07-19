@@ -324,6 +324,28 @@ export async function RoleDashboard({ roleScope, pathname }: { roleScope: RoleSc
       : [];
   }
 
+  // For parents, filter data to only their children
+  if (roleScope === "parent") {
+    const parent = await prisma.parent.findFirst({
+      where: { schoolId: profile.schoolId, userId: user.id },
+    });
+    if (parent) {
+      const myChildren = await prisma.student.findMany({
+        where: { schoolId: profile.schoolId, parentId: parent.id },
+        include: { user: true, class: true },
+        orderBy: { createdAt: "desc" },
+      });
+      const childIds = new Set(myChildren.map((s: any) => s.id));
+
+      (core as any).students = myChildren;
+      (core as any).studentCount = myChildren.length;
+      (core as any).scores = ((core as any).scores ?? []).filter((s: any) => childIds.has(s.studentId));
+      (core as any).attendance = ((core as any).attendance ?? []).filter((a: any) => childIds.has(a.studentId));
+      (core as any).bills = ((core as any).bills ?? []).filter((b: any) => childIds.has(b.studentId));
+      (core as any).payments = ((core as any).payments ?? []).filter((p: any) => childIds.has(p.studentId));
+    }
+  }
+
   // If Super Admin has school, treat as admin for dashboard model
   const effectiveRole = superAdminWithSchool ? "admin" : roleScope;
   const model = buildSchoolRoleModel(effectiveRole as Exclude<RoleScope, "superadmin">, core);

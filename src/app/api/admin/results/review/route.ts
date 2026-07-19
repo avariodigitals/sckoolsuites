@@ -358,17 +358,6 @@ export async function POST(request: Request) {
       },
     });
 
-    // Notify parent that result has been approved
-    await createNotificationsForParents(schoolId, [studentId], {
-      type: "result",
-      title: "Result Approved",
-      body: `Your child's result has been approved and is pending publication. You will be notified once it is published.`,
-      link: "/parent/results",
-      actorUserId: session.user.id,
-      excludeActorUserId: session.user.id,
-      metadata: { resultId: result.id, studentId, termId, sessionId, action: "APPROVED" },
-    });
-
     // Notify the student's teachers that the result has been approved
     await createNotificationsForTeachersOfStudent(schoolId, studentId, {
       type: "result",
