@@ -1,28 +1,46 @@
 export const dynamic = "force-dynamic";
 
+import { redirect } from "next/navigation";
 import { PortalShell } from "@/components/portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { requirePrivilege } from "@/lib/auth-guards";
+import { auth } from "@/auth";
+import { checkPrivilege } from "@/lib/privileges";
 import { getCurrentSchoolByUser } from "@/lib/data";
 import { prisma } from "@/lib/db";
 import { BrandingForm } from "@/app/admin/settings/branding/branding-form";
 
 export default async function BrandingSettingsPage() {
-  const user = await requirePrivilege("branding.manage");
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  if (session.user.mustChangePassword) redirect("/change-password");
+
+  const allowed = await checkPrivilege(session.user.id, "branding.manage");
+  if (!allowed) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center p-8">
+        <div className="max-w-md text-center">
+          <h2 className="text-lg font-semibold text-slate-900">Access Denied</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            You need the <code className="rounded bg-slate-100 px-1">branding.manage</code> privilege to access this page.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   let dbUser = null;
   let profile = null;
   try {
-    dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
-    profile = await getCurrentSchoolByUser(user.id);
+    dbUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { avatarUrl: true } });
+    profile = await getCurrentSchoolByUser(session.user.id);
   } catch (error) {
     console.error("[branding/page] Database error:", error);
     return (
       <PortalShell
-        role={user.role}
+        role={session.user.role}
         schoolName="School"
-        userName={user.name ?? "Admin"}
+        userName={session.user.name ?? "Admin"}
         pathname="/admin/settings/branding"
       >
         <Card>
@@ -61,10 +79,10 @@ export default async function BrandingSettingsPage() {
 
   return (
     <PortalShell
-      role={user.role}
+      role={session.user.role}
       schoolName={profile.school.name}
       schoolLogoUrl={branding?.logoUrl ?? undefined}
-      userName={user.name ?? "Admin"}
+      userName={session.user.name ?? "Admin"}
       avatarUrl={dbUser?.avatarUrl ?? undefined}
       pathname="/admin/settings/branding"
       primaryColor={branding?.primaryColor}
