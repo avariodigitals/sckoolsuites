@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { createAuditLog } from "@/lib/audit-log";
 import { extractCommentsFromPdf } from "@/lib/pdf-comment-extractor";
+import { createNotificationsForRoles } from "@/lib/notification-helpers";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
 
 const ALLOWED_TYPES = new Set(["application/pdf"]);
@@ -175,6 +176,21 @@ export async function POST(request: Request) {
         fileUrl: uploadResult.url,
       },
     });
+
+    // Notify heads that a new result is pending review
+    await createNotificationsForRoles(
+      schoolId,
+      ["HEAD_OF_SCHOOL", "PRINCIPAL", "HEAD_TEACHER"],
+      {
+        type: "result",
+        title: "New Result Uploaded",
+        body: `A result report was uploaded by ${session.user.name ?? "a teacher"} and is pending review.`,
+        link: "/admin/results",
+        actorUserId: session.user.id,
+        excludeActorUserId: session.user.id,
+        metadata: { resultId: result.id, studentId, termId: effectiveTermId, sessionId: effectiveSessionId },
+      }
+    );
 
     return NextResponse.json({
       ok: true,
