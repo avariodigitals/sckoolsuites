@@ -16,7 +16,17 @@ export const getCurrentSchoolByUser = cache(async function getCurrentSchoolByUse
   if (!user) return null;
 
   const schoolId = (user as any).schoolId || "default";
-  const school = await prisma.school.findUnique({ where: { id: schoolId }, include: { branding: true } });
+  let school = null;
+  try {
+    school = await prisma.school.findUnique({ where: { id: schoolId }, include: { branding: true } });
+  } catch {
+    try {
+      const schoolOnly = await prisma.school.findUnique({ where: { id: schoolId } });
+      school = schoolOnly ? { ...schoolOnly, branding: null } : null;
+    } catch {
+      // School table itself is missing
+    }
+  }
 
   return {
     ...user,

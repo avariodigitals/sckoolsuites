@@ -1,6 +1,5 @@
 export const dynamic = "force-dynamic";
 
-import { redirect } from "next/navigation";
 import { PortalShell } from "@/components/portal-shell";
 import { SetupRequiredScreen } from "@/components/setup-required-screen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,13 +9,7 @@ import { prisma } from "@/lib/db";
 import { BrandingForm } from "@/app/admin/settings/branding/branding-form";
 
 export default async function BrandingSettingsPage() {
-  let user: Awaited<ReturnType<typeof requirePrivilege>> | null = null;
-  try {
-    user = await requirePrivilege("branding.manage");
-  } catch {
-    redirect("/login");
-  }
-  if (!user) redirect("/login");
+  const user = await requirePrivilege("branding.manage");
 
   let dbUser = null;
   let profile = null;
