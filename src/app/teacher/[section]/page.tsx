@@ -6,6 +6,8 @@ import { TeacherAttendanceForm } from "@/app/teacher/_components/teacher-attenda
 import { TeacherScoreEntryForm } from "@/app/teacher/_components/teacher-score-entry-form";
 import { TeacherResultUploadForm } from "@/app/teacher/_components/teacher-result-upload-form";
 import { TeacherProfilePanel } from "@/app/teacher/_components/teacher-profile-panel";
+import { TeacherLessonForm } from "@/app/teacher/_components/teacher-lesson-form";
+import { TeacherAssignmentForm } from "@/app/teacher/_components/teacher-assignment-form";
 import { requireRole } from "@/lib/auth-guards";
 import { getCoreSchoolDataByContext, getCurrentSchoolByUser, getUserAcademicContext } from "@/lib/data";
 import { prisma } from "@/lib/db";
@@ -108,13 +110,47 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
 
   const myClasses = core.classes.filter((item: any) => item.teacherId === teacher.id);
   const classIds = new Set(myClasses.map((item: any) => item.id));
-  const mySubjects = core.subjects.filter((item: any) => item.teacherId === teacher.id || (item.classId ? classIds.has(item.classId) : false));
+
+  // Fetch ALL students in the teacher's classes directly from DB.
+  // core.students is limited to 20 school-wide which misses most students.
+  const myStudents = classIds.size > 0
+    ? await prisma.student.findMany({
+        where: { schoolId: profile.schoolId, classId: { in: [...classIds] } },
+        include: { user: true, class: true },
+        orderBy: { firstName: "asc" },
+      })
+    : [];
+
+  // Also fetch subjects where the teacher is assigned OR subjects linked to the teacher's classes
+  const mySubjects = core.subjects.filter(
+    (item: any) => item.teacherId === teacher.id || (item.classId ? classIds.has(item.classId) : false)
+  );
   const subjectIds = new Set(mySubjects.map((item: any) => item.id));
+
+  // Fetch lessons and assignments directly by teacher ID instead of school-wide take:20
+  const [myLessons, myAssignments] = await Promise.all([
+    prisma.lesson.findMany({
+      where: { schoolId: profile.schoolId, teacherId: teacher.id },
+      include: { subject: true, class: true },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    }),
+    prisma.assignment.findMany({
+      where: {
+        schoolId: profile.schoolId,
+        OR: [
+          { teacherId: teacher.id },
+          { subjectId: { in: [...subjectIds] } },
+        ],
+      },
+      include: { subject: true, class: true, lesson: true },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    }),
+  ]);
+
   const myScores = core.scores.filter((item: any) => subjectIds.has(item.subjectId));
-  const myLessons = core.lessons.filter((item: any) => item.teacherId === teacher.id);
-  const myAssignments = core.assignments.filter((item: any) => item.subjectId && subjectIds.has(item.subjectId));
   const myAttendance = core.attendance.filter((item: any) => item.classId && classIds.has(item.classId));
-  const myStudents = core.students.filter((item: any) => item.classId && classIds.has(item.classId));
 
   const canonical = aliases[section as AllowedSection];
 
@@ -256,45 +292,64 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
         );
       case "assignments":
         return (
-          <Card>
-            <CardHeader><CardTitle>Assignments</CardTitle></CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {myAssignments.slice(0, 20).map((item: any) => (
-                <div key={item.id} className="glass-soft rounded-xl p-3">
-                  <p className="font-medium">{item.title}</p>
-                  <p>Subject: {item.subject?.name ?? "-"} • Due: {formatDate(item.dueDate)}</p>
-                </div>
-              ))}
-              {!myAssignments.length ? <p className="text-slate-500">No assignments created for your subjects.</p> : null}
-            </CardContent>
-          </Card>
+          <div className="space-y-3">
+            <TeacherAssignmentForm
+              subjectOptions={mySubjects.map((item: any) => ({ id: String(item.id), name: item.name, classId: item.classId ? String(item.classId) : null }))}
+              classOptions={myClasses.map((item: any) => ({ id: String(item.id), name: item.name }))}
+            />
+            <Card>
+              <CardHeader><CardTitle>Assignment List</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {myAssignments.slice(0, 30).map((item: any) => (
+                  <div key={item.id} className="glass-soft rounded-xl p-3">
+                    <p className="font-medium">{item.title}</p>
+                    <p>Subject: {item.subject?.name ?? "-"} • Class: {item.class?.name ?? "-"} • Due: {formatDate(item.dueDate)}</p>
+                    {item.instruction ? <p className="mt-1 text-xs text-slate-500 line-clamp-2">{item.instruction}</p> : null}
+                  </div>
+                ))}
+                {!myAssignments.length ? <p className="text-slate-500">No assignments created yet. Use the form above to create one.</p> : null}
+              </CardContent>
+            </Card>
+          </div>
         );
       case "lesson-notes":
         return (
-          <Card>
-            <CardHeader><CardTitle>Lesson Notes</CardTitle></CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {myLessons.slice(0, 20).map((item: any) => (
-                <div key={item.id} className="glass-soft rounded-xl p-3">
-                  <p className="font-medium">{item.title}</p>
-                  <p>Subject: {item.subject?.name ?? "-"} • Uploaded: {formatDate(item.createdAt)}</p>
-                </div>
-              ))}
-              {!myLessons.length ? <p className="text-slate-500">No lesson notes published yet.</p> : null}
-            </CardContent>
-          </Card>
+          <div className="space-y-3">
+            <TeacherLessonForm
+              subjectOptions={mySubjects.map((item: any) => ({ id: String(item.id), name: item.name, classId: item.classId ? String(item.classId) : null }))}
+              classOptions={myClasses.map((item: any) => ({ id: String(item.id), name: item.name }))}
+            />
+            <Card>
+              <CardHeader><CardTitle>Lesson Notes</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {myLessons.slice(0, 30).map((item: any) => (
+                  <div key={item.id} className="glass-soft rounded-xl p-3">
+                    <p className="font-medium">{item.title}</p>
+                    <p>Subject: {item.subject?.name ?? "-"} • Class: {item.class?.name ?? "-"} • Created: {formatDate(item.createdAt)}</p>
+                    {item.note ? <p className="mt-1 text-xs text-slate-500 line-clamp-3">{item.note}</p> : null}
+                  </div>
+                ))}
+                {!myLessons.length ? <p className="text-slate-500">No lesson notes created yet. Use the form above to create one.</p> : null}
+              </CardContent>
+            </Card>
+          </div>
         );
       case "timetable":
         return (
           <Card>
             <CardHeader><CardTitle>Teaching Timetable</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {mySubjects.length ? mySubjects.map((item: any, idx: any) => (
-                <div key={item.id} className="glass-soft rounded-xl p-3">
-                  <p className="font-medium">Period {idx + 1}: {item.name}</p>
-                  <p>Class: {item.class?.name ?? "-"}</p>
+              {mySubjects.length ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-500 mb-2">Your assigned subjects and their classes. A formal weekly timetable will be available once the admin configures period scheduling.</p>
+                  {mySubjects.map((item: any) => (
+                    <div key={item.id} className="glass-soft rounded-xl p-3">
+                      <p className="font-medium">{item.name}</p>
+                      <p>Class: {item.class?.name ?? "-"}</p>
+                    </div>
+                  ))}
                 </div>
-              )) : <p className="text-slate-500">No timetable data available.</p>}
+              ) : <p className="text-slate-500">No subjects assigned yet. Your timetable will appear here once subjects are assigned.</p>}
             </CardContent>
           </Card>
         );
@@ -315,21 +370,45 @@ export default async function TeacherSectionPage({ params }: { params: Promise<{
         );
       case "lms":
         return (
-          <div className="grid gap-3 lg:grid-cols-2">
-            <Card>
-              <CardHeader><CardTitle>LMS Lessons</CardTitle></CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                {myLessons.slice(0, 12).map((item: any) => <p key={item.id}>{item.title}</p>)}
-                {!myLessons.length ? <p className="text-slate-500">No lesson content yet.</p> : null}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardTitle>LMS Assignments</CardTitle></CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                {myAssignments.slice(0, 12).map((item: any) => <p key={item.id}>{item.title}</p>)}
-                {!myAssignments.length ? <p className="text-slate-500">No assignments yet.</p> : null}
-              </CardContent>
-            </Card>
+          <div className="space-y-4">
+            <div className="grid gap-3 lg:grid-cols-2">
+              <div className="space-y-3">
+                <TeacherLessonForm
+                  subjectOptions={mySubjects.map((item: any) => ({ id: String(item.id), name: item.name, classId: item.classId ? String(item.classId) : null }))}
+                  classOptions={myClasses.map((item: any) => ({ id: String(item.id), name: item.name }))}
+                />
+                <Card>
+                  <CardHeader><CardTitle>Recent Lessons</CardTitle></CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    {myLessons.slice(0, 10).map((item: any) => (
+                      <div key={item.id} className="glass-soft rounded-xl p-2">
+                        <p className="font-medium">{item.title}</p>
+                        <p className="text-xs text-slate-500">{item.subject?.name ?? "-"} • {formatDate(item.createdAt)}</p>
+                      </div>
+                    ))}
+                    {!myLessons.length ? <p className="text-slate-500">No lessons yet.</p> : null}
+                  </CardContent>
+                </Card>
+              </div>
+              <div className="space-y-3">
+                <TeacherAssignmentForm
+                  subjectOptions={mySubjects.map((item: any) => ({ id: String(item.id), name: item.name, classId: item.classId ? String(item.classId) : null }))}
+                  classOptions={myClasses.map((item: any) => ({ id: String(item.id), name: item.name }))}
+                />
+                <Card>
+                  <CardHeader><CardTitle>Recent Assignments</CardTitle></CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    {myAssignments.slice(0, 10).map((item: any) => (
+                      <div key={item.id} className="glass-soft rounded-xl p-2">
+                        <p className="font-medium">{item.title}</p>
+                        <p className="text-xs text-slate-500">{item.subject?.name ?? "-"} • Due: {formatDate(item.dueDate)}</p>
+                      </div>
+                    ))}
+                    {!myAssignments.length ? <p className="text-slate-500">No assignments yet.</p> : null}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </div>
         );
       case "announcements":

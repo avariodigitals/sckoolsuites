@@ -17,7 +17,7 @@ const calendarService = new AcademicCalendarService();
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.id  || session.user.role !== "TEACHER") {
+  if (!session?.user?.id || !["TEACHER", "CLASS_ASSISTANT"].includes(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

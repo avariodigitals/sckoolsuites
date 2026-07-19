@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { createAuditLog } from "@/lib/audit-log";
+import { extractCommentsFromPdf } from "@/lib/pdf-comment-extractor";
 import { AcademicCalendarService } from "@/modules/academic-setup/services/academic-calendar.service";
 
 const ALLOWED_TYPES = new Set(["application/pdf"]);
@@ -108,6 +109,9 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
+    // Extract teacher/principal comments from the PDF text
+    const extractedComments = await extractCommentsFromPdf(buffer);
+
     const uploadResult = await uploadToCloudinary(buffer, file.type, {
       schoolId,
       folder: `result-uploads/session_${effectiveSessionId}/term_${effectiveTermId}`,
@@ -132,6 +136,12 @@ export async function POST(request: Request) {
         approvedAt: null,
         publishedById: null,
         publishedAt: null,
+        ...(extractedComments.classTeacherComment
+          ? { classTeacherComment: extractedComments.classTeacherComment }
+          : {}),
+        ...(extractedComments.principalComment
+          ? { principalComment: extractedComments.principalComment }
+          : {}),
       },
       create: {
         schoolId,
@@ -142,6 +152,12 @@ export async function POST(request: Request) {
         fileName: file.name,
         uploadedById: session.user.id,
         status: "DRAFT",
+        ...(extractedComments.classTeacherComment
+          ? { classTeacherComment: extractedComments.classTeacherComment }
+          : {}),
+        ...(extractedComments.principalComment
+          ? { principalComment: extractedComments.principalComment }
+          : {}),
       },
     });
 

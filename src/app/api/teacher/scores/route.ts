@@ -17,7 +17,7 @@ const schema = z.object({
 
 const calendarService = new AcademicCalendarService();
 
-const allowedRoles = new Set(["TEACHER", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"]);
+const allowedRoles = new Set(["TEACHER", "CLASS_ASSISTANT", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL", "SUPER_ADMIN"]);
 
 export async function POST(request: Request) {
   const session = await auth();

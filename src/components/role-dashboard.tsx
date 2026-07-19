@@ -21,7 +21,7 @@ import { assignSchoolToUser } from "@/app/admin/actions";
 const roleAliases: Record<RoleScope, string[]> = {
   superadmin: ["SUPER_ADMIN"],
   admin: ["SUPER_ADMIN", "SCHOOL_ADMIN", "HEAD_OF_SCHOOL", "PRINCIPAL"],
-  teacher: ["TEACHER"],
+  teacher: ["TEACHER", "CLASS_ASSISTANT"],
   accountant: ["ACCOUNTANT"],
   parent: ["PARENT"],
   student: ["STUDENT"],
