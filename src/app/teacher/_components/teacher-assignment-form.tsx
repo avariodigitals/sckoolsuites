@@ -10,7 +10,11 @@ export function TeacherAssignmentForm({ subjectOptions, classOptions }: { subjec
   const [classId, setClassId] = useState("");
   const [title, setTitle] = useState("");
   const [instruction, setInstruction] = useState("");
-  const [dueDate, setDueDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
+  const [dueDate, setDueDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().slice(0, 10);
+  });
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
